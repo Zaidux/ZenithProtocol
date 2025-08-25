@@ -21,6 +21,8 @@ class Config:
     # --- Model Hyper-parameters ---
     HCT_DIM = 64
     IN_CHANNELS = 1 # Grayscale images for Tetris
+    NUM_EXPERTS = 4 # New parameter for Mixture of Experts
+    NUM_HCT_FEATURES = 10 # Maximum number of dynamically discovered concepts
 
     # --- Training Hyper-parameters ---
     NUM_EPOCHS = 10
@@ -41,18 +43,20 @@ class Config:
             'max_height': -1.0
         }
     }
-    
+    EOM_WEIGHT = 2.0 # Energy of Movement bonus weight
+
     # --- Environment Settings ---
     TETRIS_BOARD_WIDTH = 10
     TETRIS_BOARD_HEIGHT = 20
-    CHESS_IMAGE_SIZE = (8, 8)  
-    TETRIS_IMAGE_SIZE = (20, 10) 
+    CHESS_IMAGE_SIZE = (8, 8)
+    TETRIS_IMAGE_SIZE = (20, 10)
 
     # --- Checkpoint and Logging ---
     CHECKPOINT_DIR = os.path.join(os.getcwd(), 'checkpoints')
     LOG_DIR = os.path.join(os.getcwd(), 'logs')
     LOG_INTERVAL = 100 # Log every 100 steps
-    
+    QUANTIZATION_EPOCH_THRESHOLD = 5 # Epoch after which quantization can occur
+
     def __init__(self):
         """Initializes configuration settings and creates necessary directories."""
         self.validate_settings()
@@ -75,5 +79,4 @@ class Config:
         os.makedirs(self.LOG_DIR, exist_ok=True)
 
 # Create a singleton instance of the Config class
-# This ensures all modules in the project use the same settings.
 config = Config()
