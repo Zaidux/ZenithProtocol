@@ -5,6 +5,7 @@ import torch.nn as nn
 import numpy as np
 from typing import Dict, List, Tuple
 import torch.nn.functional as F
+from ..nlp.command_parser import CommandParser
 
 class ExplainabilityModule:
     """
@@ -18,11 +19,46 @@ class ExplainabilityModule:
             'chess': ['Material Advantage', 'White King Safety', 'Black King Safety', 'White Center Control', 'Black Center Control']
         }
         self.discovered_concepts = [] # List to hold names of HCT concepts
+        self.parser = CommandParser()
 
     def add_discovered_concept(self, concept_name: str):
         """Adds a newly discovered concept to the explanation vocabulary."""
         if concept_name not in self.discovered_concepts:
             self.discovered_concepts.append(concept_name)
+
+    def handle_query(self, 
+                     query: str, 
+                     decision_context: Dict, 
+                     conceptual_features: torch.Tensor,
+                     domain: str) -> str:
+        """
+        Handles a natural language query and provides a specific explanation.
+        """
+        parsed_command = self.parser.parse_command(query)
+        command = parsed_command['command']
+        
+        if command == "explain":
+            chosen_move = decision_context.get('chosen_move', 'an unknown move')
+            chosen_score = decision_context.get('chosen_score', 'N/A')
+            return f"The model chose move {chosen_move} because it had the highest conceptual score of {chosen_score:.2f}. " + self._formulate_narrative(decision_context)
+        
+        elif command == "strategy":
+            conceptual_contribution = self._analyze_conceptual_contribution(
+                conceptual_features.squeeze(0),
+                domain
+            )
+            return f"The model's current long-term strategy is based on these conceptual goals: {conceptual_contribution}"
+            
+        elif command == "eval_move":
+            move_idx = parsed_command['entities'].get('move')
+            if move_idx is not None and 'all_scores' in decision_context and move_idx < len(decision_context['all_scores']):
+                score = decision_context['all_scores'][move_idx]
+                return f"Move {move_idx} was evaluated with a score of {score:.2f}."
+            else:
+                return "I'm sorry, I could not evaluate that specific move."
+                
+        else:
+            return "I'm sorry, I don't understand that command. Please try 'explain', 'strategy', or 'evaluate'."
 
     def generate_explanation(self,
                              conceptual_features: torch.Tensor,
@@ -143,4 +179,3 @@ class ExplainabilityModule:
         decision_text = explanation.get('decision_narrative', '')
 
         return f"{conceptual_text} {moe_text} {eom_text} {decision_text}"
-
