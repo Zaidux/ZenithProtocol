@@ -6,14 +6,16 @@ import numpy as np
 from typing import Dict, List, Tuple
 import torch.nn.functional as F
 from ..nlp.command_parser import CommandParser
+from .sswm import SSWM # Import the new SSWM
 
 class ExplainabilityModule:
     """
     The Explainability Module (EM) is the "Mouth" of the system.
     It provides a clear, concise justification for the model's decision.
     """
-    def __init__(self, model: nn.Module):
+    def __init__(self, model: nn.Module, sswm: SSWM):
         self.model = model
+        self.sswm = sswm # New: Pass the SSWM to the EM
         self.conceptual_feature_names = {
             'tetris': ['Lines Cleared', 'Gaps', 'Max Height', 'Board Fullness'],
             'chess': ['Material Advantage', 'White King Safety', 'Black King Safety', 'White Center Control', 'Black Center Control']
@@ -30,25 +32,26 @@ class ExplainabilityModule:
                      query: str, 
                      decision_context: Dict, 
                      conceptual_features: torch.Tensor,
-                     domain: str) -> str:
+                     domain: str,
+                     current_fused_rep: torch.Tensor) -> str:
         """
         Handles a natural language query and provides a specific explanation.
         """
         parsed_command = self.parser.parse_command(query)
         command = parsed_command['command']
-        
+
         if command == "explain":
             chosen_move = decision_context.get('chosen_move', 'an unknown move')
             chosen_score = decision_context.get('chosen_score', 'N/A')
             return f"The model chose move {chosen_move} because it had the highest conceptual score of {chosen_score:.2f}. " + self._formulate_narrative(decision_context)
-        
+
         elif command == "strategy":
             conceptual_contribution = self._analyze_conceptual_contribution(
                 conceptual_features.squeeze(0),
                 domain
             )
             return f"The model's current long-term strategy is based on these conceptual goals: {conceptual_contribution}"
-            
+
         elif command == "eval_move":
             move_idx = parsed_command['entities'].get('move')
             if move_idx is not None and 'all_scores' in decision_context and move_idx < len(decision_context['all_scores']):
@@ -56,9 +59,39 @@ class ExplainabilityModule:
                 return f"Move {move_idx} was evaluated with a score of {score:.2f}."
             else:
                 return "I'm sorry, I could not evaluate that specific move."
-                
+
+        elif command == "what_if":
+            move_idx = parsed_command['entities'].get('move')
+            if move_idx is not None:
+                return self._handle_what_if_query(current_fused_rep, move_idx)
+            else:
+                return "Please specify a move to simulate. For example, 'what if I made move 5?'"
+
         else:
-            return "I'm sorry, I don't understand that command. Please try 'explain', 'strategy', or 'evaluate'."
+            return "I'm sorry, I don't understand that command. Please try 'explain', 'strategy', 'eval_move', or 'what-if'."
+
+    def _handle_what_if_query(self, current_fused_rep: torch.Tensor, move_idx: int) -> str:
+        """
+        Simulates a hypothetical move and explains the predicted outcome.
+        """
+        try:
+            _, predicted_reward = self.sswm.simulate_what_if_scenario(
+                start_state_rep=current_fused_rep,
+                hypothetical_move=move_idx,
+                num_steps=1
+            )
+            
+            # Formulate the explanation based on the predicted reward
+            if predicted_reward > 0.5:
+                return f"If you make move {move_idx}, the SSWM predicts a highly favorable outcome with a predicted reward of {predicted_reward:.2f}. This is a strong move."
+            elif predicted_reward < -0.5:
+                return f"If you make move {move_idx}, the SSWM predicts a poor outcome with a predicted penalty of {abs(predicted_reward):.2f}. This move could lead to a significant disadvantage."
+            else:
+                return f"The SSWM predicts a neutral outcome for move {move_idx}, with a predicted reward of {predicted_reward:.2f}. There might be a better strategic option."
+        
+        except Exception as e:
+            return f"An error occurred during the simulation: {e}"
+
 
     def generate_explanation(self,
                              conceptual_features: torch.Tensor,
