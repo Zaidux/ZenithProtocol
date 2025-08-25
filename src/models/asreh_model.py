@@ -33,12 +33,12 @@ class ConceptualAttention(nn.Module):
 
 
 class ASREHModel(nn.Module):
-    def __init__(self, 
-                 in_channels: int = 1, 
+    def __init__(self,
+                 in_channels: int = 1,
                  num_tetris_features: int = 4,
                  num_chess_features: int = 5,
                  hct_dim: int = 64):
-        
+
         super(ASREHModel, self).__init__()
         self.hct_dim = hct_dim
         self.in_channels = in_channels
@@ -89,17 +89,10 @@ class ASREHModel(nn.Module):
 
         # Flatten the encoder output
         batch_size = x.size(0)
-        
-        # Calculate the size of the flattened tensor dynamically
-        # It's important to use a size that works for both domains
-        # For a 10x20 input -> after two maxpool2d -> 2x5 -> 10 features
-        # For a 8x8 input -> after two maxpool2d -> 2x2 -> 4 features
-        # We need a consistent size, so we'll adjust the padding or use a different encoder
-        # For simplicity, we'll assume the input size is standardized before this module
-        
+
         # Use a flexible size for the flattened tensor
         visual_features = x.view(batch_size, self.hct_dim, -1).transpose(1, 2)
-        
+
         # Process conceptual features with the correct domain-specific encoder
         if domain == 'tetris':
             conceptual_embedding = self.tetris_conceptual_encoder(conceptual_features)
