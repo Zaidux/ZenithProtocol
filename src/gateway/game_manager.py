@@ -19,24 +19,33 @@ def select_game():
     print("Please select a game:")
     print("1. Tetris")
     print("2. Chess")
-    game_choice = input("Enter your choice (1 or 2): ")
+    print("3. Autonomous Exploration (New Domain)") # New option
+    game_choice = input("Enter your choice (1, 2, or 3): ")
 
-    print("\nSelect a mode:")
-    print("1. Play against the AI (VS Mode)")
-    print("2. Watch the AI play (Spectator Mode)")
-    mode_choice = input("Enter your choice (1 or 2): ")
+    if game_choice == '3':
+        mode_choice = 'exploration'
+    else:
+        print("\nSelect a mode:")
+        print("1. Play against the AI (VS Mode)")
+        print("2. Watch the AI play (Spectator Mode)")
+        mode_choice = input("Enter your choice (1 or 2): ")
 
     return game_choice, mode_choice
 
 def load_game(game_choice: str):
     """Loads the appropriate game environment and model."""
     config = Config()
+    model_path = None
+    
     if game_choice == '1':
         game_env = TetrisEnv()
         model_path = os.path.join(config.CHECKPOINT_DIR, "zenith_protocol_phase4_tetris.pth")
     elif game_choice == '2':
         game_env = ChessEnv()
         model_path = os.path.join(config.CHECKPOINT_DIR, "zenith_protocol_phase4_chess.pth")
+    elif game_choice == '3':
+        # For exploration, we use a default environment to start
+        game_env = TetrisEnv() 
     else:
         raise ValueError("Invalid game choice.")
 
@@ -45,13 +54,13 @@ def load_game(game_choice: str):
     arlc = ARLCController()
     em = ExplainabilityModule(model)
 
-    # Load pre-trained weights
-    if os.path.exists(model_path):
+    # Load pre-trained weights if not in exploration mode
+    if model_path and os.path.exists(model_path):
         model.load_state_dict(torch.load(model_path, map_location=config.DEVICE))
         print(f"Loaded model from {model_path}")
-    else:
+    elif game_choice != '3':
         print(f"Warning: Model not found at {model_path}. Starting with a fresh model.")
-
+    
     return game_env, model, arlc, em
 
 def start_game_loop(game_env, model, arlc, em, mode: str):
@@ -103,15 +112,50 @@ def start_game_loop(game_env, model, arlc, em, mode: str):
 
         time.sleep(1) # Pause for a second for better viewing
 
+def start_exploration_loop(game_env, model, arlc, em):
+    """Starts a dedicated loop for autonomous exploration."""
+    print("\nStarting Autonomous Exploration...")
+    arlc.is_exploring = True
+    
+    game_state = game_env.reset()
+    last_fused_rep = None
+    done = False
+    
+    while not done:
+        # Get a generic conceptual representation for the new domain
+        conceptual_features = arlc.get_generic_conceptual_features(game_state.shape)
+        
+        # Run the model with the generic features
+        with torch.no_grad():
+            state_tensor = torch.tensor(game_state).unsqueeze(0).float().to(Config.DEVICE)
+            conceptual_tensor = torch.tensor(conceptual_features).unsqueeze(0).float().to(Config.DEVICE)
+            predicted_output, fused_representation, _ = model(state_tensor, conceptual_tensor, 'exploration')
+
+        # The ARLC makes a move, with the exploration bonus active
+        chosen_move, decision_context = arlc.choose_move(game_state, 'exploration')
+        
+        # Update last fused rep for EoM calculation in the next step
+        arlc.last_fused_rep = fused_representation.clone()
+        
+        # Update the game state
+        game_state, _, done, _ = game_env.step(chosen_move)
+        
+        # Explain the move
+        explanation = em.generate_explanation(conceptual_tensor, fused_representation, decision_context, 'exploration')
+        print("Exploration AI's Reasoning:", explanation['narrative'])
+        time.sleep(1)
+    
 def main():
     try:
         game_choice, mode_choice = select_game()
         game_env, model, arlc, em = load_game(game_choice)
-        
-        if mode_choice == '1':
+
+        if mode_choice == 'vs':
             start_game_loop(game_env, model, arlc, em, mode='vs')
-        elif mode_choice == '2':
+        elif mode_choice == 'spectator':
             start_game_loop(game_env, model, arlc, em, mode='spectator')
+        elif mode_choice == 'exploration':
+            start_exploration_loop(game_env, model, arlc, em)
         else:
             print("Invalid mode choice. Exiting.")
             sys.exit()
@@ -121,4 +165,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-  
