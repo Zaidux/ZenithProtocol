@@ -8,6 +8,7 @@ import numpy as np
 from ..models.asreh_model import ASREHModel
 from ..models.arlc_controller import ARLCController
 from ..models.explainability_module import ExplainabilityModule
+from ..models.strategic_planner import StrategicPlanner # Import the new planner
 from ..utils.config import Config
 # Placeholder for game environments
 from ..games.tetris_env import TetrisEnv
@@ -49,9 +50,10 @@ def load_game(game_choice: str):
     else:
         raise ValueError("Invalid game choice.")
 
-    # Initialize model, ARLC, and EM
+    # Initialize model and other components
     model = ASREHModel().to(config.DEVICE)
-    arlc = ARLCController()
+    strategic_planner = StrategicPlanner(model) # NEW: Initialize the Strategic Planner
+    arlc = ARLCController(strategic_planner)   # MODIFIED: Pass the planner to the ARLC
     em = ExplainabilityModule(model)
 
     # Load pre-trained weights if not in exploration mode
@@ -74,7 +76,7 @@ def start_game_loop(game_env, model, arlc, em, mode: str):
     while not done:
         # Get conceptual features for the current state
         conceptual_features = game_env.get_conceptual_features(game_state)
-        
+
         # Run the model
         with torch.no_grad():
             state_tensor = torch.tensor(game_state).unsqueeze(0).float().to(Config.DEVICE)
@@ -106,7 +108,7 @@ def start_game_loop(game_env, model, arlc, em, mode: str):
             user_query = input("Ask the AI about its reasoning (e.g., 'explain', 'what's the strategy?'): ")
             if user_query.lower() in ['exit', 'quit']:
                 break
-            
+
             response = em.handle_query(
                 user_query,
                 decision_context,
