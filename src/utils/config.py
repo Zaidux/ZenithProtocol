@@ -29,6 +29,11 @@ class Config:
     BATCH_SIZE = 64
     LEARNING_RATE = 1e-4
 
+    # --- Federated Learning Settings ---
+    FL_ROUNDS = 5        # Number of communication rounds
+    NUM_CLIENTS = 10     # Total number of simulated clients
+    CLIENTS_PER_ROUND = 3 # Number of clients to train per round
+
     # --- ARLC Hyper-parameters ---
     # Coefficients for the conceptual reward function
     ARLC_REWARD_COEFFS = {
