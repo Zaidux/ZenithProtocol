@@ -11,7 +11,7 @@ Hallucination: Models confidently generate incorrect or nonsensical information 
 2. Poor Ambiguity Resolution: Models struggle to comprehend complex dependencies, such as pronoun references, because they lack a deep understanding of the conceptual relationships within a sentence.
 
 3. Energy Inefficiency: Existing models often rely on brute-force calculations that are computationally expensive and lack the intelligent, self-regulating design necessary for sustainable long-term use.
-   
+
 # 3. The Solution: The ASREH Algorithm
 The ASREH algorithm is a hybrid architecture designed to solve these issues by embedding the "Understanding is Key" principle into its core. The system is composed of three interconnected modules that work in harmony:
 
@@ -67,7 +67,7 @@ HCT is not an always-on function but a dynamic mode activated when the system fa
 Encountering High-Uncertainty Events: When the Self-Supervised World Model (SSWM) registers a significant spike in prediction loss—indicating a situation that deviates from all its past experiences—the system can temporarily reallocate all its computational resources to its conceptual layers. This forces the model to move from a rote-analysis state to a deep, abstract-reasoning state.
 
 3. Reward for Abstraction: The Adaptive Reinforcement Learning Controller (ARLC) would be rewarded not only for achieving a goal (e.g., winning a chess game) but for discovering a new, elegant, or unconventional solution to a problem. This "discovery bonus" would incentivize the model to seek out and formalize novel concepts, making it more likely to enter the HCT state.
-   
+
 This unique capability is what truly separates the Zenith Protocol from other AI frameworks, moving it closer to a system that can not only reason but also invent.
 
 # 6. Proof of Concept: The Tetris Simulation 🎮
