@@ -659,3 +659,17 @@ specific requirements.
 if any, to sign a "copyright disclaimer" for the program, if necessary.
 For more information on this, and how to apply and follow the GNU AGPL, see
 <https://www.gnu.org/licenses/>.
+
+**Statement of Prohibited Use**
+
+By using, distributing, or modifying this software, you agree to the following conditions:
+
+The Zenith Protocol, including all core concepts and algorithms such as the ASREH Algorithm, Hyper-Conceptual Thinking (HCT), the Adaptive Reinforcement Learning Controller (ARLC), and the Explainability Module (EM), may not be used for or integrated into any of the following applications without a separate, explicit commercial license from the licensor:
+
+1.  **Military, defense, or weapon systems**, including but not limited to autonomous drones, targeting systems, and military simulations.
+2.  **Medical diagnosis or treatment decisions**, where the application of this technology could directly impact a patient’s health or well-being.
+3.  **Legal or judicial proceedings**, including but not limited to case-law analysis, predictive policing, or sentencing recommendations.
+4.  **Financial market manipulation**, including automated trading systems designed to exploit vulnerabilities or destabilize markets.
+5.  **Generation of deepfake content, propaganda, or disinformation** designed to deceive or manipulate the public.
+
+Any use of the software for these prohibited purposes will be considered a material breach of this license.
