@@ -1,1 +1,15 @@
+# Core Libraries
+torch>=2.0.0
+numpy>=1.20.0
+Pillow>=9.0.0
 
+# Game-specific Libraries
+python-chess>=1.99.1
+pygame>=2.1.0
+
+# Future-Proofing for Responsiveness and Scalability
+websockets>=10.3  # For real-time communication (e.g., live game visualization)
+fastapi>=0.78.0   # For building a web API to interact with the model
+uvicorn>=0.17.6   # ASGI server for FastAPI
+python-socketio>=5.7.2 # Another option for real-time comms, good for web GUIs
+aiohttp>=3.8.1     # For asynchronous I/O operations
