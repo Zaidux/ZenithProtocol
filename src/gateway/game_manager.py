@@ -8,8 +8,9 @@ import numpy as np
 from ..models.asreh_model import ASREHModel
 from ..models.arlc_controller import ARLCController
 from ..models.explainability_module import ExplainabilityModule
-from ..models.strategic_planner import StrategicPlanner # Import the new planner
-from ..models.sswm import SSWM # Import the new SSWM
+from ..models.strategic_planner import StrategicPlanner
+from ..models.sswm import SSWM
+from ..training.federated_learning import FederatedLearner # NEW: Import the federated learning module
 from ..utils.config import Config
 # Placeholder for game environments
 from ..games.tetris_env import TetrisEnv
@@ -22,10 +23,13 @@ def select_game():
     print("1. Tetris")
     print("2. Chess")
     print("3. Autonomous Exploration (New Domain)")
-    game_choice = input("Enter your choice (1, 2, or 3): ")
+    print("4. Start Federated Learning") # NEW: Add federated learning option
+    game_choice = input("Enter your choice (1, 2, 3, or 4): ")
 
     if game_choice == '3':
         mode_choice = 'exploration'
+    elif game_choice == '4':
+        mode_choice = 'federated_learning'
     else:
         print("\nSelect a mode:")
         print("1. Play against the AI (VS Mode)")
@@ -48,21 +52,24 @@ def load_game(game_choice: str):
     elif game_choice == '3':
         # For exploration, we use a default environment to start
         game_env = TetrisEnv() 
+    elif game_choice == '4':
+        # For federated learning, the game environment and model are handled differently
+        game_env = None
     else:
         raise ValueError("Invalid game choice.")
 
     # Initialize model and other components
     model = ASREHModel().to(config.DEVICE)
     strategic_planner = StrategicPlanner(model)
-    sswm = SSWM(input_dim=model.hct_dim, hidden_dim=64).to(config.DEVICE) # NEW: Initialize the SSWM
-    arlc = ARLCController(strategic_planner, sswm)   # MODIFIED: Pass the planner and SSWM to the ARLC
-    em = ExplainabilityModule(model, sswm)           # MODIFIED: Pass the SSWM to the EM
+    sswm = SSWM(input_dim=model.hct_dim, hidden_dim=64).to(config.DEVICE)
+    arlc = ARLCController(strategic_planner, sswm)
+    em = ExplainabilityModule(model, sswm)
 
     # Load pre-trained weights if not in exploration mode
     if model_path and os.path.exists(model_path):
         model.load_state_dict(torch.load(model_path, map_location=config.DEVICE))
         print(f"Loaded model from {model_path}")
-    elif game_choice != '3':
+    elif game_choice not in ['3', '4']:
         print(f"Warning: Model not found at {model_path}. Starting with a fresh model.")
 
     return game_env, model, arlc, em
@@ -164,20 +171,57 @@ def start_exploration_loop(game_env, model, arlc, em):
         print("Exploration AI's Reasoning:", explanation['narrative'])
         time.sleep(1)
 
+def start_federated_learning_loop():
+    """
+    Orchestrates the federated learning process.
+    This simulates the server-side and client-side operations.
+    """
+    config = Config()
+    
+    # Simulate a global model and a set of clients
+    global_model = ASREHModel().to(config.DEVICE)
+    
+    # Create a list of clients, each with a copy of the global model
+    clients = [ASREHModel().to(config.DEVICE) for _ in range(config.NUM_CLIENTS)]
+    for client in clients:
+        client.load_state_dict(global_model.state_dict())
+        
+    # Placeholder for data. In a real-world scenario, this would be on each device.
+    # We'll simulate this by creating a list of dummy data for each client.
+    print("Generating simulated client data...")
+    client_data = [
+        [{'state': np.random.rand(1, 10, 20), 'conceptual_features': np.random.rand(64), 'target': np.random.rand(64 * 64), 'domain': 'tetris'} for _ in range(10)]
+        for _ in range(config.NUM_CLIENTS)
+    ]
+    
+    criterion = torch.nn.MSELoss()
+    optimizer = torch.optim.Adam(global_model.parameters(), lr=config.LEARNING_RATE)
+    
+    fl_learner = FederatedLearner(global_model, clients, criterion, optimizer)
+    fl_learner.run_federated_training(client_data)
+    
+    # Save the final global model
+    model_path = os.path.join(config.CHECKPOINT_DIR, "zenith_protocol_fl_final.pth")
+    torch.save(global_model.state_dict(), model_path)
+    print(f"\nFinal global model saved to {model_path}")
+
 def main():
     try:
         game_choice, mode_choice = select_game()
-        game_env, model, arlc, em = load_game(game_choice)
-
-        if mode_choice == 'vs':
-            start_game_loop(game_env, model, arlc, em, mode='vs')
-        elif mode_choice == 'spectator':
-            start_game_loop(game_env, model, arlc, em, mode='spectator')
-        elif mode_choice == 'exploration':
-            start_exploration_loop(game_env, model, arlc, em)
+        
+        if mode_choice == 'federated_learning':
+            start_federated_learning_loop()
         else:
-            print("Invalid mode choice. Exiting.")
-            sys.exit()
+            game_env, model, arlc, em = load_game(game_choice)
+            if mode_choice == 'vs':
+                start_game_loop(game_env, model, arlc, em, mode='vs')
+            elif mode_choice == 'spectator':
+                start_game_loop(game_env, model, arlc, em, mode='spectator')
+            elif mode_choice == 'exploration':
+                start_exploration_loop(game_env, model, arlc, em)
+            else:
+                print("Invalid mode choice. Exiting.")
+                sys.exit()
 
     except Exception as e:
         print(f"An error occurred: {e}")
