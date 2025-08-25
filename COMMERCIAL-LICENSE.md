@@ -6,4 +6,4 @@ For companies and organizations that wish to use the Zenith Protocol in propriet
 
 A commercial license grants the right to use, modify, and distribute the Zenith Protocol without the requirement to open-source your own product's code. It also allows for use in domains that may be prohibited under the public license.
 
-**For inquiries and to obtain a commercial license, please contact: [Your Contact Information Here]**
+**For inquiries and to obtain a commercial license, please contact: zaiduabubakar777@gmail.com or zaiduabubakar888@gmail.com or ziverofficial567@gmail.com**
