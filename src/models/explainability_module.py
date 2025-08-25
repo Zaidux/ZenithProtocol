@@ -24,8 +24,8 @@ class ExplainabilityModule:
         if concept_name not in self.discovered_concepts:
             self.discovered_concepts.append(concept_name)
 
-    def generate_explanation(self, 
-                             conceptual_features: torch.Tensor, 
+    def generate_explanation(self,
+                             conceptual_features: torch.Tensor,
                              fused_representation: torch.Tensor,
                              decision_context: Dict,
                              domain: str) -> Dict:
@@ -43,6 +43,13 @@ class ExplainabilityModule:
         decision_narrative = self._analyze_decision_context(decision_context)
         explanation['decision_narrative'] = decision_narrative
 
+        moe_context = decision_context.get('moe_context', {})
+        moe_explanation = self._analyze_moe_contribution(moe_context)
+        explanation['moe_reasoning'] = moe_explanation
+
+        eom_explanation = self._analyze_eom_contribution(decision_context)
+        explanation['eom_reasoning'] = eom_explanation
+
         final_explanation = self._formulate_narrative(explanation)
         explanation['narrative'] = final_explanation
 
@@ -53,22 +60,18 @@ class ExplainabilityModule:
         Provides a simplified explanation based on the most influential conceptual features.
         """
         feature_names = self.conceptual_feature_names.get(domain, [])
-        # Add newly discovered concepts to the feature names
         feature_names.extend(self.discovered_concepts)
 
         if not feature_names:
             return "Conceptual reasoning is not available for this domain."
 
         feature_values = conceptual_features.detach().cpu().numpy()
-
-        # Find the two most influential features based on absolute value
         sorted_indices = np.argsort(np.abs(feature_values))[::-1]
         top_features = [feature_names[i] for i in sorted_indices if i < len(feature_names)]
-        
+
         if not top_features:
             return "No strong conceptual features detected."
 
-        # Craft a more dynamic explanation based on the domain
         if domain == 'tetris':
             return (f"The decision was primarily driven by the goal of minimizing '{top_features[1]}' and "
                     f"optimizing for '{top_features[0]}'.")
@@ -80,11 +83,40 @@ class ExplainabilityModule:
                 material_text = "The model is seeking to mitigate its material disadvantage."
             else:
                 material_text = "Material is balanced."
-            
+
             return (f"The model analyzed the board's abstract properties. {material_text} It is also prioritizing "
                     f"'{top_features[0]}' and managing '{top_features[1]}'.")
         else:
             return "Conceptual reasoning is not available for this domain."
+
+    def _analyze_moe_contribution(self, moe_context: Dict) -> str:
+        """
+        Explains which MoE expert was chosen and why.
+        """
+        if not moe_context:
+            return "MoE analysis is not available."
+
+        expert_idx = moe_context.get('chosen_expert', 'N/A')
+        confidence = moe_context.get('confidence', 'N/A')
+
+        if expert_idx != 'N/A':
+            return f"The model's router selected expert #{expert_idx} with a confidence score of {confidence:.2f}, indicating its specialization for this type of problem."
+        else:
+            return "The model's router was unable to select a clear expert."
+
+    def _analyze_eom_contribution(self, decision_context: Dict) -> str:
+        """
+        Explains the conceptual energy of the chosen move.
+        """
+        eom_bonus = decision_context.get('eom_bonus', 0.0)
+        eom_text = ""
+        if eom_bonus > 5.0:
+            eom_text = "The model's chosen move generated a very high conceptual energy, indicating a significant and strategic shift in the board's state."
+        elif eom_bonus > 1.0:
+            eom_text = "The move resulted in a moderate conceptual energy, suggesting a meaningful but not groundbreaking change."
+        else:
+            eom_text = "The move generated low conceptual energy, indicating a minor, tactical adjustment to the board."
+        return eom_text
 
     def _analyze_decision_context(self, context: Dict) -> str:
         """
@@ -106,6 +138,9 @@ class ExplainabilityModule:
         Combines the different analytical outputs into a single, cohesive narrative.
         """
         conceptual_text = explanation.get('conceptual_reasoning', '')
+        moe_text = explanation.get('moe_reasoning', '')
+        eom_text = explanation.get('eom_reasoning', '')
         decision_text = explanation.get('decision_narrative', '')
 
-        return f"{conceptual_text} {decision_text}"
+        return f"{conceptual_text} {moe_text} {eom_text} {decision_text}"
+
