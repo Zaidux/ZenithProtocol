@@ -2,7 +2,7 @@
 
 import torch
 import numpy as np
-from sklearn.cluster import KMeans
+from sklearn.cluster import MiniBatchKMeans
 from typing import Dict, List, Tuple
 
 class ConceptDiscoveryEngine:
@@ -16,6 +16,7 @@ class ConceptDiscoveryEngine:
         self.discovery_threshold = discovery_threshold
         self.kmeans_model = None
         self.concept_counter = 0
+        self.concept_names = [] # To store names of discovered concepts
 
     def analyze_for_new_concepts(self, fused_representation: torch.Tensor, reward: float, domain: str) -> Tuple[float, str | None]:
         """
@@ -38,26 +39,26 @@ class ConceptDiscoveryEngine:
         
         if self.kmeans_model is None:
             # First time, initialize the model with a single point
-            self.kmeans_model = KMeans(n_clusters=self.num_clusters, n_init=1, max_iter=1).fit(data)
+            self.kmeans_model = MiniBatchKMeans(n_clusters=self.num_clusters, n_init=3).fit(data)
             self.concept_counter += 1
             concept_name = f"HCT_Concept_{domain}_{self.concept_counter}"
+            self.concept_names.append(concept_name)
             return 10.0, concept_name # A high bonus for the first discovery
         
         # Predict which cluster the new representation belongs to
         new_cluster = self.kmeans_model.predict(data)[0]
         
         # Check if this state is significantly different from existing clusters
-        # A simplified check: if the distance to the nearest cluster is high, it's a new concept
         distances = self.kmeans_model.transform(data)
         min_distance = np.min(distances)
         
         # If the minimum distance is high, it could be a new concept
         if min_distance > 1.0: # A heuristic threshold
             # Retrain the model to include the new concept
-            new_data = np.vstack([self.kmeans_model.cluster_centers_, data])
-            self.kmeans_model = KMeans(n_clusters=self.num_clusters, n_init=1, max_iter=1).fit(new_data)
+            self.kmeans_model.partial_fit(data)
             self.concept_counter += 1
             concept_name = f"HCT_Concept_{domain}_{self.concept_counter}"
+            self.concept_names.append(concept_name)
             return 5.0, concept_name
             
         return 0.0, None
