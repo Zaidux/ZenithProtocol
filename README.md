@@ -40,3 +40,13 @@ Key Components Implemented in Phase 4:
  * Websockets & FastAPI: Future-proofing for a live, web-based demonstration of the project.
 
 This project is a first step toward an AI that not only excels at diverse tasks but can also articulate its reasoning, paving the way for more robust and trustworthy artificial intelligence.
+
+## Licensing
+
+The Zenith Protocol is dual-licensed under the **AGPLv3 (Open-Source)** and a **Commercial License**.
+
+* **For the community and non-commercial use**, we offer our project under the AGPLv3. This license is for individuals and organizations who are committed to the principles of open-source software and will also make their full source code available if they use the Zenith Protocol in a network service.
+* **For commercial use**, especially in a proprietary application, please refer to the `COMMERCIAL-LICENSE.md` file for details on how to obtain a commercial license.
+
+**Note:** The AGPLv3 version of this project explicitly prohibits its use in certain high-stakes domains, including military, medical, and legal applications. Please review the `LICENSE` file for the full terms and conditions.
+
