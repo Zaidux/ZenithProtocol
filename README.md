@@ -20,7 +20,19 @@ In this phase, we will introduce the second domain, Chess, to implement the Spli
 # Phase 3: Hyper-Conceptual Thinking (HCT) 💡
 The final phase focuses on implementing Hyper-Conceptual Thinking (HCT). This is a dynamic, advanced state of the Conceptual Attention Layer that allows the AI to form and apply novel, abstract concepts. This capability moves the model from simple reasoning to genuine creative problem-solving and will be activated by a unique "discovery bonus" in the ARLC's reward function.
 
-Technologies Used 💻
+# Phase 4: Autonomous Domain Exploration 🗺️
+This phase focuses on making the Zenith Protocol a truly autonomous and self-improving system. We've enhanced the model with new capabilities that allow it to understand new environments on its own, optimize its performance, and provide deeper, more insightful explanations.
+
+Key Components Implemented in Phase 4:
+ * **Mixture of Experts (MoE)**: The model's architecture has been upgraded to include a **MoE** layer. The shared encoder now acts as a router, distributing the workload to specialized expert networks. This makes the system more scalable and energy-efficient.
+
+ * **Energy of Movement (EoM)**: A new reward signal, the **Energy of Movement**, has been integrated into the ARLC. This bonus incentivizes moves that cause a significant and valuable conceptual shift in the model's internal state. It encourages the model to seek out strategic, rather than just tactical, changes.
+
+ * **Dynamic Quantization**: The model is now capable of performing **dynamic quantization**—it can automatically compress its own weights to increase inference speed when a bottleneck is detected. A human can still override this function, as per the original design.
+
+ * **Full Autonomous Exploration**: The HCT and ARLC modules now work together to enable the model to enter and learn from new, unknown domains without explicit human guidance. This is achieved through a "surprise bonus" that encourages exploration and a self-evolving conceptual knowledge base.
+
+# Technologies Used 💻
  * PyTorch: The primary deep learning framework.
  * NumPy & Pillow: For efficient data manipulation and image processing.
  * Python-Chess: A powerful library for handling all Chess-related logic (introduced in Phase 2).
