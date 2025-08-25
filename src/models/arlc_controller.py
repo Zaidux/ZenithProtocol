@@ -14,10 +14,11 @@ class ARLCController:
     """
     The Adaptive Reinforcement Learning Controller (ARLC) is the "Brain" of the system.
     It evaluates possible moves and chooses the best one based on a scoring heuristic.
-    This version is designed to be domain-agnostic and orchestrates the HCT process.
+    This version is designed to be domain-agnostic and orchestrates the HCT and EoM processes.
     """
-    def __init__(self, exploration_weight: float = 5.0):
+    def __init__(self, exploration_weight: float = 5.0, eom_weight: float = 2.0):
         self.exploration_weight = exploration_weight
+        self.eom_weight = eom_weight
         self.visited_states = {}
         self.reward_coeffs = Config.ARLC_REWARD_COEFFS
         self.cde = ConceptDiscoveryEngine()
@@ -58,6 +59,17 @@ class ARLCController:
             "score": final_score
         }
 
+    def calculate_eom_bonus(self, last_fused_rep: torch.Tensor, current_fused_rep: torch.Tensor) -> float:
+        """
+        Calculates the Energy of Movement (EoM) bonus.
+        This bonus rewards moves that cause a significant conceptual shift.
+        """
+        # Calculate the Euclidean distance between the conceptual embeddings
+        conceptual_change = torch.norm(current_fused_rep - last_fused_rep, p=2)
+        # Normalize the change and scale by a weight
+        eom_bonus = self.eom_weight * (conceptual_change.item())
+        return eom_bonus
+        
     def choose_move(self, board_state: np.ndarray, domain: str, piece_idx: int | None = None) -> Tuple[int | None, Dict]:
         """
         Chooses a move based on the conceptual evaluation of possible outcomes.
