@@ -9,6 +9,7 @@ from ..models.asreh_model import ASREHModel
 from ..models.arlc_controller import ARLCController
 from ..models.explainability_module import ExplainabilityModule
 from ..models.strategic_planner import StrategicPlanner # Import the new planner
+from ..models.sswm import SSWM # Import the new SSWM
 from ..utils.config import Config
 # Placeholder for game environments
 from ..games.tetris_env import TetrisEnv
@@ -52,9 +53,10 @@ def load_game(game_choice: str):
 
     # Initialize model and other components
     model = ASREHModel().to(config.DEVICE)
-    strategic_planner = StrategicPlanner(model) # NEW: Initialize the Strategic Planner
-    arlc = ARLCController(strategic_planner)   # MODIFIED: Pass the planner to the ARLC
-    em = ExplainabilityModule(model)
+    strategic_planner = StrategicPlanner(model)
+    sswm = SSWM(input_dim=model.hct_dim, hidden_dim=64).to(config.DEVICE) # NEW: Initialize the SSWM
+    arlc = ARLCController(strategic_planner, sswm)   # MODIFIED: Pass the planner and SSWM to the ARLC
+    em = ExplainabilityModule(model, sswm)           # MODIFIED: Pass the SSWM to the EM
 
     # Load pre-trained weights if not in exploration mode
     if model_path and os.path.exists(model_path):
@@ -105,7 +107,7 @@ def start_game_loop(game_env, model, arlc, em, mode: str):
 
         # New: NLP-powered user interaction
         while True:
-            user_query = input("Ask the AI about its reasoning (e.g., 'explain', 'what's the strategy?'): ")
+            user_query = input("Ask the AI about its reasoning (e.g., 'explain', 'what's the strategy?', 'what if I made move 5?'): ")
             if user_query.lower() in ['exit', 'quit']:
                 break
 
@@ -113,7 +115,8 @@ def start_game_loop(game_env, model, arlc, em, mode: str):
                 user_query,
                 decision_context,
                 conceptual_tensor,
-                game_env.domain
+                game_env.domain,
+                fused_representation # NEW: Pass the fused representation
             )
             print(f"AI's Response: {response}")
 
