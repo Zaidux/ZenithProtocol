@@ -1,0 +1,63 @@
+# /src/models/sswm.py
+
+import torch
+import torch.nn as nn
+from typing import Tuple
+
+class SSWM(nn.Module):
+    """
+    The Self-Supervised World Model (SSWM) is a predictive model that learns to
+    anticipate the consequences of actions. It takes a fused representation and
+    predicts the next fused representation, as well as the reward.
+    """
+    def __init__(self, input_dim: int, hidden_dim: int):
+        super(SSWM, self).__init__()
+        
+        # State prediction head: predicts the next fused representation
+        self.state_predictor = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, input_dim)
+        )
+        
+        # Reward prediction head: predicts the reward for the next state
+        self.reward_predictor = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 1)
+        )
+
+    def forward(self, fused_representation: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Takes the current fused representation and predicts the next state and reward.
+        """
+        predicted_next_state = self.state_predictor(fused_representation)
+        predicted_reward = self.reward_predictor(fused_representation)
+        return predicted_next_state, predicted_reward
+        
+    def simulate_what_if_scenario(self, 
+                                  start_state_rep: torch.Tensor,
+                                  hypothetical_move: int,
+                                  num_steps: int) -> Tuple[torch.Tensor, float]:
+        """
+        Simulates a hypothetical scenario forward in time.
+        For a real implementation, 'hypothetical_move' would be integrated into the state.
+        This is a conceptual placeholder.
+        """
+        current_rep = start_state_rep
+        total_predicted_reward = 0.0
+        
+        # The 'what-if' move is a conceptual input.
+        # We can simulate its effect by adding it to the input representation
+        # for a more realistic predictive path.
+        hypothetical_influence = torch.zeros_like(current_rep)
+        hypothetical_influence[0, hypothetical_move] = 1.0 # Simple encoding
+        
+        current_rep = current_rep + hypothetical_influence
+        
+        for _ in range(num_steps):
+            predicted_next_state, predicted_reward = self.forward(current_rep)
+            current_rep = predicted_next_state
+            total_predicted_reward += predicted_reward.item()
+            
+        return current_rep, total_predicted_reward
