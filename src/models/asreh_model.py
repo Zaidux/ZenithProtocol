@@ -1,71 +1,104 @@
-# /src/models/sswm.py
+# /src/models/asreh_model.py
 
 import torch
 import torch.nn as nn
-from typing import Dict, Tuple
+import torch.nn.functional as F
+from typing import Dict, List, Tuple
+from ..modules.mixture_of_experts import MixtureOfExperts
 
-class SelfSupervisedWorldModel(nn.Module):
+class ConceptualAttention(nn.Module):
     """
-    The Self-Supervised World Model (SSWM) is a predictive network that learns to
-    anticipate the consequences of actions. It predicts the next state and reward.
+    Implements a multi-head attention mechanism that fuses visual
+    and conceptual embeddings. This layer is the core of the Zenith Protocol.
     """
-    def __init__(self, fused_rep_dim: int = 64):
-        super(SelfSupervisedWorldModel, self).__init__()
-        self.fused_rep_dim = fused_rep_dim
+    def __init__(self, embed_dim: int, num_heads: int):
+        super(ConceptualAttention, self).__init__()
+        self.multihead_attn = nn.MultiheadAttention(
+            embed_dim=embed_dim,
+            num_heads=num_heads,
+            batch_first=True
+        )
+        self.norm = nn.LayerNorm(embed_dim)
 
-        # Predicts the next fused representation
-        self.state_predictor = nn.Sequential(
-            nn.Linear(fused_rep_dim, 128),
-            nn.ReLU(),
-            nn.Linear(128, fused_rep_dim)
+    def forward(self, visual_features: torch.Tensor, conceptual_features: torch.Tensor) -> torch.Tensor:
+        # Conceptual features act as queries for the visual keys and values
+        attn_output, _ = self.multihead_attn(
+            query=conceptual_features.unsqueeze(1),
+            key=visual_features,
+            value=visual_features
         )
 
-        # Predicts the next reward
-        self.reward_predictor = nn.Sequential(
-            nn.Linear(fused_rep_dim, 64),
+        # Add a residual connection and normalize
+        fused_output = self.norm(conceptual_features.unsqueeze(1) + attn_output)
+        return fused_output.squeeze(1)
+
+
+class ASREHModel(nn.Module):
+    def __init__(self,
+                 in_channels: int = 1,
+                 num_experts: int = 4, # New parameter for MoE
+                 hct_dim: int = 64):
+
+        super(ASREHModel, self).__init__()
+        self.hct_dim = hct_dim
+        self.in_channels = in_channels
+        self.num_experts = num_experts
+
+        # --- Shared Visual/State Encoder (The "Eye") ---
+        self.shared_encoder = nn.Sequential(
+            nn.Conv2d(in_channels, 32, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.Linear(64, 1)
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Conv2d(32, hct_dim, kernel_size=3, padding=1),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
         )
 
-    def forward(self, fused_representation: torch.Tensor, action: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Takes the current fused representation and a one-hot encoded action to
-        predict the next representation and a reward.
-        """
-        # For simplicity, we'll combine the fused representation with the action
-        # In a more complex model, this would be more sophisticated.
-        combined_input = fused_representation + action
+        # --- Conceptual Encoder (The "Understanding" component) ---
+        # A single encoder to handle a variable number of conceptual features
+        self.conceptual_encoder = nn.Sequential(
+            nn.Linear(hct_dim, hct_dim),
+            nn.ReLU(),
+            nn.Linear(hct_dim, hct_dim)
+        )
 
-        # Predict the next state and reward
-        predicted_next_rep = self.state_predictor(combined_input)
-        predicted_reward = self.reward_predictor(combined_input)
+        # --- Conceptual Attention Layer ---
+        self.conceptual_attention = ConceptualAttention(embed_dim=hct_dim, num_heads=4)
 
-        return predicted_next_rep, predicted_reward
+        # --- Mixture of Experts Layer ---
+        self.moe_layer = MixtureOfExperts(input_dim=hct_dim, num_experts=num_experts)
 
-    def simulate_what_if(self,
-                         current_fused_rep: torch.Tensor,
-                         action: int,
-                         domain: str,
-                         num_steps: int = 1) -> Dict:
-        """
-        Simulates a hypothetical scenario and predicts the outcome.
-        This is the counterfactual component.
-        """
-        # Create a one-hot encoded tensor for the action
-        action_tensor = torch.zeros_like(current_fused_rep)
-        action_tensor[0, action] = 1.0 # Assuming a single action per step
+        # --- Shared Decoder (The "Hand") ---
+        # The decoder is now shared, allowing for domain transfer
+        self.decoder = nn.Sequential(
+            nn.Linear(hct_dim, 256),
+            nn.ReLU(),
+            nn.Linear(256, 64 * 64) # A flexible output size
+        )
 
-        with torch.no_grad():
-            simulated_rep = current_fused_rep
-            total_predicted_reward = 0.0
-            
-            for _ in range(num_steps):
-                predicted_next_rep, predicted_reward = self.forward(simulated_rep, action_tensor)
-                simulated_rep = predicted_next_rep.clone()
-                total_predicted_reward += predicted_reward.item()
+    def forward(self, state: torch.Tensor, conceptual_features: torch.Tensor, domain: str):
+        # Pass state through the shared encoder
+        x = self.shared_encoder(state)
+        batch_size = x.size(0)
+        visual_features = x.view(batch_size, self.hct_dim, -1).transpose(1, 2)
 
-        return {
-            'action': action,
-            'predicted_reward': total_predicted_reward,
-            'predicted_next_state_rep': simulated_rep
-        }
+        # Get conceptual features dynamically and pass to encoder
+        conceptual_embedding = self.conceptual_encoder(conceptual_features)
+
+        # Fuse the two branches using Conceptual Attention
+        fused_representation = self.conceptual_attention(visual_features, conceptual_embedding)
+
+        # Pass the fused representation through the Mixture of Experts
+        moe_output, gate_loss = self.moe_layer(fused_representation)
+
+        # Pass the MoE output to the shared decoder
+        output = self.decoder(moe_output)
+
+        # Adjust the output shape based on the domain
+        if domain == 'tetris':
+            # This is a placeholder for a more robust solution
+            return output.view(batch_size, 1, 20, 10), fused_representation, gate_loss
+        elif domain == 'chess':
+            return output, fused_representation, gate_loss
+        else:
+            raise ValueError("Invalid domain specified.")
