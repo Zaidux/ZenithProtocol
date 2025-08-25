@@ -1,30 +1,30 @@
 ## Adaptive Self-Regulating Explainable Hybrid (ASREH) AI
 
 # Project Overview 🧠
-This project, named the Zenith Protocol, is an innovative approach to building a generalizable, explainable AI model.
+This project, named the Zenith Protocol, is an innovative approach to building a generalizable, explainable AI model. Instead of training a separate model for each task, the Zenith Protocol leverages a single, unified architecture—the Adaptive Self-Regulating Explainable Hybrid (ASREH) Model—to learn and master multiple, disparate domains. We demonstrate this capability by training the model to play two completely different games: Chess and Tetris.
+The core of the Zenith Protocol is the belief that true intelligence lies in understanding, not just memorization. The ASREH model achieves this through a novel combination of architectural components.
 
-Instead of training a separate model for each task, the Zenith Protocol leverages a single, unified architecture—the Adaptive Self-Regulating Explainable Hybrid (ASREH) Model—to learn and master multiple, disparate domains.
+# Phase 1: The Foundation 🏗️
+This phase establishes the foundational architecture by implementing the core of the ASREH model for a single domain: Tetris. We will build the essential components and prove the core hypothesis that the model can learn and reason based on both visual and conceptual data.
 
-We demonstrate this capability by training the model to play two completely different games: Chess and Tetris.
+Key Components Implemented in Phase 1:
+ * Conceptual Layer: The model is trained on a set of conceptual features for Tetris, including gaps, max_height, and board_fullness. The Conceptual Attention Layer processes this abstract knowledge, which is then fused with visual data from the Tetris board.
 
-The core of the Zenith Protocol is the belief that true intelligence lies in understanding, not just memorization. The ASREH model achieves this through a novel combination of architectural components:
+ * Action-Reinforced Learning Controller (ARLC): The ARLC guides the training by providing a conceptual reward signal. It rewards moves that lead to a "better" board state, such as minimizing gaps. This teaches the model to optimize for high-level, strategic goals.
 
-# 1. Split Mind (SPM) ☯️
-The Split Mind architecture uses a single shared core to process visual data from both games. The model learns common patterns, shapes, and spatial relationships that are relevant to both Tetris boards and Chessboards. This shared learning foundation allows for cross-domain generalization, enabling the model to apply knowledge from one game to the other.
+ * Explainability Module (EM): The EM provides transparency by analyzing the model's internal state. It generates human-readable explanations for the model's decisions, stating what conceptual goals were driving a move.
 
-# 2. Conceptual Layer and Hyper-Conceptual Thinking (HCT) 💡
-Beyond visual input, the model is trained on a set of conceptual features. For Chess, these include abstract concepts like material advantage, king safety, and center control. For Tetris, they include board fullness, number of gaps, and lines cleared. The Conceptual Layer processes this abstract knowledge, which is then fused with the visual data in the Hyper-Conceptual Thinking (HCT) layer. This fusion enables the model to make decisions based on both what it sees and what it understands.
+# Phase 2: The Split Mind (SPM) ☯️
+In this phase, we will introduce the second domain, Chess, to implement the Split Mind architecture. The model will be trained on both Tetris and Chess simultaneously. This phase will require significant upgrades to the data loaders and the training loop to demonstrate the model's ability to learn across disparate domains using a single shared core.
 
-# 3. Action-Reinforced Learning Controller (ARLC) 🎯
-The ARLC is a custom training loop that goes beyond simple supervised learning. It acts as a guide, providing a conceptual reward signal that reinforces moves leading to "better" states. For example, a move that improves king safety in Chess or reduces the number of gaps in Tetris is rewarded more heavily. This encourages the model to learn and optimize for high-level, strategic goals rather than just rote patterns.
-
-# 4. Explainability Module (EM) 💬
-The EM is designed to provide transparency and build trust. By analyzing the model's internal state—specifically the attention weights and the conceptual embeddings—the EM generates human-readable explanations for every move. It can tell us what part of the board the model was focusing on and what conceptual goals were driving its decision. This is a crucial feature for ensuring accountability and debugging the model's behavior.
+# Phase 3: Hyper-Conceptual Thinking (HCT) 💡
+The final phase focuses on implementing Hyper-Conceptual Thinking (HCT). This is a dynamic, advanced state of the Conceptual Attention Layer that allows the AI to form and apply novel, abstract concepts. This capability moves the model from simple reasoning to genuine creative problem-solving and will be activated by a unique "discovery bonus" in the ARLC's reward function.
 
 Technologies Used 💻
  * PyTorch: The primary deep learning framework.
- * Python-Chess: A powerful library for handling all Chess-related logic.
- * Pygame: Used for the game environments and real-time visualization of the model's performance.
  * NumPy & Pillow: For efficient data manipulation and image processing.
+ * Python-Chess: A powerful library for handling all Chess-related logic (introduced in Phase 2).
+ * Pygame: Used for the game environments and real-time visualization of the model's performance (optional for training but good for demos).
  * Websockets & FastAPI: Future-proofing for a live, web-based demonstration of the project.
+
 This project is a first step toward an AI that not only excels at diverse tasks but can also articulate its reasoning, paving the way for more robust and trustworthy artificial intelligence.
