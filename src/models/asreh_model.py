@@ -102,3 +102,12 @@ class ASREHModel(nn.Module):
             return output, fused_representation, gate_loss
         else:
             raise ValueError("Invalid domain specified.")
+
+    def get_state_dict(self):
+        """Returns the model's state dictionary for federated learning."""
+        return self.state_dict()
+
+    def set_state_dict(self, state_dict):
+        """Loads a state dictionary, useful for receiving a global model."""
+        self.load_state_dict(state_dict)
+
