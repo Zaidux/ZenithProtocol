@@ -1,29 +1,32 @@
 # /src/utils/config.py
 
 import torch
+import os
 
 class Config:
     """
     Central configuration class for the entire ASREH project.
+    Provides a single source of truth for all hyperparameters and settings.
     """
-    
+
     # --- General Project Settings ---
     PROJECT_NAME = "Adaptive Self-Regulating Explainable Hybrid (ASREH) AI"
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-    
+
     # --- Data Generation Settings ---
-    DATA_DIR = "src/data/"
+    DATA_DIR = os.path.join(os.getcwd(), 'data')
     CHESS_DATA_SIZE = 500000
     TETRIS_DATA_SIZE = 500000
 
     # --- Model Hyper-parameters ---
     HCT_DIM = 64
-    
+    IN_CHANNELS = 1 # Grayscale images for Tetris
+
     # --- Training Hyper-parameters ---
     NUM_EPOCHS = 10
     BATCH_SIZE = 64
     LEARNING_RATE = 1e-4
-    
+
     # --- ARLC Hyper-parameters ---
     # Coefficients for the conceptual reward function
     ARLC_REWARD_COEFFS = {
@@ -34,37 +37,43 @@ class Config:
         },
         'tetris': {
             'lines_cleared': 1.0,
-            'gaps': -0.5,
-            'max_height': -0.8
+            'gaps': -5.0,
+            'max_height': -1.0
         }
     }
     
+    # --- Environment Settings ---
+    TETRIS_BOARD_WIDTH = 10
+    TETRIS_BOARD_HEIGHT = 20
+    CHESS_IMAGE_SIZE = (8, 8)  
+    TETRIS_IMAGE_SIZE = (20, 10) 
+
     # --- Checkpoint and Logging ---
-    CHECKPOINT_DIR = "checkpoints/"
-    LOG_DIR = "logs/"
+    CHECKPOINT_DIR = os.path.join(os.getcwd(), 'checkpoints')
+    LOG_DIR = os.path.join(os.getcwd(), 'logs')
     LOG_INTERVAL = 100 # Log every 100 steps
     
-    # --- Environment Settings ---
-    CHESS_IMAGE_SIZE = (8, 8)  # Chess is a tensor, not a true image
-    TETRIS_IMAGE_SIZE = (20, 10) # Tetris is a visual board
-    
     def __init__(self):
-        """Initializes configuration settings."""
+        """Initializes configuration settings and creates necessary directories."""
         self.validate_settings()
-        
+        self.create_directories()
+
     def validate_settings(self):
         """
         Validates key configuration settings to ensure they are consistent.
         """
         if self.BATCH_SIZE < 1:
             raise ValueError("BATCH_SIZE must be at least 1.")
-        
+
         if self.LEARNING_RATE <= 0:
             raise ValueError("LEARNING_RATE must be a positive value.")
-        
-        # Add more validation checks as the project grows
-        
+
+    def create_directories(self):
+        """Creates necessary directories for logging and checkpoints."""
+        os.makedirs(self.DATA_DIR, exist_ok=True)
+        os.makedirs(self.CHECKPOINT_DIR, exist_ok=True)
+        os.makedirs(self.LOG_DIR, exist_ok=True)
+
 # Create a singleton instance of the Config class
 # This ensures all modules in the project use the same settings.
 config = Config()
-
