@@ -11,6 +11,7 @@ from ..games.tetris_env import get_conceptual_features as get_tetris_features
 from ..games.chess_env import get_conceptual_features as get_chess_features
 from .hyper_conceptual_thinking import ConceptDiscoveryEngine
 from .strategic_planner import StrategicPlanner
+from .sswm import SSWM # Import the new SSWM
 
 class ARLCController:
     """
@@ -18,8 +19,9 @@ class ARLCController:
     It evaluates possible moves and chooses the best one based on a scoring heuristic.
     This version is designed to be domain-agnostic and orchestrates the HCT and EoM processes.
     """
-    def __init__(self, strategic_planner: StrategicPlanner, exploration_weight: float = 5.0, eom_weight: float = 2.0):
+    def __init__(self, strategic_planner: StrategicPlanner, sswm: SSWM, exploration_weight: float = 5.0, eom_weight: float = 2.0):
         self.strategic_planner = strategic_planner
+        self.sswm = sswm # New: Pass the SSWM to the ARLC
         self.exploration_weight = exploration_weight
         self.eom_weight = eom_weight
         self.visited_states = {}
@@ -111,16 +113,19 @@ class ARLCController:
             chosen_move = random.choice(legal_moves)
             decision_context = {"chosen_move": chosen_move, "chosen_score": 0.0, "all_scores": [0.0]}
             return chosen_move, decision_context
-            
+
         # This is a placeholder for move generation
         all_scores = [1.5, 2.1, 0.8, 1.9, 2.5] 
 
         # New: Adjust scores based on the current strategic goal
         adjusted_scores = self.adjust_score_for_strategy(all_scores, board_state, domain)
         
+        # New: Further adjust scores based on SSWM's prediction
+        adjusted_scores = self.predictive_score_adjustment(adjusted_scores, self.last_fused_rep, domain)
+
         chosen_move = np.argmax(adjusted_scores)
         chosen_score = adjusted_scores[chosen_move]
-        
+
         # The decision context will now also include the current strategic goal
         decision_context = {
             'chosen_move': chosen_move,
@@ -149,4 +154,21 @@ class ARLCController:
             if bonus_move_index < len(scores):
                 scores[bonus_move_index] += 1.0 # Add a bonus for a strategically good move.
 
+        return scores
+        
+    def predictive_score_adjustment(self, scores: list, current_fused_rep: torch.Tensor, domain: str) -> list:
+        """
+        Uses the SSWM to predict future outcomes and adjust move scores.
+        """
+        for i in range(len(scores)):
+            # Simulate the outcome of each move and get a predicted reward
+            predicted_rep, predicted_reward = self.sswm.simulate_what_if_scenario(
+                start_state_rep=current_fused_rep,
+                hypothetical_move=i,
+                num_steps=1 # Look one step ahead
+            )
+            
+            # The ARLC can now add a bonus based on the predicted reward
+            scores[i] += predicted_reward
+            
         return scores
