@@ -17,6 +17,12 @@ class ExplainabilityModule:
             'tetris': ['Lines Cleared', 'Gaps', 'Max Height', 'Board Fullness'],
             'chess': ['Material Advantage', 'White King Safety', 'Black King Safety', 'White Center Control', 'Black Center Control']
         }
+        self.discovered_concepts = [] # List to hold names of HCT concepts
+
+    def add_discovered_concept(self, concept_name: str):
+        """Adds a newly discovered concept to the explanation vocabulary."""
+        if concept_name not in self.discovered_concepts:
+            self.discovered_concepts.append(concept_name)
 
     def generate_explanation(self, 
                              conceptual_features: torch.Tensor, 
@@ -47,6 +53,9 @@ class ExplainabilityModule:
         Provides a simplified explanation based on the most influential conceptual features.
         """
         feature_names = self.conceptual_feature_names.get(domain, [])
+        # Add newly discovered concepts to the feature names
+        feature_names.extend(self.discovered_concepts)
+
         if not feature_names:
             return "Conceptual reasoning is not available for this domain."
 
@@ -54,14 +63,17 @@ class ExplainabilityModule:
 
         # Find the two most influential features based on absolute value
         sorted_indices = np.argsort(np.abs(feature_values))[::-1]
-        top_features = [feature_names[i] for i in sorted_indices]
+        top_features = [feature_names[i] for i in sorted_indices if i < len(feature_names)]
         
+        if not top_features:
+            return "No strong conceptual features detected."
+
         # Craft a more dynamic explanation based on the domain
         if domain == 'tetris':
             return (f"The decision was primarily driven by the goal of minimizing '{top_features[1]}' and "
                     f"optimizing for '{top_features[0]}'.")
         elif domain == 'chess':
-            material_val = feature_values[feature_names.index('Material Advantage')]
+            material_val = feature_values[feature_names.index('Material Advantage')] if 'Material Advantage' in feature_names else 0
             if material_val > 0:
                 material_text = "The model is seeking to increase its material advantage."
             elif material_val < 0:
