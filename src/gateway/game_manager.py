@@ -19,7 +19,7 @@ def select_game():
     print("Please select a game:")
     print("1. Tetris")
     print("2. Chess")
-    print("3. Autonomous Exploration (New Domain)") # New option
+    print("3. Autonomous Exploration (New Domain)")
     game_choice = input("Enter your choice (1, 2, or 3): ")
 
     if game_choice == '3':
@@ -36,7 +36,7 @@ def load_game(game_choice: str):
     """Loads the appropriate game environment and model."""
     config = Config()
     model_path = None
-    
+
     if game_choice == '1':
         game_env = TetrisEnv()
         model_path = os.path.join(config.CHECKPOINT_DIR, "zenith_protocol_phase4_tetris.pth")
@@ -60,7 +60,7 @@ def load_game(game_choice: str):
         print(f"Loaded model from {model_path}")
     elif game_choice != '3':
         print(f"Warning: Model not found at {model_path}. Starting with a fresh model.")
-    
+
     return game_env, model, arlc, em
 
 def start_game_loop(game_env, model, arlc, em, mode: str):
@@ -70,7 +70,7 @@ def start_game_loop(game_env, model, arlc, em, mode: str):
     game_state = game_env.reset()
     last_fused_rep = None
     done = False
-    
+
     while not done:
         # Get conceptual features for the current state
         conceptual_features = game_env.get_conceptual_features(game_state)
@@ -79,27 +79,41 @@ def start_game_loop(game_env, model, arlc, em, mode: str):
         with torch.no_grad():
             state_tensor = torch.tensor(game_state).unsqueeze(0).float().to(Config.DEVICE)
             conceptual_tensor = torch.tensor(conceptual_features).unsqueeze(0).float().to(Config.DEVICE)
-            
+
             # The model's forward pass
             predicted_output, fused_representation, _ = model(state_tensor, conceptual_tensor, game_env.domain)
-        
+
         # Calculate EoM bonus
         eom_bonus = 0.0
         if last_fused_rep is not None:
             eom_bonus = arlc.calculate_eom_bonus(last_fused_rep, fused_representation)
-            
+
         last_fused_rep = fused_representation.clone()
-        
+
         # Get the AI's move
         chosen_move, decision_context = arlc.choose_move(game_state, game_env.domain)
-        
+
         # Explain the decision
         decision_context['eom_bonus'] = eom_bonus
         explanation = em.generate_explanation(conceptual_tensor, fused_representation, decision_context, game_env.domain)
-        
+
         print("\n--- AI's Turn ---")
         game_env.render(game_state)
         print("AI's Reasoning:", explanation['narrative'])
+
+        # New: NLP-powered user interaction
+        while True:
+            user_query = input("Ask the AI about its reasoning (e.g., 'explain', 'what's the strategy?'): ")
+            if user_query.lower() in ['exit', 'quit']:
+                break
+            
+            response = em.handle_query(
+                user_query,
+                decision_context,
+                conceptual_tensor,
+                game_env.domain
+            )
+            print(f"AI's Response: {response}")
 
         # Update the game state based on the chosen move
         game_state, _, done, _ = game_env.step(chosen_move)
@@ -116,15 +130,15 @@ def start_exploration_loop(game_env, model, arlc, em):
     """Starts a dedicated loop for autonomous exploration."""
     print("\nStarting Autonomous Exploration...")
     arlc.is_exploring = True
-    
+
     game_state = game_env.reset()
     last_fused_rep = None
     done = False
-    
+
     while not done:
         # Get a generic conceptual representation for the new domain
         conceptual_features = arlc.get_generic_conceptual_features(game_state.shape)
-        
+
         # Run the model with the generic features
         with torch.no_grad():
             state_tensor = torch.tensor(game_state).unsqueeze(0).float().to(Config.DEVICE)
@@ -133,18 +147,18 @@ def start_exploration_loop(game_env, model, arlc, em):
 
         # The ARLC makes a move, with the exploration bonus active
         chosen_move, decision_context = arlc.choose_move(game_state, 'exploration')
-        
+
         # Update last fused rep for EoM calculation in the next step
         arlc.last_fused_rep = fused_representation.clone()
-        
+
         # Update the game state
         game_state, _, done, _ = game_env.step(chosen_move)
-        
+
         # Explain the move
         explanation = em.generate_explanation(conceptual_tensor, fused_representation, decision_context, 'exploration')
         print("Exploration AI's Reasoning:", explanation['narrative'])
         time.sleep(1)
-    
+
 def main():
     try:
         game_choice, mode_choice = select_game()
