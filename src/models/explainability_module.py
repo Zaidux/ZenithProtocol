@@ -14,9 +14,10 @@ class ExplainabilityModule:
     def __init__(self, model: nn.Module):
         self.model = model
         self.conceptual_feature_names = {
-            'tetris': ['Lines Cleared', 'Gaps', 'Max Height', 'Board Fullness']
+            'tetris': ['Lines Cleared', 'Gaps', 'Max Height', 'Board Fullness'],
+            'chess': ['Material Advantage', 'White King Safety', 'Black King Safety', 'White Center Control', 'Black Center Control']
         }
-    
+
     def generate_explanation(self, 
                              conceptual_features: torch.Tensor, 
                              fused_representation: torch.Tensor,
@@ -24,27 +25,18 @@ class ExplainabilityModule:
                              domain: str) -> Dict:
         """
         Generates a human-readable explanation based on the model's internal state.
-        
-        Args:
-            conceptual_features: The raw conceptual features used as input.
-            fused_representation: The output of the Conceptual Attention layer.
-            decision_context: A dictionary from the ARLCController with move details.
-            domain: The current game domain (e.g., 'tetris').
         """
         explanation = {}
 
-        # 1. Analyze Conceptual Layer's Contribution
         conceptual_contribution = self._analyze_conceptual_contribution(
             conceptual_features.squeeze(0),
             domain
         )
         explanation['conceptual_reasoning'] = conceptual_contribution
 
-        # 2. Analyze Decision-Making Context
         decision_narrative = self._analyze_decision_context(decision_context)
         explanation['decision_narrative'] = decision_narrative
-        
-        # 3. Formulate the Final Explanation
+
         final_explanation = self._formulate_narrative(explanation)
         explanation['narrative'] = final_explanation
 
@@ -53,21 +45,34 @@ class ExplainabilityModule:
     def _analyze_conceptual_contribution(self, conceptual_features: torch.Tensor, domain: str) -> str:
         """
         Provides a simplified explanation based on the most influential conceptual features.
-        This is a placeholder for a more advanced explanation that would analyze gradients.
         """
         feature_names = self.conceptual_feature_names.get(domain, [])
         if not feature_names:
             return "Conceptual reasoning is not available for this domain."
-            
+
         feature_values = conceptual_features.detach().cpu().numpy()
-        
-        # Find the most influential features
+
+        # Find the two most influential features based on absolute value
         sorted_indices = np.argsort(np.abs(feature_values))[::-1]
-        
         top_features = [feature_names[i] for i in sorted_indices]
         
-        return (f"The decision was primarily driven by the goal of minimizing '{top_features[1]}' and "
-                f"optimizing for '{top_features[0]}'.")
+        # Craft a more dynamic explanation based on the domain
+        if domain == 'tetris':
+            return (f"The decision was primarily driven by the goal of minimizing '{top_features[1]}' and "
+                    f"optimizing for '{top_features[0]}'.")
+        elif domain == 'chess':
+            material_val = feature_values[feature_names.index('Material Advantage')]
+            if material_val > 0:
+                material_text = "The model is seeking to increase its material advantage."
+            elif material_val < 0:
+                material_text = "The model is seeking to mitigate its material disadvantage."
+            else:
+                material_text = "Material is balanced."
+            
+            return (f"The model analyzed the board's abstract properties. {material_text} It is also prioritizing "
+                    f"'{top_features[0]}' and managing '{top_features[1]}'.")
+        else:
+            return "Conceptual reasoning is not available for this domain."
 
     def _analyze_decision_context(self, context: Dict) -> str:
         """
@@ -75,10 +80,10 @@ class ExplainabilityModule:
         """
         chosen_move = context.get('chosen_move', 'an unknown move')
         chosen_score = context.get('chosen_score', 'N/A')
-        
+
         all_scores = context.get('all_scores', [])
         best_possible_score = max(all_scores) if all_scores else 'N/A'
-        
+
         if chosen_score == best_possible_score:
             return f"The model chose the best possible move, which had the highest calculated score of {chosen_score:.2f}."
         else:
@@ -90,5 +95,5 @@ class ExplainabilityModule:
         """
         conceptual_text = explanation.get('conceptual_reasoning', '')
         decision_text = explanation.get('decision_narrative', '')
-        
+
         return f"{conceptual_text} {decision_text}"
