@@ -10,6 +10,7 @@ from ..utils.config import Config
 from ..games.tetris_env import get_conceptual_features as get_tetris_features
 from ..games.chess_env import get_conceptual_features as get_chess_features
 from .hyper_conceptual_thinking import ConceptDiscoveryEngine
+from .strategic_planner import StrategicPlanner
 
 class ARLCController:
     """
@@ -17,7 +18,8 @@ class ARLCController:
     It evaluates possible moves and chooses the best one based on a scoring heuristic.
     This version is designed to be domain-agnostic and orchestrates the HCT and EoM processes.
     """
-    def __init__(self, exploration_weight: float = 5.0, eom_weight: float = 2.0):
+    def __init__(self, strategic_planner: StrategicPlanner, exploration_weight: float = 5.0, eom_weight: float = 2.0):
+        self.strategic_planner = strategic_planner
         self.exploration_weight = exploration_weight
         self.eom_weight = eom_weight
         self.visited_states = {}
@@ -35,7 +37,7 @@ class ARLCController:
         # such as board dimensions, number of active pieces, etc.
         num_features = 3 # A simple starting point
         conceptual_features = np.zeros(num_features)
-        
+
         # Simple hypotheses based on board dimensions
         if len(state_shape) == 3: # Assuming a 2D board with channels
             height, width = state_shape[1], state_shape[2]
@@ -43,7 +45,7 @@ class ARLCController:
             conceptual_features[1] = width # Board Width
             # A placeholder for piece count
             conceptual_features[2] = np.sum(state_shape)
-        
+
         return conceptual_features
 
     def evaluate_conceptual_features(self, conceptual_features: np.ndarray, fused_representation: torch.Tensor, domain: str) -> Dict[str, float]:
@@ -73,12 +75,12 @@ class ARLCController:
 
         # HCT: Check for newly discovered high-value concepts and add a bonus
         hct_bonus, discovered_concept = self.cde.analyze_for_new_concepts(fused_representation, score, domain)
-        
+
         # Add the 'surprise bonus' to the conceptual score
         if self.is_exploring and self.last_fused_rep is not None:
             surprise_bonus = self.calculate_eom_bonus(self.last_fused_rep, fused_representation)
             score += surprise_bonus
-            
+
         final_score = score + exploration_bonus + hct_bonus
 
         return {
@@ -110,13 +112,41 @@ class ARLCController:
             decision_context = {"chosen_move": chosen_move, "chosen_score": 0.0, "all_scores": [0.0]}
             return chosen_move, decision_context
             
-        if domain == 'tetris':
-            # This logic would require simulating every possible move
-            pass
-        elif domain == 'chess':
-            # This would involve evaluating the conceptual features of every legal move
-            pass
-        else:
-            raise ValueError("Invalid domain specified for ARLC move selection.")
+        # This is a placeholder for move generation
+        all_scores = [1.5, 2.1, 0.8, 1.9, 2.5] 
 
-        return None, {}
+        # New: Adjust scores based on the current strategic goal
+        adjusted_scores = self.adjust_score_for_strategy(all_scores, board_state, domain)
+        
+        chosen_move = np.argmax(adjusted_scores)
+        chosen_score = adjusted_scores[chosen_move]
+        
+        # The decision context will now also include the current strategic goal
+        decision_context = {
+            'chosen_move': chosen_move,
+            'chosen_score': chosen_score,
+            'all_scores': all_scores,
+            'current_strategy': self.strategic_planner.current_goal
+        }
+
+        return chosen_move, decision_context
+
+    def adjust_score_for_strategy(self, scores: list, game_state: np.ndarray, domain: str) -> list:
+        """
+        Adjusts the raw scores of each move based on how well they align
+        with the current high-level strategic goal.
+        """
+        conceptual_features_for_goal_selection = self.strategic_planner.model.get_conceptual_features(game_state)
+        strategic_goal = self.strategic_planner.select_goal(conceptual_features_for_goal_selection, domain)
+
+        # A simple, rule-based bonus system for demonstration.
+        # This would be much more complex in a real implementation.
+        if strategic_goal['goal'] == 'control_center' and domain == 'chess':
+            # For a real implementation, you would need to simulate each move
+            # and evaluate its conceptual features.
+            # Here, we just give a simple bonus to a hypothetical "good" move.
+            bonus_move_index = 2
+            if bonus_move_index < len(scores):
+                scores[bonus_move_index] += 1.0 # Add a bonus for a strategically good move.
+
+        return scores
