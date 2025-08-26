@@ -1,8 +1,7 @@
 ### `main.py`
 
-This file will be the entry point for the user to interact with the trained chatbot. It will load the saved model and provide a simple command-line interface.
+# This file will be the entry point for the user to interact with the trained chatbot. It will load the saved model and provide a simple command-line interface.
 
-```python
 import torch
 import json
 import re
