@@ -1,1 +1,154 @@
+{
+  "conceptual_elements": {
+    "agent": {
+      "definition": "An agent is a living entity or autonomous system capable of performing actions.",
+      "properties": [
+        "is_autonomous",
+        "has_intent",
+        "can_perform_actions",
+        "has_attributes"
+      ],
+      "examples": [
+        {
+          "sentence": "He placed the book on the table because it was dusty.",
+          "breakdown": {
+            "he": {
+              "element": "agent",
+              "attributes": [
+                "gender:male",
+                "is_human"
+              ],
+              "purpose": "initiates the action of placing the book"
+            }
+          }
+        },
+        {
+          "sentence": "The robot moved the box.",
+          "breakdown": {
+            "the robot": {
+              "element": "agent",
+              "attributes": [
+                "is_machine",
+                "can_manipulate_objects"
+              ],
+              "purpose": "initiates the action of moving"
+            }
+          }
+        }
+      ]
+    },
+    "object": {
+      "definition": "A static entity with useful properties, often manipulated by an agent.",
+      "properties": [
+        "is_physical",
+        "has_material",
+        "has_function",
+        "is_manipulable"
+      ],
+      "examples": [
+        {
+          "sentence": "He placed the book on the table because it was dusty.",
+          "breakdown": {
+            "book": {
+              "element": "object",
+              "properties": [
+                "is_physical",
+                "has_function:reading",
+                "has_material:paper"
+              ],
+              "purpose": "the item being manipulated"
+            },
+            "table": {
+              "element": "object",
+              "properties": [
+                "is_physical",
+                "has_function:surface",
+                "has_material:wood"
+              ],
+              "purpose": "the destination of the manipulated item"
+            }
+          }
+        }
+      ]
+    },
+    "action": {
+      "definition": "A process executed by an agent with a specific purpose or reason.",
+      "properties": [
+        "has_initiator",
+        "has_purpose",
+        "changes_state",
+        "has_temporal_context"
+      ],
+      "examples": [
+        {
+          "sentence": "He placed the book on the table because it was dusty.",
+          "breakdown": {
+            "placed": {
+              "element": "action",
+              "initiator": "he",
+              "purpose": "to remove dust"
+            }
+          }
+        }
+      ]
+    },
+    "motion": {
+      "definition": "Something constant, a process already happening, or a state of being.",
+      "properties": [
+        "is_ongoing",
+        "is_process",
+        "describes_agent_state"
+      ],
+      "examples": [
+        {
+          "sentence": "The river is flowing.",
+          "breakdown": {
+            "is flowing": {
+              "element": "motion",
+              "description": "an ongoing process"
+            }
+          }
+        }
+      ]
+    },
+    "bridge": {
+      "definition": "Relational words that connect conceptual elements and clarify relationships.",
+      "properties": [
+        "connects_elements",
+        "clarifies_causality",
+        "indicates_purpose"
+      ],
+      "examples": [
+        {
+          "sentence": "He placed the book on the table because it was dusty.",
+          "breakdown": {
+            "because": {
+              "element": "bridge",
+              "purpose": "connects the action ('placed') to its reason ('it was dusty')"
+            }
+          }
+        }
+      ]
+    },
+    "properties": {
+      "definition": "Foundational, detailed data that provides a profound conceptual understanding of the world.",
+      "properties": [
+        "is_foundational",
+        "provides_causal_context",
+        "defines_attributes"
+      ],
+      "examples": [
+        {
+          "sentence": "He placed the book on the table because it was dusty.",
+          "breakdown": {
+            "dusty": {
+              "element": "property",
+              "purpose": "provides the reason for the action; implies a negative state that needs to be resolved (e.g., by a cleaning motion)."
+            }
+          }
+        }
+      ]
+    }
+  }
+}
 
