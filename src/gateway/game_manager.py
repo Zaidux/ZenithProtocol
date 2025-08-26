@@ -10,7 +10,8 @@ from ..models.arlc_controller import ARLCController
 from ..models.explainability_module import ExplainabilityModule
 from ..models.strategic_planner import StrategicPlanner
 from ..models.sswm import SSWM
-from ..training.federated_learning import FederatedLearner # NEW: Import the federated learning module
+from ..training.federated_learning import FederatedLearner
+from ..training.meta_learner import MetaLearner # NEW: Import the meta-learning module
 from ..utils.config import Config
 # Placeholder for game environments
 from ..games.tetris_env import TetrisEnv
@@ -23,13 +24,16 @@ def select_game():
     print("1. Tetris")
     print("2. Chess")
     print("3. Autonomous Exploration (New Domain)")
-    print("4. Start Federated Learning") # NEW: Add federated learning option
-    game_choice = input("Enter your choice (1, 2, 3, or 4): ")
+    print("4. Start Federated Learning")
+    print("5. Start Meta-Learning") # NEW: Add meta-learning option
+    game_choice = input("Enter your choice (1, 2, 3, 4, or 5): ")
 
     if game_choice == '3':
         mode_choice = 'exploration'
     elif game_choice == '4':
         mode_choice = 'federated_learning'
+    elif game_choice == '5':
+        mode_choice = 'meta_learning'
     else:
         print("\nSelect a mode:")
         print("1. Play against the AI (VS Mode)")
@@ -55,6 +59,9 @@ def load_game(game_choice: str):
     elif game_choice == '4':
         # For federated learning, the game environment and model are handled differently
         game_env = None
+    elif game_choice == '5':
+        # For meta-learning, the game environment and model are handled differently
+        game_env = None
     else:
         raise ValueError("Invalid game choice.")
 
@@ -69,7 +76,7 @@ def load_game(game_choice: str):
     if model_path and os.path.exists(model_path):
         model.load_state_dict(torch.load(model_path, map_location=config.DEVICE))
         print(f"Loaded model from {model_path}")
-    elif game_choice not in ['3', '4']:
+    elif game_choice not in ['3', '4', '5']:
         print(f"Warning: Model not found at {model_path}. Starting with a fresh model.")
 
     return game_env, model, arlc, em
@@ -143,6 +150,16 @@ def start_exploration_loop(game_env, model, arlc, em):
     print("\nStarting Autonomous Exploration...")
     arlc.is_exploring = True
 
+    # New: Simulate a small amount of data from the new domain for rapid adaptation
+    print("Generating a small dataset for rapid adaptation...")
+    new_domain_data = [
+        {'state': np.random.rand(1, 20, 10), 'conceptual_features': np.random.rand(64), 'target': np.random.rand(64 * 64), 'domain': 'new_domain'}
+        for _ in range(5) # A few examples are enough with meta-learning
+    ]
+    
+    # Rapidly adapt the model using the meta-learned knowledge
+    arlc.rapid_adaptation_to_new_domain(new_domain_data)
+
     game_state = game_env.reset()
     last_fused_rep = None
     done = False
@@ -177,15 +194,15 @@ def start_federated_learning_loop():
     This simulates the server-side and client-side operations.
     """
     config = Config()
-    
+
     # Simulate a global model and a set of clients
     global_model = ASREHModel().to(config.DEVICE)
-    
+
     # Create a list of clients, each with a copy of the global model
     clients = [ASREHModel().to(config.DEVICE) for _ in range(config.NUM_CLIENTS)]
     for client in clients:
         client.load_state_dict(global_model.state_dict())
-        
+
     # Placeholder for data. In a real-world scenario, this would be on each device.
     # We'll simulate this by creating a list of dummy data for each client.
     print("Generating simulated client data...")
@@ -193,24 +210,58 @@ def start_federated_learning_loop():
         [{'state': np.random.rand(1, 10, 20), 'conceptual_features': np.random.rand(64), 'target': np.random.rand(64 * 64), 'domain': 'tetris'} for _ in range(10)]
         for _ in range(config.NUM_CLIENTS)
     ]
-    
+
     criterion = torch.nn.MSELoss()
     optimizer = torch.optim.Adam(global_model.parameters(), lr=config.LEARNING_RATE)
-    
+
     fl_learner = FederatedLearner(global_model, clients, criterion, optimizer)
     fl_learner.run_federated_training(client_data)
-    
+
     # Save the final global model
     model_path = os.path.join(config.CHECKPOINT_DIR, "zenith_protocol_fl_final.pth")
     torch.save(global_model.state_dict(), model_path)
     print(f"\nFinal global model saved to {model_path}")
 
+def start_meta_learning_loop():
+    """
+    Orchestrates the meta-learning training process.
+    """
+    config = Config()
+    
+    # Initialize the core model that will learn how to learn
+    meta_model = ASREHModel().to(config.DEVICE)
+    
+    # Simulate a few different tasks (e.g., Chess and Tetris)
+    print("Preparing a set of diverse tasks for meta-training...")
+    tasks = [
+        {
+            'domain': 'tetris',
+            'train_data': [{'state': np.random.rand(1, 20, 10), 'conceptual_features': np.random.rand(64), 'target': np.random.rand(64 * 64), 'domain': 'tetris'} for _ in range(2)],
+            'val_data': [{'state': np.random.rand(1, 20, 10), 'conceptual_features': np.random.rand(64), 'target': np.random.rand(64 * 64), 'domain': 'tetris'} for _ in range(2)]
+        },
+        {
+            'domain': 'chess',
+            'train_data': [{'state': np.random.rand(1, 8, 8), 'conceptual_features': np.random.rand(64), 'target': np.random.rand(64 * 64), 'domain': 'chess'} for _ in range(2)],
+            'val_data': [{'state': np.random.rand(1, 8, 8), 'conceptual_features': np.random.rand(64), 'target': np.random.rand(64 * 64), 'domain': 'chess'} for _ in range(2)]
+        }
+    ]
+    
+    meta_learner = MetaLearner(meta_model, tasks)
+    meta_learner.run_meta_training()
+    
+    # Save the meta-learned model
+    model_path = os.path.join(config.CHECKPOINT_DIR, "zenith_protocol_meta_final.pth")
+    torch.save(meta_model.state_dict(), model_path)
+    print(f"\nFinal meta-learned model saved to {model_path}")
+
 def main():
     try:
         game_choice, mode_choice = select_game()
-        
+
         if mode_choice == 'federated_learning':
             start_federated_learning_loop()
+        elif mode_choice == 'meta_learning':
+            start_meta_learning_loop()
         else:
             game_env, model, arlc, em = load_game(game_choice)
             if mode_choice == 'vs':
