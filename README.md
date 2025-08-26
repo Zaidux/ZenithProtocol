@@ -30,7 +30,19 @@ Key Components Implemented in Phase 4:
 
  * **Dynamic Quantization**: The model is now capable of performing **dynamic quantization**—it can automatically compress its own weights to increase inference speed when a bottleneck is detected. A human can still override this function, as per the original design.
 
+ * **Spatial-Semantic World Model (SSWM)**: We introduced a new component, the **SSWM**, which allows the model to predict the future state of the game based on hypothetical moves. This enables "what-if" scenario analysis, moving beyond reactive play to proactive strategic planning.
+
+ * **Strategic Planner**: The ARLC is now enhanced with a **Strategic Planner** module. This allows the model to select and pursue high-level goals (e.g., "center control" in chess or "minimize gaps" in Tetris) and adjust its tactical decisions accordingly.
+
  * **Full Autonomous Exploration**: The HCT and ARLC modules now work together to enable the model to enter and learn from new, unknown domains without explicit human guidance. This is achieved through a "surprise bonus" that encourages exploration and a self-evolving conceptual knowledge base.
+
+# Phase 5: Meta-Capabilities and On-Device Deployment 🌐
+This phase elevates the Zenith Protocol's intelligence by focusing on meta-level improvements: learning how to learn and scaling to real-world applications with privacy in mind.
+
+Key Components Implemented in Phase 5:
+ * **Federated Learning and On-Device Deployment**: We've integrated a federated learning pipeline. This enables the model to be trained on decentralized data directly from user devices. The process aggregates model updates without ever exposing private gameplay data, addressing scalability and privacy concerns.
+
+ * **Meta-Learning for Rapid Adaptation**: A new meta-learning module allows the model to learn a good set of initial parameters that can be rapidly fine-tuned for new, unknown domains. Instead of a long exploration process, the model can now adapt to a new game from just a few examples.
 
 # Technologies Used 💻
  * PyTorch: The primary deep learning framework.
@@ -49,4 +61,3 @@ The Zenith Protocol is dual-licensed under the **AGPLv3 (Open-Source)** and a **
 * **For commercial use**, especially in a proprietary application, please refer to the `COMMERCIAL-LICENSE.md` file for details on how to obtain a commercial license.
 
 **Note:** The AGPLv3 version of this project explicitly prohibits its use in certain high-stakes domains, including military, medical, and legal applications. Please review the `LICENSE` file for the full terms and conditions.
-
