@@ -8,7 +8,7 @@ The core of the Zenith Protocol is the belief that true intelligence lies in und
 This phase establishes the foundational architecture by implementing the core of the ASREH model for a single domain: Tetris. We will build the essential components and prove the core hypothesis that the model can learn and reason based on both visual and conceptual data.
 
 Key Components Implemented in Phase 1:
- * Conceptual Layer or The Self supervised world model(SSWM): The model is trained on a set of conceptual features for Tetris, including gaps, max_height, and board_fullness. The Conceptual Attention Layer processes this abstract knowledge, which is then fused with visual data from the Tetris board.
+ * Conceptual Layer : The model is trained on a set of conceptual features for Tetris, including gaps, max_height, and board_fullness. The Conceptual Attention Layer processes this abstract knowledge, which is then fused with visual data from the Tetris board.
 
  * Adaptive-Reinforced Learning Controller (ARLC): The ARLC guides the training by providing a conceptual reward signal. It rewards moves that lead to a "better" board state, such as minimizing gaps. This teaches the model to optimize for high-level, strategic goals.
 
@@ -30,7 +30,7 @@ Key Components Implemented in Phase 4:
 
  * **Dynamic Quantization**: The model is now capable of performing **dynamic quantization**—it can automatically compress its own weights to increase inference speed when a bottleneck is detected. A human can still override this function, as per the original design.
 
- * **Spatial-Semantic World Model (SSWM)**: We introduced a new component, the **SSWM**, which allows the model to predict the future state of the game based on hypothetical moves. This enables "what-if" scenario analysis, moving beyond reactive play to proactive strategic planning.
+ * **Self-superviced World Model (SSWM)**: We introduced another component, the **SSWM**, which allows the model to predict the future state of the game based on hypothetical moves. This enables "what-if" scenario analysis, moving beyond reactive play to proactive strategic planning.
 
  * **Strategic Planner**: The ARLC is now enhanced with a **Strategic Planner** module. This allows the model to select and pursue high-level goals (e.g., "center control" in chess or "minimize gaps" in Tetris) and adjust its tactical decisions accordingly.
 
