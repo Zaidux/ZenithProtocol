@@ -5,6 +5,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Dict, List, Tuple
 from ..modules.mixture_of_experts import MixtureOfExperts
+from copy import deepcopy
 
 class ConceptualAttention(nn.Module):
     """
@@ -110,4 +111,11 @@ class ASREHModel(nn.Module):
     def set_state_dict(self, state_dict):
         """Loads a state dictionary, useful for receiving a global model."""
         self.load_state_dict(state_dict)
+
+    def get_fast_adaptable_model(self):
+        """
+        Creates a copy of the model with the current parameters.
+        This is used for the inner loop of meta-learning.
+        """
+        return deepcopy(self)
 
