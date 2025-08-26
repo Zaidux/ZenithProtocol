@@ -8,9 +8,9 @@ The core of the Zenith Protocol is the belief that true intelligence lies in und
 This phase establishes the foundational architecture by implementing the core of the ASREH model for a single domain: Tetris. We will build the essential components and prove the core hypothesis that the model can learn and reason based on both visual and conceptual data.
 
 Key Components Implemented in Phase 1:
- * Conceptual Layer: The model is trained on a set of conceptual features for Tetris, including gaps, max_height, and board_fullness. The Conceptual Attention Layer processes this abstract knowledge, which is then fused with visual data from the Tetris board.
+ * Conceptual Layer or The Self supervised world model(SSWM): The model is trained on a set of conceptual features for Tetris, including gaps, max_height, and board_fullness. The Conceptual Attention Layer processes this abstract knowledge, which is then fused with visual data from the Tetris board.
 
- * Action-Reinforced Learning Controller (ARLC): The ARLC guides the training by providing a conceptual reward signal. It rewards moves that lead to a "better" board state, such as minimizing gaps. This teaches the model to optimize for high-level, strategic goals.
+ * Adaptive-Reinforced Learning Controller (ARLC): The ARLC guides the training by providing a conceptual reward signal. It rewards moves that lead to a "better" board state, such as minimizing gaps. This teaches the model to optimize for high-level, strategic goals.
 
  * Explainability Module (EM): The EM provides transparency by analyzing the model's internal state. It generates human-readable explanations for the model's decisions, stating what conceptual goals were driving a move.
 
