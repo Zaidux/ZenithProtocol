@@ -43,6 +43,7 @@
         "is_physical",
         "has_material",
         "has_function",
+        "has_reason",
         "is_manipulable"
       ],
       "examples": [
@@ -54,6 +55,7 @@
               "properties": [
                 "is_physical",
                 "has_function:reading",
+                "has_reason: entertainment, knowledge",
                 "has_material:paper"
               ],
               "purpose": "the item being manipulated"
