@@ -119,7 +119,7 @@ class ARLCController:
 
         # New: Adjust scores based on the current strategic goal
         adjusted_scores = self.adjust_score_for_strategy(all_scores, board_state, domain)
-        
+
         # New: Further adjust scores based on SSWM's prediction
         adjusted_scores = self.predictive_score_adjustment(adjusted_scores, self.last_fused_rep, domain)
 
@@ -155,7 +155,7 @@ class ARLCController:
                 scores[bonus_move_index] += 1.0 # Add a bonus for a strategically good move.
 
         return scores
-        
+
     def predictive_score_adjustment(self, scores: list, current_fused_rep: torch.Tensor, domain: str) -> list:
         """
         Uses the SSWM to predict future outcomes and adjust move scores.
@@ -167,8 +167,43 @@ class ARLCController:
                 hypothetical_move=i,
                 num_steps=1 # Look one step ahead
             )
-            
+
             # The ARLC can now add a bonus based on the predicted reward
             scores[i] += predicted_reward
-            
+
         return scores
+
+    def rapid_adaptation_to_new_domain(self, new_domain_data: List[Dict]):
+        """
+        This is a placeholder for the rapid adaptation process.
+        It simulates a few fast updates on the new domain data.
+        """
+        print("Rapidly adapting to the new domain with meta-learned knowledge...")
+        
+        # In a real scenario, this would involve a temporary model.
+        # We simulate this here by doing a few quick updates.
+        optimizer = torch.optim.Adam(self.strategic_planner.model.parameters(), lr=0.001)
+        criterion = torch.nn.MSELoss()
+        
+        for i, data_point in enumerate(new_domain_data):
+            state = data_point['state']
+            conceptual_features = data_point['conceptual_features']
+            target = data_point['target']
+            
+            state_tensor = torch.tensor(state).unsqueeze(0).float().to(Config.DEVICE)
+            conceptual_tensor = torch.tensor(conceptual_features).unsqueeze(0).float().to(Config.DEVICE)
+            target_tensor = torch.tensor(target).unsqueeze(0).float().to(Config.DEVICE)
+            
+            # Forward pass
+            predicted_output, _, _ = self.strategic_planner.model(state_tensor, conceptual_tensor, data_point['domain'])
+            loss = criterion(predicted_output, target_tensor)
+            
+            # Backpropagation
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            print(f"  - Adaptation step {i+1} complete. Loss: {loss.item():.4f}")
+            
+        print("Rapid adaptation complete.")
+        self.is_exploring = True
+
