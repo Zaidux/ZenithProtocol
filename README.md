@@ -61,9 +61,10 @@ This phase establishes the foundational architecture by implementing the core of
 ​For commercial use, especially in a proprietary application, please refer to the COMMERCIAL-LICENSE.md file for details on how to obtain a commercial license.
 ​Note: The AGPLv3 version of this project explicitly prohibits its use in certain high-stakes domains, including military, medical, and legal applications. Please review the LICENSE file for the full terms and conditions.
 
-#​ Project Roadmap 🛣️
+# Project Roadmap 🛣️
 
-​Based on the impressive progress from a foundational model to one with autonomous learning and rapid adaptation, here are some potential next steps for the Zenith Protocol project:
+Based on the impressive progress from a foundational model to one with autonomous learning and rapid adaptation, here are some potential next steps for the Zenith Protocol project:
+
 
 # ​Phase 6: Real-World Deployment and API Development 🚀
 The project is currently a local prototype. This phase would focus on making the Zenith Protocol accessible and practical for external use.
