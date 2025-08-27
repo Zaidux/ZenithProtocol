@@ -4,7 +4,7 @@
 ​This project, named the Zenith Protocol, is an innovative approach to building a generalizable, explainable AI model. Instead of training a separate model for each task, the Zenith Protocol leverages a single, unified architecture—the Adaptive Self-Regulating Explainable Hybrid (ASREH) Model—to learn and master multiple, disparate domains. We demonstrate this capability by training the model to play two completely different games: Chess and Tetris.
 The core of the Zenith Protocol is the belief that true intelligence lies in understanding, not just memorization. The ASREH model achieves this through a novel combination of architectural components.
 
-#​ Phase 1: The Foundation 🏗️
+#​# Phase 1: The Foundation 🏗️
 
 ​This phase establishes the foundational architecture by implementing the core of the ASREH model for a single domain: Tetris. We will build the essential components and prove the core hypothesis that the model can learn and reason based on both visual and conceptual data.
 ​Key Components Implemented in Phase 1:
