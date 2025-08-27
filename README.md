@@ -4,16 +4,16 @@
 ​This project, named the Zenith Protocol, is an innovative approach to building a generalizable, explainable AI model. Instead of training a separate model for each task, the Zenith Protocol leverages a single, unified architecture—the Adaptive Self-Regulating Explainable Hybrid (ASREH) Model—to learn and master multiple, disparate domains. We demonstrate this capability by training the model to play two completely different games: Chess and Tetris.
 The core of the Zenith Protocol is the belief that true intelligence lies in understanding, not just memorization. The ASREH model achieves this through a novel combination of architectural components.
 
-Phase 1: The Foundation 🏗️
+# Phase 1: The Foundation 🏗️
+This phase establishes the foundational architecture by implementing the core of the ASREH model for a single domain: Tetris. We will build the essential components and prove the core hypothesis that the model can learn and reason based on both visual and conceptual data.
 
-​This phase establishes the foundational architecture by implementing the core of the ASREH model for a single domain: Tetris. We will build the essential components and prove the core hypothesis that the model can learn and reason based on both visual and conceptual data.
-​Key Components Implemented in Phase 1:
+*Key Components Implemented in Phase 1:*
 
-* ​Conceptual Layer : The model is trained on a set of conceptual features for Tetris, including gaps, max_height, and board_fullness. The Conceptual Attention Layer processes this abstract knowledge, which is then fused with visual data from the Tetris board.
+* Conceptual Layer : The model is trained on a set of conceptual features for Tetris, including gaps, max_height, and board_fullness. The Conceptual Attention Layer processes this abstract knowledge, which is then fused with visual data from the Tetris board.
 
-* ​Adaptive-Reinforced Learning Controller (ARLC): The ARLC guides the training by providing a conceptual reward signal. It rewards moves that lead to a "better" board state, such as minimizing gaps. This teaches the model to optimize for high-level, strategic goals.
+* Adaptive-Reinforced Learning Controller (ARLC): The ARLC guides the training by providing a conceptual reward signal. It rewards moves that lead to a "better" board state, such as minimizing gaps. This teaches the model to optimize for high-level, strategic goals.
 
-* ​Explainability Module (EM): The EM provides transparency by analyzing the model's internal state. It generates human-readable explanations for the model's decisions, stating what conceptual goals were driving a move.
+* Explainability Module (EM): The EM provides transparency by analyzing the model's internal state. It generates human-readable explanations for the model's decisions, stating what conceptual goals were driving a move.
 
 # ​Phase 2: The Split Mind (SPM) ☯️
 ​In this phase, we will introduce the second domain, Chess, to implement the Split Mind architecture. The model will be trained on both Tetris and Chess simultaneously. This phase will require significant upgrades to the data loaders and the training loop to demonstrate the model's ability to learn across disparate domains using a single shared core.
@@ -62,6 +62,7 @@ Phase 1: The Foundation 🏗️
 ​Note: The AGPLv3 version of this project explicitly prohibits its use in certain high-stakes domains, including military, medical, and legal applications. Please review the LICENSE file for the full terms and conditions.
 
 #​ Project Roadmap 🛣️
+
 ​Based on the impressive progress from a foundational model to one with autonomous learning and rapid adaptation, here are some potential next steps for the Zenith Protocol project:
 
 # ​Phase 6: Real-World Deployment and API Development 🚀
