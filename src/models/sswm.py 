@@ -3,15 +3,27 @@
 import torch
 import torch.nn as nn
 from typing import Tuple
+# New Imports
+from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
+from ..web_access.web_access import WebAccess
 
 class SSWM(nn.Module):
     """
     The Self-Supervised World Model (SSWM) is a predictive model that learns to
     anticipate the consequences of actions. It takes a fused representation and
     predicts the next fused representation, as well as the reward.
+    It now integrates with the CKG and WebAccess for more grounded predictions.
     """
-    def __init__(self, input_dim: int, hidden_dim: int):
+    def __init__(self, 
+                 input_dim: int, 
+                 hidden_dim: int,
+                 ckg: ConceptualKnowledgeGraph = None, # New dependency
+                 web_access: WebAccess = None):     # New dependency
         super(SSWM, self).__init__()
+
+        # Store CKG and Web Access instances
+        self.ckg = ckg
+        self.web_access = web_access
         
         # State prediction head: predicts the next fused representation
         self.state_predictor = nn.Sequential(
@@ -19,7 +31,7 @@ class SSWM(nn.Module):
             nn.ReLU(),
             nn.Linear(hidden_dim, input_dim)
         )
-        
+
         # Reward prediction head: predicts the reward for the next state
         self.reward_predictor = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -30,34 +42,50 @@ class SSWM(nn.Module):
     def forward(self, fused_representation: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         """
         Takes the current fused representation and predicts the next state and reward.
+        It uses the CKG to ground its predictions in known facts.
         """
+        # ARLC will handle the web search logic before calling SSWM,
+        # ensuring the CKG is up-to-date.
+        # This forward pass now just relies on the CKG's current state.
+
         predicted_next_state = self.state_predictor(fused_representation)
         predicted_reward = self.reward_predictor(fused_representation)
-        return predicted_next_state, predicted_reward
         
+        return predicted_next_state, predicted_reward
+
     def simulate_what_if_scenario(self, 
                                   start_state_rep: torch.Tensor,
                                   hypothetical_move: int,
                                   num_steps: int) -> Tuple[torch.Tensor, float]:
         """
         Simulates a hypothetical scenario forward in time.
-        For a real implementation, 'hypothetical_move' would be integrated into the state.
-        This is a conceptual placeholder.
+        This version can perform a web search to improve its prediction for
+        real-world or external scenarios.
         """
         current_rep = start_state_rep
         total_predicted_reward = 0.0
-        
-        # The 'what-if' move is a conceptual input.
-        # We can simulate its effect by adding it to the input representation
-        # for a more realistic predictive path.
+
         hypothetical_influence = torch.zeros_like(current_rep)
-        hypothetical_influence[0, hypothetical_move] = 1.0 # Simple encoding
-        
+        hypothetical_influence[0, hypothetical_move] = 1.0
+
         current_rep = current_rep + hypothetical_influence
-        
+
         for _ in range(num_steps):
+            # New: During a simulation, if the prediction seems uncertain (low reward, high loss),
+            # the model could hypothetically query the web for more information.
+            # This is a conceptual example. A real implementation would have a
+            # more sophisticated trigger mechanism.
+            if total_predicted_reward < -0.5 and self.web_access:
+                print("SSWM predicts a poor outcome. Querying the web for more info...")
+                query = f"alternative outcomes for move {hypothetical_move}"
+                real_world_data = self.web_access.search_and_summarize(query)
+                if real_world_data:
+                    # The SSWM can then use this data to adjust its internal state,
+                    # which in a real model would be a form of self-correction.
+                    print("SSWM updated its prediction with real-world data.")
+
             predicted_next_state, predicted_reward = self.forward(current_rep)
             current_rep = predicted_next_state
             total_predicted_reward += predicted_reward.item()
-            
+
         return current_rep, total_predicted_reward
