@@ -11,17 +11,27 @@ from ..games.tetris_env import get_conceptual_features as get_tetris_features
 from ..games.chess_env import get_conceptual_features as get_chess_features
 from .hyper_conceptual_thinking import ConceptDiscoveryEngine
 from .strategic_planner import StrategicPlanner
-from .sswm import SSWM # Import the new SSWM
+from .sswm import SSWM
+# New Imports
+from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
+from ..web_access.web_access import WebAccess
 
 class ARLCController:
     """
     The Adaptive Reinforcement Learning Controller (ARLC) is the "Brain" of the system.
     It evaluates possible moves and chooses the best one based on a scoring heuristic.
     This version is designed to be domain-agnostic and orchestrates the HCT and EoM processes.
+    It now integrates with the Conceptual Knowledge Graph and the Web Access module.
     """
-    def __init__(self, strategic_planner: StrategicPlanner, sswm: SSWM, exploration_weight: float = 5.0, eom_weight: float = 2.0):
+    def __init__(self, 
+                 strategic_planner: StrategicPlanner, 
+                 sswm: SSWM, 
+                 exploration_weight: float = 5.0, 
+                 eom_weight: float = 2.0,
+                 ckg: ConceptualKnowledgeGraph = None, # New: CKG instance
+                 web_access: WebAccess = None):     # New: WebAccess instance
         self.strategic_planner = strategic_planner
-        self.sswm = sswm # New: Pass the SSWM to the ARLC
+        self.sswm = sswm
         self.exploration_weight = exploration_weight
         self.eom_weight = eom_weight
         self.visited_states = {}
@@ -29,26 +39,57 @@ class ARLCController:
         self.cde = ConceptDiscoveryEngine()
         self.last_fused_rep = None
         self.is_exploring = False
+        
+        # New: Initialize the CKG and Web Access modules
+        self.ckg = ckg or ConceptualKnowledgeGraph()
+        self.web_access = web_access or WebAccess()
 
     def get_generic_conceptual_features(self, state_shape: tuple) -> np.ndarray:
         """
         Generates a generic, baseline set of conceptual features for a new domain.
         This is the "Initial Analysis" step.
         """
-        # For a new, unknown domain, we'll start with a generic set of features
-        # such as board dimensions, number of active pieces, etc.
-        num_features = 3 # A simple starting point
+        num_features = 3
         conceptual_features = np.zeros(num_features)
 
-        # Simple hypotheses based on board dimensions
-        if len(state_shape) == 3: # Assuming a 2D board with channels
+        if len(state_shape) == 3:
             height, width = state_shape[1], state_shape[2]
-            conceptual_features[0] = height # Board Height
-            conceptual_features[1] = width # Board Width
-            # A placeholder for piece count
+            conceptual_features[0] = height
+            conceptual_features[1] = width
             conceptual_features[2] = np.sum(state_shape)
 
         return conceptual_features
+    
+    # New Method
+    def check_for_knowledge_gaps(self, prompt: str) -> List[str]:
+        """
+        Analyzes a prompt to identify concepts that are not in the CKG.
+        """
+        gaps = []
+        # This is a simplified keyword-based check.
+        # A more advanced model would use the Conceptual Encoder to find gaps.
+        words = set(prompt.lower().split())
+        for word in words:
+            if not self.ckg.query(word):
+                gaps.append(word)
+        return gaps
+
+    # New Method
+    def update_knowledge_with_web_data(self, query: str):
+        """
+        Uses the WebAccess module to get real-time data and updates the CKG.
+        """
+        # Check if the data is stale before making a new web call
+        if self.web_access.check_for_update(query, time_limit_minutes=1440): # Update every 24 hours
+            print(f"\n[ARLC] Knowledge for '{query}' is stale. Performing web search...")
+            summary = self.web_access.search_and_summarize(query)
+            if summary:
+                # This is a simple update logic. A more complex one would parse the summary
+                # into a structured knowledge graph format.
+                self.ckg.add_node(query, {"type": "concept", "source": "web_search", "content": summary})
+                print(f"[ARLC] CKG updated with new information from the web.")
+            else:
+                print(f"[ARLC] Web search for '{query}' found no relevant information.")
 
     def evaluate_conceptual_features(self, conceptual_features: np.ndarray, fused_representation: torch.Tensor, domain: str) -> Dict[str, float]:
         """
@@ -65,20 +106,15 @@ class ARLCController:
                     (self.reward_coeffs['chess']['king_safety'] * (conceptual_features[1] - conceptual_features[2])) + \
                     (self.reward_coeffs['chess']['center_control'] * (conceptual_features[3] - conceptual_features[4]))
         elif self.is_exploring:
-            # During exploration, the conceptual score is initially zero,
-            # as we don't know what features are valuable yet.
             score = 0.0
 
-        # State exploration bonus
         state_hash = hashlib.sha256(conceptual_features.tobytes()).hexdigest()
         visits = self.visited_states.get(state_hash, 0)
         exploration_bonus = self.exploration_weight / (1 + visits)
         self.visited_states[state_hash] = visits + 1
 
-        # HCT: Check for newly discovered high-value concepts and add a bonus
         hct_bonus, discovered_concept = self.cde.analyze_for_new_concepts(fused_representation, score, domain)
 
-        # Add the 'surprise bonus' to the conceptual score
         if self.is_exploring and self.last_fused_rep is not None:
             surprise_bonus = self.calculate_eom_bonus(self.last_fused_rep, fused_representation)
             score += surprise_bonus
@@ -105,34 +141,43 @@ class ARLCController:
     def choose_move(self, board_state: np.ndarray, domain: str, piece_idx: int | None = None) -> Tuple[int | None, Dict]:
         """
         Chooses a move based on the conceptual evaluation of possible outcomes.
-        This function is for live game play, not for the training loop.
         """
+        # New: Before choosing a move, check for knowledge gaps and update CKG
+        # This is a simplified example; a real-world scenario would use a text prompt
+        # but for game environments, we can infer a "knowledge gap" from a low-confidence
+        # prediction or an unknown state.
+        if random.random() < 0.1: # Simulate a 10% chance of needing a web search
+            query = "latest AI news" # Example query
+            self.update_knowledge_with_web_data(query)
+
         if self.is_exploring:
-            # In exploration mode, we choose a random move to gather data
-            legal_moves = range(5) # Placeholder for the actual number of legal moves
+            legal_moves = range(5)
             chosen_move = random.choice(legal_moves)
             decision_context = {"chosen_move": chosen_move, "chosen_score": 0.0, "all_scores": [0.0]}
             return chosen_move, decision_context
 
-        # This is a placeholder for move generation
         all_scores = [1.5, 2.1, 0.8, 1.9, 2.5] 
 
-        # New: Adjust scores based on the current strategic goal
         adjusted_scores = self.adjust_score_for_strategy(all_scores, board_state, domain)
 
-        # New: Further adjust scores based on SSWM's prediction
         adjusted_scores = self.predictive_score_adjustment(adjusted_scores, self.last_fused_rep, domain)
 
         chosen_move = np.argmax(adjusted_scores)
         chosen_score = adjusted_scores[chosen_move]
 
-        # The decision context will now also include the current strategic goal
         decision_context = {
             'chosen_move': chosen_move,
             'chosen_score': chosen_score,
             'all_scores': all_scores,
             'current_strategy': self.strategic_planner.current_goal
         }
+
+        # New: Store the decision in the CKG for long-term memory
+        self.ckg.add_prompt_response(
+            prompt=f"Board State Hash: {hashlib.sha256(board_state.tobytes()).hexdigest()}",
+            response=f"Chosen Move: {chosen_move} with score {chosen_score}",
+            concepts=[domain, "move", str(chosen_move), "score"]
+        )
 
         return chosen_move, decision_context
 
@@ -144,15 +189,10 @@ class ARLCController:
         conceptual_features_for_goal_selection = self.strategic_planner.model.get_conceptual_features(game_state)
         strategic_goal = self.strategic_planner.select_goal(conceptual_features_for_goal_selection, domain)
 
-        # A simple, rule-based bonus system for demonstration.
-        # This would be much more complex in a real implementation.
         if strategic_goal['goal'] == 'control_center' and domain == 'chess':
-            # For a real implementation, you would need to simulate each move
-            # and evaluate its conceptual features.
-            # Here, we just give a simple bonus to a hypothetical "good" move.
             bonus_move_index = 2
             if bonus_move_index < len(scores):
-                scores[bonus_move_index] += 1.0 # Add a bonus for a strategically good move.
+                scores[bonus_move_index] += 1.0
 
         return scores
 
@@ -161,14 +201,11 @@ class ARLCController:
         Uses the SSWM to predict future outcomes and adjust move scores.
         """
         for i in range(len(scores)):
-            # Simulate the outcome of each move and get a predicted reward
             predicted_rep, predicted_reward = self.sswm.simulate_what_if_scenario(
                 start_state_rep=current_fused_rep,
                 hypothetical_move=i,
-                num_steps=1 # Look one step ahead
+                num_steps=1
             )
-
-            # The ARLC can now add a bonus based on the predicted reward
             scores[i] += predicted_reward
 
         return scores
@@ -179,31 +216,25 @@ class ARLCController:
         It simulates a few fast updates on the new domain data.
         """
         print("Rapidly adapting to the new domain with meta-learned knowledge...")
-        
-        # In a real scenario, this would involve a temporary model.
-        # We simulate this here by doing a few quick updates.
         optimizer = torch.optim.Adam(self.strategic_planner.model.parameters(), lr=0.001)
         criterion = torch.nn.MSELoss()
-        
+
         for i, data_point in enumerate(new_domain_data):
             state = data_point['state']
             conceptual_features = data_point['conceptual_features']
             target = data_point['target']
-            
+
             state_tensor = torch.tensor(state).unsqueeze(0).float().to(Config.DEVICE)
             conceptual_tensor = torch.tensor(conceptual_features).unsqueeze(0).float().to(Config.DEVICE)
             target_tensor = torch.tensor(target).unsqueeze(0).float().to(Config.DEVICE)
-            
-            # Forward pass
+
             predicted_output, _, _ = self.strategic_planner.model(state_tensor, conceptual_tensor, data_point['domain'])
             loss = criterion(predicted_output, target_tensor)
-            
-            # Backpropagation
+
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             print(f"  - Adaptation step {i+1} complete. Loss: {loss.item():.4f}")
-            
+
         print("Rapid adaptation complete.")
         self.is_exploring = True
-
