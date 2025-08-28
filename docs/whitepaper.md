@@ -18,7 +18,7 @@ The widespread adoption of AI has exposed a critical vulnerability: the Hallucin
 # 3. The Zenith Protocol: A New Paradigm for AI
 The foundation of our work is built on a simple yet profound principle: "Understanding is Key." This principle directly addresses a fundamental flaw in modern AI—its reliance on statistical correlation over genuine, causal reasoning. Our proposed solution, the Zenith Model, is an architectural blueprint that operationalizes this principle by introducing a novel Conceptual Attention Layer designed to work in tandem with a standard word-attention layer. This innovation allows the model to go beyond simple word relationships and interpret the conceptual roles of words, gaining a deeper, more grounded understanding of the "why" behind a statement.
 
-# How It Works: The Three-Step Reasoning Process #
+* How It Works: The Three-Step Reasoning Process * 
 The Zenith Model is trained on highly detailed datasets that define the properties of everything, allowing it to interpret the world through a structured ontology:
 
 * Agent: The entity performing an action (e.g., a person, an animal, a machine).
