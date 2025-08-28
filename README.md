@@ -18,7 +18,7 @@ This phase establishes the foundational architecture by implementing the core of
 # Phase 2: The Split Mind (SPM) ☯️
 In this phase, we will introduce the second domain, Chess, to implement the Split Mind (SPM) architecture. The model will be trained on both Tetris and Chess simultaneously. This phase will require significant upgrades to the data loaders and the training loop to demonstrate the model's ability to learn across disparate domains using a single shared core.
 
-#;Phase 3: Hyper-Conceptual Thinking (HCT) 💡
+# Phase 3: Hyper-Conceptual Thinking (HCT) 💡
 The final phase focuses on implementing Hyper-Conceptual Thinking (HCT). This is a dynamic, advanced state of the Conceptual Attention Layer that allows the AI to form and apply novel, abstract concepts. This capability moves the model from simple reasoning to genuine creative problem-solving and will be activated by a unique "discovery bonus" in the ARLC's reward function.
 
 # Phase 4: Autonomous Domain Exploration 🗺️
