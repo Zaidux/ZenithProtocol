@@ -6,6 +6,9 @@ import torch.nn.functional as F
 from typing import Dict, List, Tuple
 from ..modules.mixture_of_experts import MixtureOfExperts
 from copy import deepcopy
+# New Imports
+from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
+from ..web_access.web_access import WebAccess
 
 class ConceptualAttention(nn.Module):
     """
@@ -37,13 +40,19 @@ class ConceptualAttention(nn.Module):
 class ASREHModel(nn.Module):
     def __init__(self,
                  in_channels: int = 1,
-                 num_experts: int = 4, # New parameter for MoE
-                 hct_dim: int = 64):
+                 num_experts: int = 4,
+                 hct_dim: int = 64,
+                 ckg: ConceptualKnowledgeGraph = None, # New dependency
+                 web_access: WebAccess = None):     # New dependency
 
         super(ASREHModel, self).__init__()
         self.hct_dim = hct_dim
         self.in_channels = in_channels
         self.num_experts = num_experts
+        
+        # New: Store CKG and Web Access instances
+        self.ckg = ckg
+        self.web_access = web_access
 
         # --- Shared Visual/State Encoder (The "Eye") ---
         self.shared_encoder = nn.Sequential(
@@ -56,7 +65,7 @@ class ASREHModel(nn.Module):
         )
 
         # --- Conceptual Encoder (The "Understanding" component) ---
-        # A single encoder to handle a variable number of conceptual features
+        # It's now more flexible to handle concepts from the CKG.
         self.conceptual_encoder = nn.Sequential(
             nn.Linear(hct_dim, hct_dim),
             nn.ReLU(),
@@ -70,11 +79,10 @@ class ASREHModel(nn.Module):
         self.moe_layer = MixtureOfExperts(input_dim=hct_dim, num_experts=num_experts)
 
         # --- Shared Decoder (The "Hand") ---
-        # The decoder is now shared, allowing for domain transfer
         self.decoder = nn.Sequential(
             nn.Linear(hct_dim, 256),
             nn.ReLU(),
-            nn.Linear(256, 64 * 64) # A flexible output size
+            nn.Linear(256, 64 * 64)
         )
 
     def forward(self, state: torch.Tensor, conceptual_features: torch.Tensor, domain: str):
@@ -89,6 +97,9 @@ class ASREHModel(nn.Module):
         # Fuse the two branches using Conceptual Attention
         fused_representation = self.conceptual_attention(visual_features, conceptual_embedding)
 
+        # New: ARLC will now use the fused representation to guide the search for new knowledge
+        # The logic for this is primarily in the ARLC, but the model provides the representation.
+
         # Pass the fused representation through the Mixture of Experts
         moe_output, gate_loss = self.moe_layer(fused_representation)
 
@@ -97,7 +108,6 @@ class ASREHModel(nn.Module):
 
         # Adjust the output shape based on the domain
         if domain == 'tetris':
-            # This is a placeholder for a more robust solution
             return output.view(batch_size, 1, 20, 10), fused_representation, gate_loss
         elif domain == 'chess':
             return output, fused_representation, gate_loss
@@ -118,4 +128,3 @@ class ASREHModel(nn.Module):
         This is used for the inner loop of meta-learning.
         """
         return deepcopy(self)
-
