@@ -1,240 +1,156 @@
-# src/models/arlc_controller.py
+# /src/training/zenith_training_orchestrator.py
 
 import torch
+import torch.optim as optim
 import torch.nn as nn
-import numpy as np
-import hashlib
-import random
-from typing import Dict, List, Tuple
-from ..utils.config import Config
-from ..games.tetris_env import get_conceptual_features as get_tetris_features
-from ..games.chess_env import get_conceptual_features as get_chess_features
-from .hyper_conceptual_thinking import ConceptDiscoveryEngine
-from .strategic_planner import StrategicPlanner
-from .sswm import SSWM
-# New Imports
-from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
+from torch.utils.data import DataLoader
+from ..models.asreh_model import ASREHModel
+from ..models.arlc_controller import ARLCController
+from ..models.explainability_module import ExplainabilityModule
+from ..models.sswm import SSWM
+from ..models.hyper_conceptual_thinking import ConceptDiscoveryEngine
+from ..models.strategic_planner import StrategicPlanner
+from ..models.adversarial_module import AdversarialModule # New Import
+from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph # New Import
 from ..web_access.web_access import WebAccess
+from ..training.meta_learner import MetaLearner # New Import
+from ..data.tetris_generator import MemoryEfficientDataset
+from ..data.chess_generator import ChessDataset
+from ..utils.config import Config
+from ..utils.dynamic_quantization import DynamicQuantization
+import os
+import itertools
+import numpy as np
 
-class ARLCController:
-    """
-    The Adaptive Reinforcement Learning Controller (ARLC) is the "Brain" of the system.
-    It evaluates possible moves and chooses the best one based on a scoring heuristic.
-    This version is designed to be domain-agnostic and orchestrates the HCT and EoM processes.
-    It now integrates with the Conceptual Knowledge Graph and the Web Access module.
-    """
-    def __init__(self, 
-                 strategic_planner: StrategicPlanner, 
-                 sswm: SSWM, 
-                 exploration_weight: float = 5.0, 
-                 eom_weight: float = 2.0,
-                 ckg: ConceptualKnowledgeGraph = None, # New: CKG instance
-                 web_access: WebAccess = None):     # New: WebAccess instance
-        self.strategic_planner = strategic_planner
-        self.sswm = sswm
-        self.exploration_weight = exploration_weight
-        self.eom_weight = eom_weight
-        self.visited_states = {}
-        self.reward_coeffs = Config.ARLC_REWARD_COEFFS
-        self.cde = ConceptDiscoveryEngine()
-        self.last_fused_rep = None
-        self.is_exploring = False
+# Create a configuration object instance
+config = Config()
+
+class ZenithTrainingOrchestrator:
+    def __init__(self):
+        self.config = config
+        self.ckg = ConceptualKnowledgeGraph()
+        self.web_access = WebAccess(self.ckg)
+        self.model = ASREHModel(
+            in_channels=self.config.IN_CHANNELS,
+            hct_dim=self.config.HCT_DIM,
+            num_experts=self.config.NUM_EXPERTS,
+            ckg=self.ckg,
+            web_access=self.web_access
+        ).to(self.config.DEVICE)
         
-        # New: Initialize the CKG and Web Access modules
-        self.ckg = ckg or ConceptualKnowledgeGraph()
-        self.web_access = web_access or WebAccess()
+        self.sswm = SSWM(
+            input_dim=self.config.HCT_DIM,
+            hidden_dim=self.config.HCT_DIM,
+            ckg=self.ckg,
+            web_access=self.web_access
+        ).to(self.config.DEVICE)
 
-    def get_generic_conceptual_features(self, state_shape: tuple) -> np.ndarray:
-        """
-        Generates a generic, baseline set of conceptual features for a new domain.
-        This is the "Initial Analysis" step.
-        """
-        num_features = 3
-        conceptual_features = np.zeros(num_features)
-
-        if len(state_shape) == 3:
-            height, width = state_shape[1], state_shape[2]
-            conceptual_features[0] = height
-            conceptual_features[1] = width
-            conceptual_features[2] = np.sum(state_shape)
-
-        return conceptual_features
-    
-    # New Method
-    def check_for_knowledge_gaps(self, prompt: str) -> List[str]:
-        """
-        Analyzes a prompt to identify concepts that are not in the CKG.
-        """
-        gaps = []
-        # This is a simplified keyword-based check.
-        # A more advanced model would use the Conceptual Encoder to find gaps.
-        words = set(prompt.lower().split())
-        for word in words:
-            if not self.ckg.query(word):
-                gaps.append(word)
-        return gaps
-
-    # New Method
-    def update_knowledge_with_web_data(self, query: str):
-        """
-        Uses the WebAccess module to get real-time data and updates the CKG.
-        """
-        # Check if the data is stale before making a new web call
-        if self.web_access.check_for_update(query, time_limit_minutes=1440): # Update every 24 hours
-            print(f"\n[ARLC] Knowledge for '{query}' is stale. Performing web search...")
-            summary = self.web_access.search_and_summarize(query)
-            if summary:
-                # This is a simple update logic. A more complex one would parse the summary
-                # into a structured knowledge graph format.
-                self.ckg.add_node(query, {"type": "concept", "source": "web_search", "content": summary})
-                print(f"[ARLC] CKG updated with new information from the web.")
-            else:
-                print(f"[ARLC] Web search for '{query}' found no relevant information.")
-
-    def evaluate_conceptual_features(self, conceptual_features: np.ndarray, fused_representation: torch.Tensor, domain: str) -> Dict[str, float]:
-        """
-        Calculates a score for a given set of conceptual features and adds an HCT bonus.
-        This function is the core of the ARLC's reward mechanism.
-        """
-        score = 0
-        if domain == 'tetris':
-            score = (self.reward_coeffs['tetris']['lines_cleared'] * conceptual_features[0]) + \
-                    (self.reward_coeffs['tetris']['gaps'] * conceptual_features[1]) + \
-                    (self.reward_coeffs['tetris']['max_height'] * conceptual_features[2])
-        elif domain == 'chess':
-            score = (self.reward_coeffs['chess']['material_advantage'] * conceptual_features[0]) + \
-                    (self.reward_coeffs['chess']['king_safety'] * (conceptual_features[1] - conceptual_features[2])) + \
-                    (self.reward_coeffs['chess']['center_control'] * (conceptual_features[3] - conceptual_features[4]))
-        elif self.is_exploring:
-            score = 0.0
-
-        state_hash = hashlib.sha256(conceptual_features.tobytes()).hexdigest()
-        visits = self.visited_states.get(state_hash, 0)
-        exploration_bonus = self.exploration_weight / (1 + visits)
-        self.visited_states[state_hash] = visits + 1
-
-        hct_bonus, discovered_concept = self.cde.analyze_for_new_concepts(fused_representation, score, domain)
-
-        if self.is_exploring and self.last_fused_rep is not None:
-            surprise_bonus = self.calculate_eom_bonus(self.last_fused_rep, fused_representation)
-            score += surprise_bonus
-
-        final_score = score + exploration_bonus + hct_bonus
-
-        return {
-            "conceptual_score": score,
-            "exploration_bonus": exploration_bonus,
-            "hct_bonus": hct_bonus,
-            "discovered_concept": discovered_concept,
-            "score": final_score
-        }
-
-    def calculate_eom_bonus(self, last_fused_rep: torch.Tensor, current_fused_rep: torch.Tensor) -> float:
-        """
-        Calculates the Energy of Movement (EoM) bonus.
-        This bonus rewards moves that cause a significant conceptual shift.
-        """
-        conceptual_change = torch.norm(current_fused_rep - last_fused_rep, p=2)
-        eom_bonus = self.eom_weight * (conceptual_change.item())
-        return eom_bonus
-
-    def choose_move(self, board_state: np.ndarray, domain: str, piece_idx: int | None = None) -> Tuple[int | None, Dict]:
-        """
-        Chooses a move based on the conceptual evaluation of possible outcomes.
-        """
-        # New: Before choosing a move, check for knowledge gaps and update CKG
-        # This is a simplified example; a real-world scenario would use a text prompt
-        # but for game environments, we can infer a "knowledge gap" from a low-confidence
-        # prediction or an unknown state.
-        if random.random() < 0.1: # Simulate a 10% chance of needing a web search
-            query = "latest AI news" # Example query
-            self.update_knowledge_with_web_data(query)
-
-        if self.is_exploring:
-            legal_moves = range(5)
-            chosen_move = random.choice(legal_moves)
-            decision_context = {"chosen_move": chosen_move, "chosen_score": 0.0, "all_scores": [0.0]}
-            return chosen_move, decision_context
-
-        all_scores = [1.5, 2.1, 0.8, 1.9, 2.5] 
-
-        adjusted_scores = self.adjust_score_for_strategy(all_scores, board_state, domain)
-
-        adjusted_scores = self.predictive_score_adjustment(adjusted_scores, self.last_fused_rep, domain)
-
-        chosen_move = np.argmax(adjusted_scores)
-        chosen_score = adjusted_scores[chosen_move]
-
-        decision_context = {
-            'chosen_move': chosen_move,
-            'chosen_score': chosen_score,
-            'all_scores': all_scores,
-            'current_strategy': self.strategic_planner.current_goal
-        }
-
-        # New: Store the decision in the CKG for long-term memory
-        self.ckg.add_prompt_response(
-            prompt=f"Board State Hash: {hashlib.sha256(board_state.tobytes()).hexdigest()}",
-            response=f"Chosen Move: {chosen_move} with score {chosen_score}",
-            concepts=[domain, "move", str(chosen_move), "score"]
+        self.strategic_planner = StrategicPlanner(model=self.model, ckg=self.ckg)
+        
+        # ARLC now gets the CKG and WebAccess
+        self.arlc = ARLCController(
+            strategic_planner=self.strategic_planner,
+            sswm=self.sswm,
+            ckg=self.ckg,
+            web_access=self.web_access
         )
+        self.em = ExplainabilityModule(
+            model=self.model,
+            sswm=self.sswm,
+            ckg=self.ckg
+        )
+        self.adversary = AdversarialModule(model=self.model)
 
-        return chosen_move, decision_context
+        self.tetris_loader, self.chess_loader = self.get_dataloaders()
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.config.LEARNING_RATE)
+        self.tetris_wm_loss_fn = nn.BCELoss()
+        self.chess_policy_loss_fn = nn.CrossEntropyLoss()
+        
+    def get_dataloaders(self):
+        print("Initializing Tetris and Chess datasets...")
+        tetris_dataset = MemoryEfficientDataset(size=self.config.TETRIS_DATA_SIZE)
+        chess_dataset = ChessDataset(size=self.config.CHESS_DATA_SIZE)
 
-    def adjust_score_for_strategy(self, scores: list, game_state: np.ndarray, domain: str) -> list:
-        """
-        Adjusts the raw scores of each move based on how well they align
-        with the current high-level strategic goal.
-        """
-        conceptual_features_for_goal_selection = self.strategic_planner.model.get_conceptual_features(game_state)
-        strategic_goal = self.strategic_planner.select_goal(conceptual_features_for_goal_selection, domain)
+        tetris_loader = DataLoader(tetris_dataset, batch_size=self.config.BATCH_SIZE, shuffle=True, num_workers=os.cpu_count() // 2 or 1)
+        chess_loader = DataLoader(chess_dataset, batch_size=self.config.BATCH_SIZE, shuffle=True, num_workers=os.cpu_count() // 2 or 1)
+        return tetris_loader, chess_loader
 
-        if strategic_goal['goal'] == 'control_center' and domain == 'chess':
-            bonus_move_index = 2
-            if bonus_move_index < len(scores):
-                scores[bonus_move_index] += 1.0
+    def phase4_autonomous_exploration(self):
+        print("Starting Phase 4: Autonomous Exploration training loop...")
+        last_fused_representation = None
+        tetris_iter = itertools.cycle(self.tetris_loader)
+        chess_iter = itertools.cycle(self.chess_loader)
+        num_batches = len(self.tetris_loader) + len(self.chess_loader)
 
-        return scores
+        for epoch in range(self.config.NUM_EPOCHS):
+            total_tetris_loss = 0
+            total_chess_loss = 0
+            for i in range(num_batches):
+                if i % 2 == 0:
+                    state_before_img, board_after_img, _, conceptual_features = next(tetris_iter)
+                    domain = 'tetris'
+                    state_before_img = state_before_img.to(self.config.DEVICE)
+                    board_after_img = board_after_img.to(self.config.DEVICE)
+                    conceptual_features = conceptual_features.to(self.config.DEVICE)
+                    predicted_board, fused_representation, moe_loss = self.model(state_before_img, conceptual_features, domain)
+                    main_loss = self.tetris_wm_loss_fn(predicted_board, board_after_img)
+                    total_loss = main_loss + moe_loss
+                    total_tetris_loss += total_loss.item()
+                else:
+                    state_before_img, move_idx, conceptual_features = next(chess_iter)
+                    domain = 'chess'
+                    state_before_img = state_before_img.to(self.config.DEVICE)
+                    move_idx = move_idx.to(self.config.DEVICE)
+                    conceptual_features = conceptual_features.to(self.config.DEVICE)
+                    predicted_move_logits, fused_representation, moe_loss = self.model(state_before_img, conceptual_features, domain)
+                    main_loss = self.chess_policy_loss_fn(predicted_move_logits, move_idx)
+                    total_loss = main_loss + moe_loss
+                    total_chess_loss += total_loss.item()
 
-    def predictive_score_adjustment(self, scores: list, current_fused_rep: torch.Tensor, domain: str) -> list:
-        """
-        Uses the SSWM to predict future outcomes and adjust move scores.
-        """
-        for i in range(len(scores)):
-            predicted_rep, predicted_reward = self.sswm.simulate_what_if_scenario(
-                start_state_rep=current_fused_rep,
-                hypothetical_move=i,
-                num_steps=1
-            )
-            scores[i] += predicted_reward
+                if last_fused_representation is not None:
+                    self.arlc.calculate_eom_bonus(last_fused_representation, fused_representation)
+                last_fused_representation = fused_representation.detach().clone()
 
-        return scores
+                self.optimizer.zero_grad()
+                total_loss.backward()
+                self.optimizer.step()
 
-    def rapid_adaptation_to_new_domain(self, new_domain_data: List[Dict]):
-        """
-        This is a placeholder for the rapid adaptation process.
-        It simulates a few fast updates on the new domain data.
-        """
-        print("Rapidly adapting to the new domain with meta-learned knowledge...")
-        optimizer = torch.optim.Adam(self.strategic_planner.model.parameters(), lr=0.001)
-        criterion = torch.nn.MSELoss()
+                if (i + 1) % self.config.LOG_INTERVAL == 0:
+                    print(f"Epoch [{epoch+1}/{self.config.NUM_EPOCHS}], Step [{i+1}/{num_batches}], "
+                          f"Domain: {domain.capitalize()}, Loss: {total_loss.item():.4f}")
+            
+            if DynamicQuantization.should_quantize(epoch, total_tetris_loss, total_chess_loss):
+                print("Applying dynamic quantization to the model...")
+                self.model = DynamicQuantization.quantize_model(self.model)
+                print("Model quantized. Continuing training with a faster model.")
 
-        for i, data_point in enumerate(new_domain_data):
-            state = data_point['state']
-            conceptual_features = data_point['conceptual_features']
-            target = data_point['target']
+            avg_tetris_loss = total_tetris_loss / len(self.tetris_loader)
+            avg_chess_loss = total_chess_loss / len(self.chess_loader)
+            print(f"Epoch {epoch+1} finished. Avg Tetris Loss: {avg_tetris_loss:.4f}, Avg Chess Loss: {avg_chess_loss:.4f}")
 
-            state_tensor = torch.tensor(state).unsqueeze(0).float().to(Config.DEVICE)
-            conceptual_tensor = torch.tensor(conceptual_features).unsqueeze(0).float().to(Config.DEVICE)
-            target_tensor = torch.tensor(target).unsqueeze(0).float().to(Config.DEVICE)
+    def phase5_meta_learning(self):
+        print("\nStarting Phase 5: Cross-Domain and Meta-Learning...")
+        # Create a simple task list for the meta-learner
+        tasks = [
+            {'domain': 'tetris', 'train_data': list(self.tetris_loader), 'val_data': list(self.tetris_loader)},
+            {'domain': 'chess', 'train_data': list(self.chess_loader), 'val_data': list(self.chess_loader)}
+        ]
+        meta_learner = MetaLearner(self.model, tasks, self.ckg)
+        meta_learner.run_meta_training()
+    
+    def phase6_adversarial_self_correction(self):
+        print("\nStarting Phase 6: Adversarial and Self-Correctional Training...")
+        self.adversary.run_adversarial_training(self.arlc, self.em)
+        
+    def run_all_phases(self):
+        print(f"Using device: {self.config.DEVICE}")
+        self.phase4_autonomous_exploration()
+        self.phase5_meta_learning()
+        self.phase6_adversarial_self_correction()
+        print("All training phases finished!")
+        torch.save(self.model.state_dict(), os.path.join(self.config.CHECKPOINT_DIR, "zenith_protocol_final.pth"))
+        print(f"Final model saved to {self.config.CHECKPOINT_DIR}/zenith_protocol_final.pth")
 
-            predicted_output, _, _ = self.strategic_planner.model(state_tensor, conceptual_tensor, data_point['domain'])
-            loss = criterion(predicted_output, target_tensor)
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            print(f"  - Adaptation step {i+1} complete. Loss: {loss.item():.4f}")
-
-        print("Rapid adaptation complete.")
-        self.is_exploring = True
+if __name__ == '__main__':
+    orchestrator = ZenithTrainingOrchestrator()
+    orchestrator.run_all_phases()
