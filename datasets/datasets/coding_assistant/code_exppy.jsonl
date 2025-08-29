@@ -1155,4 +1155,1041 @@
     "confidence_score": 0.98,
     "hallucination_score": 0.01
   }
-
+[
+  {
+    "code_snippet": "fruits = ('apple', 'banana', 'cherry')\nprint(fruits[1])",
+    "purpose": "To demonstrate a tuple, an immutable data structure.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "fruits": "A tuple with the **property** of being an ordered, immutable sequence of elements. Immutable means its contents cannot be changed after creation."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "fruits[1]",
+          "cause": "The index `1` is used to retrieve an element from the `fruits` tuple.",
+          "effect": "The lookup operation returns the element at the second position, which is `'banana'`."
+        },
+        {
+          "step": 2,
+          "action": "print(...)",
+          "cause": "The returned value `'banana'` is passed to the `print` function.",
+          "effect": "The string `'banana'` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "Tuples are similar to lists but are unchangeable. This immutability is a key conceptual difference that makes them suitable for storing data that should not be modified, such as configuration settings or a fixed set of coordinates. Their immutability also makes them more memory-efficient and faster to process than lists in some cases.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "x = 10\nprint(type(x))",
+    "purpose": "To determine the data type of a variable.",
+    "conceptual_breakdown": {
+      "variables": {
+        "x": "An identifier with the **property** of being an integer."
+      },
+      "function_call": {
+        "type()": "A built-in Python function with the **purpose** of returning the class type of the object it's given."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "type(x)",
+          "cause": "The `type()` function is called with the variable `x`.",
+          "effect": "The function returns the class object `<class 'int'>`."
+        },
+        {
+          "step": 2,
+          "action": "print(...)",
+          "cause": "The returned class object is passed to the `print` function.",
+          "effect": "The string representation of the class, `<class 'int'>`, is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "The `type()` function is a fundamental introspection tool in Python. Because Python is a dynamically typed language, the type of a variable is determined at runtime. `type()` is essential for debugging and for writing flexible code that can adapt its behavior based on the type of data it receives.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "def safe_divide(numerator, denominator):\n    if denominator == 0:\n        return 'Error: Cannot divide by zero.'\n    return numerator / denominator\n\nprint(safe_divide(10, 2))\nprint(safe_divide(10, 0))",
+    "purpose": "To demonstrate a function with an `if` statement for error handling.",
+    "conceptual_breakdown": {
+      "function_definition": {
+        "safe_divide": "A function with the **purpose** of performing division while preventing a common runtime error."
+      },
+      "control_flow": {
+        "if statement": "A logical construct that checks for a specific condition (`denominator == 0`) and takes a protective action."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "safe_divide(10, 2)",
+          "cause": "The function is called with `denominator` as `2`.",
+          "effect": "The `if` condition is `False`, and the division `10 / 2` is performed, returning `5.0`."
+        },
+        {
+          "step": 2,
+          "action": "safe_divide(10, 0)",
+          "cause": "The function is called with `denominator` as `0`.",
+          "effect": "The `if` condition is `True`, and the function returns the error string, preventing a `ZeroDivisionError`."
+        }
+      ]
+    },
+    "explanation_module": "This function exemplifies the concept of defensive programming, where you anticipate potential errors and handle them gracefully before they can cause the program to crash. Using an `if` statement to check for division by zero is a simple but critical way to make code more robust and reliable.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "my_string = 'Python is great.'\nprint(my_string.split())",
+    "purpose": "To split a string into a list of substrings.",
+    "conceptual_breakdown": {
+      "variables": {
+        "my_string": "A string variable with the value `'Python is great.'`."
+      },
+      "method_call": {
+        ".split()": "A string method with the **purpose** of breaking a string into a list of substrings based on a delimiter, which defaults to whitespace."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_string.split()",
+          "cause": "The `split()` method is called on the string.",
+          "effect": "The string is scanned for whitespace, and a new list `['Python', 'is', 'great.']` is created with each word as an element."
+        },
+        {
+          "step": 2,
+          "action": "print(...)",
+          "cause": "The resulting list is passed to the `print` function.",
+          "effect": "The list `['Python', 'is', 'great.']` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "The `split()` method is a powerful and commonly used tool for parsing text. It transforms a single string into a more manageable data structure (a list), where each part of the original string can be accessed individually. This is a foundational concept in text processing and data manipulation.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "my_list = [10, 20, 30, 40, 50]\nprint(my_list[1:4])",
+    "purpose": "To demonstrate list slicing, a method for accessing a subset of a list.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "my_list": "A list of integers."
+      },
+      "slicing": {
+        "my_list[1:4]": "A syntax with the **purpose** of creating a new list containing elements from the original list, starting at index 1 and ending *before* index 4."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_list[1:4]",
+          "cause": "The slicing operation is performed.",
+          "effect": "A new list containing the elements from index 1 (`20`), index 2 (`30`), and index 3 (`40`) is created. The element at index 4 is excluded."
+        },
+        {
+          "step": 2,
+          "action": "print(...)",
+          "cause": "The new list `[20, 30, 40]` is passed to the `print` function.",
+          "effect": "The list `[20, 30, 40]` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "Slicing is a powerful and concise way to extract portions of lists, tuples, and strings. The syntax `[start:end]` specifies the range of elements to include. Understanding that the `end` index is exclusive (it is not included in the slice) is a key conceptual point for avoiding off-by-one errors.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "try:\n    result = 10 / 0\nexcept ZeroDivisionError:\n    print('An error occurred: division by zero.')",
+    "purpose": "To handle a runtime error using a `try/except` block.",
+    "conceptual_breakdown": {
+      "control_flow": {
+        "try/except": "A control structure with the **purpose** of anticipating and handling potential exceptions or errors without crashing the program."
+      },
+      "exception": {
+        "ZeroDivisionError": "A specific type of error that has the **property** of being raised when a division by zero occurs."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "result = 10 / 0",
+          "cause": "The program attempts to perform a division by zero.",
+          "effect": "A `ZeroDivisionError` is raised."
+        },
+        {
+          "step": 2,
+          "action": "except ZeroDivisionError:",
+          "cause": "The `try` block fails and the program looks for a matching `except` block.",
+          "effect": "The `except` block that catches `ZeroDivisionError` is found and its code is executed."
+        },
+        {
+          "step": 3,
+          "action": "print(...)",
+          "cause": "The `print` function is called inside the `except` block.",
+          "effect": "The error message `'An error occurred: division by zero.'` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "Error handling is a critical part of writing robust code. The `try/except` block allows you to 'try' a piece of code that might fail and 'except' (handle) the error if it occurs. This prevents the program from abruptly terminating and allows for graceful failure, which is a key principle of good software design.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "def factorial(n):\n    if n == 0:\n        return 1\n    else:\n        return n * factorial(n-1)\n\nprint(factorial(5))",
+    "purpose": "To demonstrate a recursive function.",
+    "conceptual_breakdown": {
+      "function_definition": {
+        "factorial(n)": "A function that has the **property** of calling itself (recursion) to solve a problem by breaking it down into smaller, similar sub-problems."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "factorial(5)",
+          "cause": "The function is called with the argument `5`.",
+          "effect": "The function checks the base case (`5 != 0`) and proceeds to the `else` block, returning `5 * factorial(4)`."
+        },
+        {
+          "step": 2,
+          "action": "factorial(4)",
+          "cause": "The function calls itself with a smaller argument `4`.",
+          "effect": "This process repeats, multiplying `4 * factorial(3)`, then `3 * factorial(2)`, and so on."
+        },
+        {
+          "step": 3,
+          "action": "factorial(0)",
+          "cause": "The function is called with the base case `0`.",
+          "effect": "The `if` condition is `True`, and the function returns `1`, terminating the recursion."
+        },
+        {
+          "step": 4,
+          "action": "Return values",
+          "cause": "The chain of recursive calls unwinds, multiplying the results.",
+          "effect": "The final result `5 * 4 * 3 * 2 * 1` (which is `120`) is computed and returned."
+        }
+      ]
+    },
+    "explanation_module": "Recursion is a programming concept where a function solves a problem by calling itself with a simpler version of the same problem. Every recursive function must have a 'base case' to prevent an infinite loop. This approach is often used for tasks that can be broken down into self-similar sub-problems, such as traversing tree structures or, in this case, calculating a factorial.",
+    "confidence_score": 0.97,
+    "hallucination_score": 0.02
+  },
+  {
+    "code_snippet": "class Dog:\n    def __init__(self, name, age):\n        self.name = name\n        self.age = age\n\n    def bark(self):\n        return f'{self.name} says Woof!'\n\nmy_dog = Dog('Buddy', 5)\nprint(my_dog.bark())",
+    "purpose": "To demonstrate a basic class definition and object creation.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "class Dog": "A blueprint for creating objects. It encapsulates data (`name`, `age`) and methods (`bark`) that operate on that data."
+      },
+      "method_call": {
+        "__init__()": "A special method (the constructor) with the **purpose** of initializing a new object when it is created."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_dog = Dog('Buddy', 5)",
+          "cause": "An instance of the `Dog` class is created.",
+          "effect": "The `__init__` method is automatically called, and the new object (`my_dog`) is created with its `name` and `age` attributes set to `'Buddy'` and `5` respectively."
+        },
+        {
+          "step": 2,
+          "action": "my_dog.bark()",
+          "cause": "The `bark()` method is called on the `my_dog` object.",
+          "effect": "The method accesses the object's `name` attribute (`self.name`) and returns the string `'Buddy says Woof!'`."
+        },
+        {
+          "step": 3,
+          "action": "print(...)",
+          "cause": "The returned string is passed to `print`.",
+          "effect": "The string `'Buddy says Woof!'` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "Object-oriented programming (OOP) is a paradigm centered around 'objects' which are instances of 'classes'. A class is a template that defines the properties (attributes) and behaviors (methods) of an object. This example demonstrates a basic class with a constructor (`__init__`) and a method, illustrating the core concept of encapsulation—bundling data and the methods that operate on that data together.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "file = open('example.txt', 'w')\nfile.write('Hello, file!')\nfile.close()",
+    "purpose": "To demonstrate writing text to a file.",
+    "conceptual_breakdown": {
+      "function_call": {
+        "open()": "A built-in function with the **purpose** of establishing a connection (a 'file object') to a file on the disk."
+      },
+      "method_call": {
+        ".write()": "A method of the file object, with the **purpose** of writing a string to the file."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "open('example.txt', 'w')",
+          "cause": "The `open()` function is called with the filename and the 'write' mode (`'w'`).",
+          "effect": "A file named `example.txt` is created (or overwritten if it already exists), and a file object (`file`) is created to interact with it."
+        },
+        {
+          "step": 2,
+          "action": "file.write('Hello, file!')",
+          "cause": "The `write()` method is called on the file object.",
+          "effect": "The string `'Hello, file!'` is written into the `example.txt` file."
+        },
+        {
+          "step": 3,
+          "action": "file.close()",
+          "cause": "The `close()` method is called.",
+          "effect": "The connection to the file is terminated, and the changes are saved to the disk. This is a crucial final step to prevent data loss."
+        }
+      ]
+    },
+    "explanation_module": "File I/O (Input/Output) is a common task in programming. This example shows the standard pattern for writing to a text file: `open`, `write`, and `close`. The `open()` function's `mode` argument (`'w'` for write) is a key conceptual component, as it dictates the nature of the interaction with the file. The `close()` method is critical because it ensures that all buffered data is written and the file is properly saved, a common source of bugs if neglected.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "my_tuple = (1, 2, 3)\n# my_tuple[0] = 4  # This would cause an error\nprint(my_tuple[0])",
+    "purpose": "To demonstrate the immutability of a tuple.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "my_tuple": "A tuple with the **property** of being an immutable sequence."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_tuple[0] = 4",
+          "cause": "An attempt is made to reassign a value at a specific index within a tuple.",
+          "effect": "This **causes** a `TypeError` because the tuple's immutable property prevents this action. The line is commented out to prevent the error from stopping the program."
+        },
+        {
+          "step": 2,
+          "action": "print(my_tuple[0])",
+          "cause": "The program proceeds to print the first element.",
+          "effect": "The value `1` is displayed, confirming that the tuple remains unchanged."
+        }
+      ]
+    },
+    "explanation_module": "This example highlights a critical conceptual difference between mutable data types (like lists) and immutable ones (like tuples). The immutability of tuples means you can't add, remove, or change elements after creation. This is a deliberate design choice that makes them safer for data that should not be altered.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "numbers = [1, 2, 3, 4, 5]\nsquared = [x**2 for x in numbers]\nprint(squared)",
+    "purpose": "To create a new list by squaring each element of an existing list using a list comprehension.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "list comprehension": "A concise syntax with the **purpose** of creating a new list by applying an expression to each item in an iterable."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "[x**2 for x in numbers]",
+          "cause": "The list comprehension is evaluated.",
+          "effect": "For each element `x` in the `numbers` list, the expression `x**2` is computed. The resulting values are `1`, `4`, `9`, `16`, `25`."
+        },
+        {
+          "step": 2,
+          "action": "squared = ...",
+          "cause": "The list of computed values is assigned to the `squared` variable.",
+          "effect": "The `squared` variable now holds the new list `[1, 4, 9, 16, 25]`."
+        },
+        {
+          "step": 3,
+          "action": "print(squared)",
+          "cause": "The `print` function is called.",
+          "effect": "The new list `[1, 4, 9, 16, 25]` is displayed."
+        }
+      ]
+    },
+    "explanation_module": "List comprehensions are a powerful and Pythonic way to create lists. They are generally more readable and faster than using a traditional `for` loop to achieve the same result. Understanding this syntax is a key step towards writing idiomatic and efficient Python code.",
+[
+  {
+    "code_snippet": "fruits = ('apple', 'banana', 'cherry')\nprint(fruits[1])",
+    "purpose": "To demonstrate a tuple, an immutable data structure.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "fruits": "A tuple with the **property** of being an ordered, immutable sequence of elements. Immutable means its contents cannot be changed after creation."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "fruits[1]",
+          "cause": "The index `1` is used to retrieve an element from the `fruits` tuple.",
+          "effect": "The lookup operation returns the element at the second position, which is `'banana'`."
+        },
+        {
+          "step": 2,
+          "action": "print(...)",
+          "cause": "The returned value `'banana'` is passed to the `print` function.",
+          "effect": "The string `'banana'` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "Tuples are similar to lists but are unchangeable. This immutability is a key conceptual difference that makes them suitable for storing data that should not be modified, such as configuration settings or a fixed set of coordinates. Their immutability also makes them more memory-efficient and faster to process than lists in some cases.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "x = 10\nprint(type(x))",
+    "purpose": "To determine the data type of a variable.",
+    "conceptual_breakdown": {
+      "variables": {
+        "x": "An identifier with the **property** of being an integer."
+      },
+      "function_call": {
+        "type()": "A built-in Python function with the **purpose** of returning the class type of the object it's given."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "type(x)",
+          "cause": "The `type()` function is called with the variable `x`.",
+          "effect": "The function returns the class object `<class 'int'>`."
+        },
+        {
+          "step": 2,
+          "action": "print(...)",
+          "cause": "The returned class object is passed to the `print` function.",
+          "effect": "The string representation of the class, `<class 'int'>`, is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "The `type()` function is a fundamental introspection tool in Python. Because Python is a dynamically typed language, the type of a variable is determined at runtime. `type()` is essential for debugging and for writing flexible code that can adapt its behavior based on the type of data it receives.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "def safe_divide(numerator, denominator):\n    if denominator == 0:\n        return 'Error: Cannot divide by zero.'\n    return numerator / denominator\n\nprint(safe_divide(10, 2))\nprint(safe_divide(10, 0))",
+    "purpose": "To demonstrate a function with an `if` statement for error handling.",
+    "conceptual_breakdown": {
+      "function_definition": {
+        "safe_divide": "A function with the **purpose** of performing division while preventing a common runtime error."
+      },
+      "control_flow": {
+        "if statement": "A logical construct that checks for a specific condition (`denominator == 0`) and takes a protective action."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "safe_divide(10, 2)",
+          "cause": "The function is called with `denominator` as `2`.",
+          "effect": "The `if` condition is `False`, and the division `10 / 2` is performed, returning `5.0`."
+        },
+        {
+          "step": 2,
+          "action": "safe_divide(10, 0)",
+          "cause": "The function is called with `denominator` as `0`.",
+          "effect": "The `if` condition is `True`, and the function returns the error string, preventing a `ZeroDivisionError`."
+        }
+      ]
+    },
+    "explanation_module": "This function exemplifies the concept of defensive programming, where you anticipate potential errors and handle them gracefully before they can cause the program to crash. Using an `if` statement to check for division by zero is a simple but critical way to make code more robust and reliable.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "my_string = 'Python is great.'\nprint(my_string.split())",
+    "purpose": "To split a string into a list of substrings.",
+    "conceptual_breakdown": {
+      "variables": {
+        "my_string": "A string variable with the value `'Python is great.'`."
+      },
+      "method_call": {
+        ".split()": "A string method with the **purpose** of breaking a string into a list of substrings based on a delimiter, which defaults to whitespace."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_string.split()",
+          "cause": "The `split()` method is called on the string.",
+          "effect": "The string is scanned for whitespace, and a new list `['Python', 'is', 'great.']` is created with each word as an element."
+        },
+        {
+          "step": 2,
+          "action": "print(...)",
+          "cause": "The resulting list is passed to the `print` function.",
+          "effect": "The list `['Python', 'is', 'great.']` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "The `split()` method is a powerful and commonly used tool for parsing text. It transforms a single string into a more manageable data structure (a list), where each part of the original string can be accessed individually. This is a foundational concept in text processing and data manipulation.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "my_list = [10, 20, 30, 40, 50]\nprint(my_list[1:4])",
+    "purpose": "To demonstrate list slicing, a method for accessing a subset of a list.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "my_list": "A list of integers."
+      },
+      "slicing": {
+        "my_list[1:4]": "A syntax with the **purpose** of creating a new list containing elements from the original list, starting at index 1 and ending *before* index 4."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_list[1:4]",
+          "cause": "The slicing operation is performed.",
+          "effect": "A new list containing the elements from index 1 (`20`), index 2 (`30`), and index 3 (`40`) is created. The element at index 4 is excluded."
+        },
+        {
+          "step": 2,
+          "action": "print(...)",
+          "cause": "The new list `[20, 30, 40]` is passed to the `print` function.",
+          "effect": "The list `[20, 30, 40]` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "Slicing is a powerful and concise way to extract portions of lists, tuples, and strings. The syntax `[start:end]` specifies the range of elements to include. Understanding that the `end` index is exclusive (it is not included in the slice) is a key conceptual point for avoiding off-by-one errors.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "try:\n    result = 10 / 0\nexcept ZeroDivisionError:\n    print('An error occurred: division by zero.')",
+    "purpose": "To handle a runtime error using a `try/except` block.",
+    "conceptual_breakdown": {
+      "control_flow": {
+        "try/except": "A control structure with the **purpose** of anticipating and handling potential exceptions or errors without crashing the program."
+      },
+      "exception": {
+        "ZeroDivisionError": "A specific type of error that has the **property** of being raised when a division by zero occurs."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "result = 10 / 0",
+          "cause": "The program attempts to perform a division by zero.",
+          "effect": "A `ZeroDivisionError` is raised."
+        },
+        {
+          "step": 2,
+          "action": "except ZeroDivisionError:",
+          "cause": "The `try` block fails and the program looks for a matching `except` block.",
+          "effect": "The `except` block that catches `ZeroDivisionError` is found and its code is executed."
+        },
+        {
+          "step": 3,
+          "action": "print(...)",
+          "cause": "The `print` function is called inside the `except` block.",
+          "effect": "The error message `'An error occurred: division by zero.'` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "Error handling is a critical part of writing robust code. The `try/except` block allows you to 'try' a piece of code that might fail and 'except' (handle) the error if it occurs. This prevents the program from abruptly terminating and allows for graceful failure, which is a key principle of good software design.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "def factorial(n):\n    if n == 0:\n        return 1\n    else:\n        return n * factorial(n-1)\n\nprint(factorial(5))",
+    "purpose": "To demonstrate a recursive function.",
+    "conceptual_breakdown": {
+      "function_definition": {
+        "factorial(n)": "A function that has the **property** of calling itself (recursion) to solve a problem by breaking it down into smaller, similar sub-problems."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "factorial(5)",
+          "cause": "The function is called with the argument `5`.",
+          "effect": "The function checks the base case (`5 != 0`) and proceeds to the `else` block, returning `5 * factorial(4)`."
+        },
+        {
+          "step": 2,
+          "action": "factorial(4)",
+          "cause": "The function calls itself with a smaller argument `4`.",
+          "effect": "This process repeats, multiplying `4 * factorial(3)`, then `3 * factorial(2)`, and so on."
+        },
+        {
+          "step": 3,
+          "action": "factorial(0)",
+          "cause": "The function is called with the base case `0`.",
+          "effect": "The `if` condition is `True`, and the function returns `1`, terminating the recursion."
+        },
+        {
+          "step": 4,
+          "action": "Return values",
+          "cause": "The chain of recursive calls unwinds, multiplying the results.",
+          "effect": "The final result `5 * 4 * 3 * 2 * 1` (which is `120`) is computed and returned."
+        }
+      ]
+    },
+    "explanation_module": "Recursion is a programming concept where a function solves a problem by calling itself with a simpler version of the same problem. Every recursive function must have a 'base case' to prevent an infinite loop. This approach is often used for tasks that can be broken down into self-similar sub-problems, such as traversing tree structures or, in this case, calculating a factorial.",
+    "confidence_score": 0.97,
+    "hallucination_score": 0.02
+  },
+  {
+    "code_snippet": "class Dog:\n    def __init__(self, name, age):\n        self.name = name\n        self.age = age\n\n    def bark(self):\n        return f'{self.name} says Woof!'\n\nmy_dog = Dog('Buddy', 5)\nprint(my_dog.bark())",
+    "purpose": "To demonstrate a basic class definition and object creation.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "class Dog": "A blueprint for creating objects. It encapsulates data (`name`, `age`) and methods (`bark`) that operate on that data."
+      },
+      "method_call": {
+        "__init__()": "A special method (the constructor) with the **purpose** of initializing a new object when it is created."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_dog = Dog('Buddy', 5)",
+          "cause": "An instance of the `Dog` class is created.",
+          "effect": "The `__init__` method is automatically called, and the new object (`my_dog`) is created with its `name` and `age` attributes set to `'Buddy'` and `5` respectively."
+        },
+        {
+          "step": 2,
+          "action": "my_dog.bark()",
+          "cause": "The `bark()` method is called on the `my_dog` object.",
+          "effect": "The method accesses the object's `name` attribute (`self.name`) and returns the string `'Buddy says Woof!'`."
+        },
+        {
+          "step": 3,
+          "action": "print(...)",
+          "cause": "The returned string is passed to `print`.",
+          "effect": "The string `'Buddy says Woof!'` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "Object-oriented programming (OOP) is a paradigm centered around 'objects' which are instances of 'classes'. A class is a template that defines the properties (attributes) and behaviors (methods) of an object. This example demonstrates a basic class with a constructor (`__init__`) and a method, illustrating the core concept of encapsulation—bundling data and the methods that operate on that data together.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "file = open('example.txt', 'w')\nfile.write('Hello, file!')\nfile.close()",
+    "purpose": "To demonstrate writing text to a file.",
+    "conceptual_breakdown": {
+      "function_call": {
+        "open()": "A built-in function with the **purpose** of establishing a connection (a 'file object') to a file on the disk."
+      },
+      "method_call": {
+        ".write()": "A method of the file object, with the **purpose** of writing a string to the file."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "open('example.txt', 'w')",
+          "cause": "The `open()` function is called with the filename and the 'write' mode (`'w'`).",
+          "effect": "A file named `example.txt` is created (or overwritten if it already exists), and a file object (`file`) is created to interact with it."
+        },
+        {
+          "step": 2,
+          "action": "file.write('Hello, file!')",
+          "cause": "The `write()` method is called on the file object.",
+          "effect": "The string `'Hello, file!'` is written into the `example.txt` file."
+        },
+        {
+          "step": 3,
+          "action": "file.close()",
+          "cause": "The `close()` method is called.",
+          "effect": "The connection to the file is terminated, and the changes are saved to the disk. This is a crucial final step to prevent data loss."
+        }
+      ]
+    },
+    "explanation_module": "File I/O (Input/Output) is a common task in programming. This example shows the standard pattern for writing to a text file: `open`, `write`, and `close`. The `open()` function's `mode` argument (`'w'` for write) is a key conceptual component, as it dictates the nature of the interaction with the file. The `close()` method is critical because it ensures that all buffered data is written and the file is properly saved, a common source of bugs if neglected.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "my_tuple = (1, 2, 3)\n# my_tuple[0] = 4  # This would cause an error\nprint(my_tuple[0])",
+    "purpose": "To demonstrate the immutability of a tuple.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "my_tuple": "A tuple with the **property** of being an immutable sequence."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_tuple[0] = 4",
+          "cause": "An attempt is made to reassign a value at a specific index within a tuple.",
+          "effect": "This **causes** a `TypeError` because the tuple's immutable property prevents this action. The line is commented out to prevent the error from stopping the program."
+        },
+        {
+          "step": 2,
+          "action": "print(my_tuple[0])",
+          "cause": "The program proceeds to print the first element.",
+          "effect": "The value `1` is displayed, confirming that the tuple remains unchanged."
+        }
+      ]
+    },
+    "explanation_module": "This example highlights a critical conceptual difference between mutable data types (like lists) and immutable ones (like tuples). The immutability of tuples means you can't add, remove, or change elements after creation. This is a deliberate design choice that makes them safer for data that should not be altered.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "numbers = [1, 2, 3, 4, 5]\nsquared = [x**2 for x in numbers]\nprint(squared)",
+    "purpose": "To create a new list by squaring each element of an existing list using a list comprehension.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "list comprehension": "A concise syntax with the **purpose** of creating a new list by applying an expression to each item in an iterable."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "[x**2 for x in numbers]",
+          "cause": "The list comprehension is evaluated.",
+          "effect": "For each element `x` in the `numbers` list, the expression `x**2` is computed. The resulting values are `1`, `4`, `9`, `16`, `25`."
+        },
+        {
+          "step": 2,
+          "action": "squared = ...",
+          "cause": "The list of computed values is assigned to the `squared` variable.",
+          "effect": "The `squared` variable now holds the new list `[1, 4, 9, 16, 25]`."
+        },
+        {
+          "step": 3,
+          "action": "print(squared)",
+          "cause": "The `print` function is called.",
+          "effect": "The new list `[1, 4, 9, 16, 25]` is displayed."
+        }
+      ]
+    },
+    "explanation_module": "List comprehensions are a powerful and Pythonic way to create lists. They are generally more readable and faster than using a traditional `for` loop to achieve the same result. Understanding this syntax is a key step towards writing idiomatic and efficient Python code.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "x = 10\nif x > 5 and x < 15:\n    print('x is between 5 and 15')",
+    "purpose": "To demonstrate the use of a logical operator (`and`).",
+    "conceptual_breakdown": {
+      "variables": {
+        "x": "An integer variable with value 10."
+      },
+      "logical_operator": {
+        "and": "A logical operator with the **purpose** of combining two or more conditions. The entire expression is `True` only if all individual conditions are `True`."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "x > 5",
+          "cause": "The first condition is evaluated.",
+          "effect": "It evaluates to `True`."
+        },
+        {
+          "step": 2,
+          "action": "x < 15",
+          "cause": "The second condition is evaluated.",
+          "effect": "It also evaluates to `True`."
+        },
+        {
+          "step": 3,
+          "action": "True and True",
+          "cause": "The `and` operator combines the two `True` results.",
+          "effect": "The entire condition evaluates to `True`."
+        },
+        {
+          "step": 4,
+          "action": "if ...:",
+          "cause": "The main `if` condition is `True`.",
+          "effect": "The indented code block is executed, printing the message."
+        }
+      ]
+    },
+    "explanation_module": "Logical operators (`and`, `or`, `not`) are used to create more complex conditional expressions. The `and` operator requires all conditions to be true, while the `or` operator requires at least one condition to be true. These operators are fundamental to creating flexible and dynamic program logic.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "my_string = 'hello world'\nprint(my_string.upper())",
+    "purpose": "To convert a string to uppercase.",
+    "conceptual_breakdown": {
+      "variables": {
+        "my_string": "A string variable holding the value `'hello world'`."
+      },
+      "method_call": {
+        ".upper()": "A string method with the **purpose** of returning a copy of the string with all characters converted to uppercase."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_string.upper()",
+          "cause": "The `upper()` method is called.",
+          "effect": "A new string `'HELLO WORLD'` is created with all characters capitalized."
+        },
+        {
+          "step": 2,
+          "action": "print(...)",
+          "cause": "The new string is passed to `print`.",
+          "effect": "The string `'HELLO WORLD'` is displayed."
+        }
+      ]
+    },
+    "explanation_module": "String methods are a powerful set of tools for manipulating text data. Like `capitalize()`, `upper()` returns a new string and does not modify the original, reinforcing the concept of string immutability. This is a very common operation for standardizing text data, for example, before a comparison or search.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "numbers = [1, 2, 3]\nprint(len(numbers))",
+    "purpose": "To get the number of elements in a list.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "numbers": "A list with the **property** of having a countable number of elements."
+      },
+      "function_call": {
+        "len()": "A built-in function with the **purpose** of returning the number of items in a container."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "len(numbers)",
+          "cause": "The `len()` function is called with the `numbers` list.",
+          "effect": "The function counts the elements in the list and returns the integer `3`."
+        },
+        {
+          "step": 2,
+          "action": "print(...)",
+          "cause": "The value `3` is passed to the `print` function.",
+          "effect": "The integer `3` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "The `len()` function is a versatile tool that works on many data structures, including strings, lists, tuples, and dictionaries. It provides a quick and reliable way to determine the size of a data collection, which is a common requirement in many algorithms and tasks.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "import math\nprint(math.sqrt(25))",
+    "purpose": "To use a function from a built-in module.",
+    "conceptual_breakdown": {
+      "imports": {
+        "math": "A standard Python module with the **property** of providing mathematical functions. It is a **prerequisite** for accessing functions like `sqrt`."
+      },
+      "function_call": {
+        "math.sqrt()": "A function that has the **purpose** of calculating the square root of a number."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "import math",
+          "cause": "The `math` module is imported.",
+          "effect": "The code gains access to the functions and constants defined within the `math` module, such as `sqrt`."
+        },
+        {
+          "step": 2,
+          "action": "math.sqrt(25)",
+          "cause": "The `sqrt()` function from the `math` module is called with the argument `25`.",
+          "effect": "The function computes the square root, returning `5.0`."
+        },
+        {
+          "step": 3,
+          "action": "print(...)",
+          "cause": "The returned value is passed to the `print` function.",
+          "effect": "The floating-point value `5.0` is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "Modules are external files containing functions, classes, and variables that you can import and use in your code. This allows for code reuse and keeps the global namespace clean. The `import` statement is a key conceptual mechanism for accessing this functionality, and it's a fundamental part of organizing larger projects.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "def get_details(name, age=30):\n    return f'Name: {name}, Age: {age}'\n\nprint(get_details('Bob'))\nprint(get_details('Jane', 25))",
+    "purpose": "To demonstrate a function with a default parameter.",
+    "conceptual_breakdown": {
+      "function_definition": {
+        "get_details(name, age=30)": "A function that takes one required argument (`name`) and one optional argument (`age`) with a default value of `30`."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "get_details('Bob')",
+          "cause": "The function is called with only one argument.",
+          "effect": "The `age` parameter automatically uses its default value of `30`."
+        },
+        {
+          "step": 2,
+          "action": "get_details('Jane', 25)",
+          "cause": "The function is called with both arguments.",
+          "effect": "The provided value `25` overrides the default value for the `age` parameter."
+        }
+      ]
+    },
+    "explanation_module": "Default parameters make a function more flexible and easier to use. They allow the function to be called with a reduced number of arguments, while still having a fallback value if a specific argument is not provided. This is a common pattern for writing functions that have optional configurations or settings.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "names = ['Alice', 'Bob', 'Charlie']\nif 'Bob' in names:\n    print('Bob is in the list.')",
+    "purpose": "To check for the existence of an element in a list.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "names": "A list of strings."
+      },
+      "logical_operator": {
+        "in": "An operator with the **purpose** of checking for membership, returning `True` if the element exists in the container and `False` otherwise."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "'Bob' in names",
+          "cause": "The `in` operator checks if the string `'Bob'` is an element of the `names` list.",
+          "effect": "The operation returns the boolean value `True`."
+        },
+        {
+          "step": 2,
+          "action": "if ...:",
+          "cause": "The condition of the `if` statement is `True`.",
+          "effect": "The indented `print` statement is executed, and the message is displayed."
+        }
+      ]
+    },
+    "explanation_module": "The `in` operator provides an elegant and readable way to test for membership in a collection. It is a fundamental concept for data validation and search operations. It can be used with lists, tuples, sets, and strings.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "x = 10\nx += 5\nprint(x)",
+    "purpose": "To demonstrate the compound assignment operator.",
+    "conceptual_breakdown": {
+      "variables": {
+        "x": "An integer variable with value 10."
+      },
+      "operator": {
+        "+=": "A compound assignment operator with the **purpose** of adding a value to a variable and then reassigning the result back to that same variable."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "x += 5",
+          "cause": "The compound assignment operator is executed.",
+          "effect": "This is equivalent to `x = x + 5`. The value `10` is added to `5`, and the result `15` is assigned back to `x`."
+        },
+        {
+          "step": 2,
+          "action": "print(x)",
+          "cause": "The `print` function is called.",
+          "effect": "The new value of `x`, which is `15`, is displayed on the console."
+        }
+      ]
+    },
+    "explanation_module": "Compound assignment operators (`+=`, `-=`, `*=`, `/=`, etc.) are a shorthand way to perform an operation and an assignment in a single step. They make the code more concise and are a common pattern in Python for updating variable values.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "user_input = input('Enter your name: ')\nprint(f'Hello, {user_input}!')",
+    "purpose": "To get input from the user via the console.",
+    "conceptual_breakdown": {
+      "function_call": {
+        "input()": "A built-in function with the **purpose** of pausing the program, displaying a prompt, and reading a line of text typed by the user."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "input('Enter your name: ')",
+          "cause": "The `input()` function is called.",
+          "effect": "The string `'Enter your name: '` is displayed to the user, and the program waits for them to type and press Enter. Whatever the user types is returned as a string."
+        },
+        {
+          "step": 2,
+          "action": "user_input = ...",
+          "cause": "The string entered by the user is returned.",
+          "effect": "The `user_input` variable is assigned the string value from the user."
+        },
+        {
+          "step": 3,
+          "action": "print(...)",
+          "cause": "The `print` function is called with the f-string.",
+          "effect": "A personalized greeting is displayed on the console using the value stored in `user_input`."
+        }
+      ]
+    },
+    "explanation_module": "The `input()` function is the primary way to interact with a user through the console. It always returns the user's input as a string, regardless of what they typed. This is a crucial conceptual point, as you may need to explicitly convert the input to a different data type (e.g., an integer) if required for a calculation.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "my_dict = {'a': 1, 'b': 2, 'c': 3}\nfor key, value in my_dict.items():\n    print(f'Key: {key}, Value: {value}')",
+    "purpose": "To iterate over the key-value pairs of a dictionary.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "my_dict": "A dictionary."
+      },
+      "method_call": {
+        ".items()": "A dictionary method with the **purpose** of returning a view object that displays a list of a dictionary's key-value tuple pairs."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_dict.items()",
+          "cause": "The `items()` method is called on the dictionary.",
+          "effect": "An iterable of key-value tuples, like `[('a', 1), ('b', 2), ('c', 3)]`, is created."
+        },
+        {
+          "step": 2,
+          "action": "for key, value in ...:",
+          "cause": "The `for` loop iterates over the iterable of tuples and unpacks each one.",
+          "effect": "The `key` variable gets the first element of the tuple, and `value` gets the second for each iteration."
+        },
+        {
+          "step": 3,
+          "action": "print(...)",
+          "cause": "The `print` function is called inside the loop.",
+          "effect": "A formatted string displaying the key and value is printed for each pair."
+        }
+      ]
+    },
+    "explanation_module": "The `items()` method is the standard and most readable way to loop through a dictionary and access both its keys and values. This is a common pattern in data processing when you need to perform an action on both parts of each key-value pair.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "x = 10\nif x % 2 == 0:\n    print('Even')\nelse:\n    print('Odd')",
+    "purpose": "To use the modulo operator (`%`) to check if a number is even or odd.",
+    "conceptual_breakdown": {
+      "variables": {
+        "x": "An integer variable with value 10."
+      },
+      "operator": {
+        "%": "The modulo operator with the **purpose** of returning the remainder of a division."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "x % 2",
+          "cause": "The remainder of `10` divided by `2` is calculated.",
+          "effect": "The result is `0`."
+        },
+        {
+          "step": 2,
+          "action": "0 == 0",
+          "cause": "The comparison is made.",
+          "effect": "The condition evaluates to `True`."
+        },
+        {
+          "step": 3,
+          "action": "if ...:",
+          "cause": "The `if` condition is `True`.",
+          "effect": "The first `print` statement is executed, and `'Even'` is displayed."
+        }
+      ]
+    },
+    "explanation_module": "The modulo operator (`%`) is a powerful mathematical tool in programming. It's often used for tasks like checking for even/odd numbers, wrapping around a certain range, or validating divisibility. A key conceptual insight is that `x % 2 == 0` is a universally reliable way to determine if an integer `x` is even.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "def fibonacci(n):\n    if n <= 1:\n        return n\n    else:\n        return fibonacci(n-1) + fibonacci(n-2)\n\nprint(fibonacci(7))",
+    "purpose": "To demonstrate a more complex recursive function (Fibonacci sequence).",
+    "conceptual_breakdown": {
+      "function_definition": {
+        "fibonacci(n)": "A function that has the **property** of recursively computing a number in the Fibonacci sequence."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "fibonacci(7)",
+          "cause": "The function is called with argument `7`.",
+          "effect": "It breaks the problem into two smaller recursive calls: `fibonacci(6)` and `fibonacci(5)`."
+        },
+        {
+          "step": 2,
+          "action": "Recursive calls",
+          "cause": "Each call recursively breaks down until it hits the base case `n <= 1`.",
+          "effect": "The base cases return `0` or `1`, and the results are summed up the call stack."
+        },
+        {
+          "step": 3,
+          "action": "Return value",
+          "cause": "The chain of calls unwinds, summing up the results.",
+          "effect": "The final sum `13` (0, 1, 1, 2, 3, 5, 8, **13**) is returned and printed."
+        }
+      ]
+    },
+    "explanation_module": "The Fibonacci sequence is a classic example used to illustrate recursion. This example shows how a complex problem can be solved by breaking it down into smaller, self-similar problems. While elegant, this specific recursive implementation is computationally inefficient for large numbers due to repeated calculations, which is a key trade-off to consider in computer science.",
+    "confidence_score": 0.97,
+    "hallucination_score": 0.02
+  }
+]
