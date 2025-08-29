@@ -1,0 +1,876 @@
+[
+  {
+    "code_snippet": "class MyMeta(type):\n    def __new__(cls, name, bases, dct):\n        dct['class_attribute'] = 'I was added by a metaclass'\n        return super().__new__(cls, name, bases, dct)\n\nclass MyClass(metaclass=MyMeta):\n    pass\n\nprint(MyClass.class_attribute)",
+    "purpose": "To demonstrate a metaclass, which is a class of a class, used to customize class creation.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "metaclass": "A class that has the **property** of defining the behavior of other classes. When you create a class, Python uses a metaclass (by default, `type`) to build the class object itself. By specifying `metaclass=...`, you can hook into this creation process."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "class MyClass(metaclass=MyMeta):",
+          "cause": "Python sees the `metaclass` keyword.",
+          "effect": "Instead of using `type` to create `MyClass`, it uses `MyMeta` to build the class object."
+        },
+        {
+          "step": 2,
+          "action": "MyMeta.__new__(...)",
+          "cause": "The `__new__` method of `MyMeta` is executed.",
+          "effect": "It receives the class's name (`'MyClass'`), its base classes, and its dictionary (`dct`). The code then modifies this dictionary to add a new `class_attribute`."
+        },
+        {
+          "step": 3,
+          "action": "return super().__new__(...)",
+          "cause": "The metaclass returns the modified class object.",
+          "effect": "The `MyClass` object is fully created with the new attribute, which is accessible immediately."
+        }
+      ]
+    },
+    "explanation_module": "Metaclasses are a highly advanced and powerful feature that allows for meta-programming—writing code that manipulates other code at a higher level. They are often used in frameworks for complex tasks like defining APIs, registering classes, or enforcing design patterns. Understanding this is a key conceptual leap from simple object-oriented programming to a deeper understanding of the Python object model.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "def repeat_n_times(n):\n    def decorator(func):\n        def wrapper(*args, **kwargs):\n            for _ in range(n):\n                func(*args, **kwargs)\n        return wrapper\n    return decorator\n\n@repeat_n_times(3)\ndef print_hello():\n    print('Hello')",
+    "purpose": "To demonstrate a decorator that accepts arguments, which is a key concept for writing highly reusable and configurable decorators.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "decorator with arguments": "A design pattern with the **property** of being a function that returns a decorator. This allows the decorator to be configured at the time of its application."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "@repeat_n_times(3)",
+          "cause": "The outer function `repeat_n_times` is called with the argument `3`.",
+          "effect": "It returns the `decorator` function, which now has access to the value of `n` (which is `3`) via a closure."
+        },
+        {
+          "step": 2,
+          "action": "decorator(print_hello)",
+          "cause": "The returned `decorator` function is applied to `print_hello`.",
+          "effect": "It returns the `wrapper` function, which is now the new `print_hello`."
+        },
+        {
+          "step": 3,
+          "action": "print_hello()",
+          "cause": "The decorated function is called.",
+          "effect": "The `wrapper` is executed. It uses the `n` value captured from its closure to run the original `print_hello` function three times."
+        }
+      ]
+    },
+    "explanation_module": "This pattern is a crucial step up in decorator mastery. By creating a function that returns a decorator, you can make your decorators more flexible and powerful, allowing them to adapt their behavior based on runtime parameters. This is a common and important pattern for creating reusable code in Python frameworks.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "import sys\n\nclass C:\n    __slots__ = ['x', 'y']\n\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\nc1 = C(10, 20)\n\nprint(f'Size of object with __slots__: {sys.getsizeof(c1)} bytes')\n\n# This would raise an AttributeError because 'z' is not in __slots__\n# c1.z = 30",
+    "purpose": "To demonstrate the use of `__slots__` for memory optimization and preventing the creation of a `__dict__`.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "__slots__": "A class attribute that has the **purpose** of telling Python not to create a `__dict__` for each instance, thus saving memory. It also prevents the addition of new attributes not defined in `__slots__`."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "__slots__ = ['x', 'y']",
+          "cause": "The `__slots__` attribute is defined at the class level.",
+          "effect": "Python rethinks how it stores instance attributes. Instead of creating a dictionary (`__dict__`) for each instance to store its variables, it allocates a fixed, more compact data structure for the attributes listed in `__slots__`."
+        },
+        {
+          "step": 2,
+          "action": "c1 = C(10, 20)",
+          "cause": "An instance is created.",
+          "effect": "The `x` and `y` attributes are stored directly on the object without the overhead of a dictionary, making the instance smaller."
+        },
+        {
+          "step": 3,
+          "action": "c1.z = 30",
+          "cause": "An attempt is made to add a new attribute not in `__slots__`.",
+          "effect": "Python raises an `AttributeError` because the object does not have a `__dict__` to store new, arbitrary attributes."
+        }
+      ]
+    },
+    "explanation_module": "`__slots__` is a conceptual tool for advanced memory management, particularly useful for applications that create millions of simple objects, such as in data processing or game development. While it reduces memory footprint, it has trade-offs: it prevents dynamic attribute assignment and can complicate multiple inheritance. This is a key concept for writing high-performance, memory-efficient code.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "class Descriptor:\n    def __get__(self, instance, owner):\n        if instance is None:\n            return self\n        return instance._value\n\n    def __set__(self, instance, value):\n        if not isinstance(value, int):\n            raise ValueError('Value must be an integer')\n        instance._value = value\n\nclass MyClass:\n    value = Descriptor()\n\n    def __init__(self, value):\n        self.value = value\n\nobj = MyClass(10)\nprint(obj.value)\n# This would raise a ValueError\n# obj.value = 'hello'",
+    "purpose": "To demonstrate a descriptor, a powerful object that controls how attributes are accessed, set, and deleted.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "descriptor protocol": "A protocol that has the **property** of defining how an object's attribute access is handled. It is implemented via a class that defines one or more of the methods `__get__`, `__set__`, and `__delete__`."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "value = Descriptor()",
+          "cause": "An instance of `Descriptor` is assigned to a class attribute.",
+          "effect": "Python recognizes this as a descriptor and delegates attribute access of `MyClass.value` to the `Descriptor` instance."
+        },
+        {
+          "step": 2,
+          "action": "obj.value = 10",
+          "cause": "An attempt is made to set the attribute `value` on an instance.",
+          "effect": "This is intercepted, and the `__set__` method of the `Descriptor` is called. It validates the value and then stores it on the instance as `_value`."
+        },
+        {
+          "step": 3,
+          "action": "print(obj.value)",
+          "cause": "An attempt is made to get the attribute `value`.",
+          "effect": "This is intercepted, and the `__get__` method of the `Descriptor` is called. It retrieves the value from `instance._value`."
+        }
+      ]
+    },
+    "explanation_module": "Descriptors are a fundamental, behind-the-scenes mechanism of Python used to implement properties (`@property`), methods, and class methods. They are a powerful tool for advanced attribute management, allowing for lazy loading, data validation, or complex attribute behavior. This is a key conceptual point for understanding how Python's object model works at a deeper level.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "from functools import partial\n\ndef multiply(x, y):\n    return x * y\n\ndouble = partial(multiply, 2)\ntriple = partial(multiply, 3)\n\nprint(double(5))\nprint(triple(5))",
+    "purpose": "To demonstrate `functools.partial`, which is a function that 'freezes' a part of a function's arguments.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "partial function application": "A functional programming concept with the **purpose** of deriving a new function with one or more of its arguments already specified."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "double = partial(multiply, 2)",
+          "cause": "The `partial` function is called.",
+          "effect": "It returns a new callable object `double`. This object is a wrapper around `multiply` that will always provide the number `2` as its first argument."
+        },
+        {
+          "step": 2,
+          "action": "print(double(5))",
+          "cause": "The `double` function is called with a single argument.",
+          "effect": "The `partial` object internally calls `multiply(2, 5)`, and the result `10` is printed."
+        }
+      ]
+    },
+    "explanation_module": "`partial` is a powerful tool from the functional programming paradigm. It is a cleaner and more efficient alternative to creating a `lambda` function or a nested function to achieve the same result. It is a key concept for writing declarative, reusable, and concise code in Python, often used in GUI programming, event handlers, or data processing pipelines.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "class MyList(list):\n    def __init__(self, initial_list):\n        super().__init__(initial_list)\n\n    def sum(self):\n        return sum(self)\n\nmy_list = MyList([1, 2, 3])\nprint(my_list.sum())",
+    "purpose": "To demonstrate subclassing a built-in type to extend its functionality.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "subclassing built-ins": "The **property** of creating a new class that inherits from a built-in type like `list`, `dict`, or `str`."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "class MyList(list):",
+          "cause": "The `MyList` class inherits from the built-in `list`.",
+          "effect": "It inherits all of the `list`'s methods (`append`, `pop`, etc.) and behavior."
+        },
+        {
+          "step": 2,
+          "action": "super().__init__(initial_list)",
+          "cause": "The `__init__` method of the parent class (`list`) is called.",
+          "effect": "This correctly initializes the new object, populating it with the elements from the `initial_list`."
+        },
+        {
+          "step": 3,
+          "action": "def sum(self):",
+          "cause": "A new method is defined.",
+          "effect": "This adds a new, custom function to `MyList` instances that is not present on a regular `list`."
+        }
+      ]
+    },
+    "explanation_module": "Subclassing built-in types can be a powerful way to add custom behavior to common data structures. However, it's a key conceptual point to be careful when doing so, as the internal C implementations of some built-in methods can bypass your overrides. A common alternative is 'composition,' where you wrap the built-in in your own class. This example shows a simple, safe way to extend the `list` class.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "from contextlib import contextmanager\n\n@contextmanager\ndef file_safe_open(filename, mode):\n    file = None\n    try:\n        file = open(filename, mode)\n        yield file\n    finally:\n        if file:\n            print('Closing file...')\n            file.close()\n\n# This works with an exception inside\nwith file_safe_open('test.txt', 'w') as f:\n    f.write('hello')\n    raise ValueError('Something went wrong!')",
+    "purpose": "To demonstrate a custom context manager that guarantees cleanup, even when an exception occurs.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "exception handling in context managers": "A design pattern with the **property** of using a `try...finally` block within a context manager's generator to ensure that the cleanup code is always executed, regardless of whether an exception is raised."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "with file_safe_open(...)",
+          "cause": "The `with` statement calls the generator function.",
+          "effect": "The `try` block is entered, and the file is opened."
+        },
+        {
+          "step": 2,
+          "action": "raise ValueError(...)",
+          "cause": "An exception is raised inside the `with` block.",
+          "effect": "The code block is immediately exited, but the `finally` block of the generator is guaranteed to run before the exception is propagated, ensuring the file is closed."
+        }
+      ]
+    },
+    "explanation_module": "The `with` statement and the `contextmanager` decorator are built for this exact purpose: robust resource management. The `try...finally` block is the core conceptual component here, guaranteeing that your resource's `close()` method is called even in the face of errors. This is a critical concept for writing reliable and bug-free code that handles external resources like files, network connections, or database sessions.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "from concurrent.futures import ThreadPoolExecutor\n\ndef worker(num):\n    print(f'Starting worker {num}')\n    return num * 2\n\nwith ThreadPoolExecutor(max_workers=3) as executor:\n    results = list(executor.map(worker, range(5)))\n\nprint(f'Results: {results}')",
+    "purpose": "To demonstrate thread-based parallelism for I/O-bound tasks using `ThreadPoolExecutor`.",
+    "conceptual_breakdown": {
+      "concurrency_model": {
+        "ThreadPoolExecutor": "A class from the `concurrent.futures` module with the **purpose** of running a set of tasks in a pool of worker threads. It's best suited for I/O-bound tasks."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "ThreadPoolExecutor(max_workers=3)",
+          "cause": "A thread pool is created.",
+          "effect": "This sets up a pool of three worker threads, ready to execute tasks."
+        },
+        {
+          "step": 2,
+          "action": "executor.map(worker, ...)",
+          "cause": "The `map` method is called.",
+          "effect": "It submits the tasks (`worker` for each number) to the thread pool, which distributes the work across the three threads. The main thread then waits for all tasks to complete and collects their results in order."
+        }
+      ]
+    },
+    "explanation_module": "This is a key concept in Python concurrency. `ThreadPoolExecutor` provides a high-level, easy-to-use interface for running tasks concurrently. Because of the Global Interpreter Lock (GIL), Python threads are best for I/O-bound tasks (like network requests or file I/O) where they can 'wait' without blocking the main program. For CPU-bound tasks, `ProcessPoolExecutor` is the conceptually correct choice, as it bypasses the GIL.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "from collections import deque\n\nstack = deque()\nstack.append('a')\nstack.append('b')\nprint(stack.pop())\nprint(stack.pop())",
+    "purpose": "To demonstrate using a `deque` as a highly efficient stack (LIFO data structure).",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "deque": "A list-like data structure with the **property** of being optimized for fast appends and pops from both ends. `pop()` is an O(1) operation from the right side."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "stack = deque()",
+          "cause": "An empty `deque` is created.",
+          "effect": "This object is ready to be used as a stack or a queue."
+        },
+        {
+          "step": 2,
+          "action": "stack.append('a')",
+          "cause": "Elements are added to the right side.",
+          "effect": "The `deque` grows from the right."
+        },
+        {
+          "step": 3,
+          "action": "stack.pop()",
+          "cause": "The `pop()` method is called.",
+          "effect": "The element from the right side is removed and returned, which is the Last-In, First-Out (LIFO) behavior of a stack."
+        }
+      ]
+    },
+    "explanation_module": "While a standard list can also be used as a stack, a `deque` is the conceptually superior and more performant choice for this purpose, as its `append()` and `pop()` operations are both highly efficient (O(1)). This is a key conceptual point for choosing the right data structure for a given problem.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "class Circle:\n    def __init__(self, radius):\n        self._radius = radius\n\n    def get_radius(self):\n        print('Getting radius...')\n        return self._radius\n\n    def set_radius(self, value):\n        print('Setting radius...')\n        if value <= 0:\n            raise ValueError('Radius cannot be negative')\n        self._radius = value\n\n    radius = property(get_radius, set_radius)\n\nc = Circle(10)\nprint(c.radius)\nc.radius = 5\n# This would raise a ValueError\n# c.radius = -1",
+    "purpose": "To demonstrate the `property()` function for creating managed attributes with getters and setters.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "property()": "A built-in function that has the **purpose** of creating a `property` object. This object intercepts attribute access and routes it to specified getter, setter, and deleter methods."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "radius = property(get_radius, set_radius)",
+          "cause": "The `property` object is assigned to the `radius` class attribute.",
+          "effect": "Any time `Circle.radius` is accessed, Python internally calls the functions provided to the `property`."
+        },
+        {
+          "step": 2,
+          "action": "c.radius = 5",
+          "cause": "The attribute is set.",
+          "effect": "Python sees `radius` is a property and calls `set_radius(self, 5)`."
+        },
+        {
+          "step": 3,
+          "action": "print(c.radius)",
+          "cause": "The attribute is accessed.",
+          "effect": "Python sees `radius` is a property and calls `get_radius(self)`."
+        }
+      ]
+    },
+    "explanation_module": "The `@property` decorator is the more common and Pythonic way to use properties, but understanding the underlying `property()` function is crucial for a deeper conceptual understanding. Properties allow you to expose a simple attribute while hiding the complex logic for validation or computation behind the scenes. This is a core concept for writing a clean and robust class API.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "from abc import ABC, abstractmethod\n\nclass Animal(ABC):\n    @abstractmethod\n    def make_sound(self):\n        pass\n\nclass Pet(Animal):\n    def __init__(self, name):\n        self.name = name\n    \n    # Pet does not implement make_sound, so it is an abstract class\n\nclass Dog(Pet):\n    def make_sound(self):\n        return 'Woof!'\n\ndog = Dog('Buddy')\nprint(dog.make_sound())",
+    "purpose": "To demonstrate a multi-level inheritance hierarchy with an abstract base class, enforcing a common interface across different levels of abstraction.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "abstract class": "A class with the **property** that it cannot be instantiated directly and serves as a blueprint for its subclasses.",
+        "concrete class": "A class that has the **property** of being fully implemented and can be instantiated."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "class Animal(ABC):",
+          "cause": "The `Animal` class is declared as an ABC.",
+          "effect": "It becomes a blueprint for behavior, specifically requiring a `make_sound` method."
+        },
+        {
+          "step": 2,
+          "action": "class Pet(Animal):",
+          "cause": "The `Pet` class inherits from `Animal` but does not implement `make_sound`.",
+          "effect": "It also becomes an abstract class. Attempting to create a `Pet` instance would raise an error."
+        },
+        {
+          "step": 3,
+          "action": "class Dog(Pet):",
+          "cause": "The `Dog` class inherits from `Pet` and provides the required `make_sound` implementation.",
+          "effect": "This makes `Dog` a concrete class that can be instantiated and used."
+        }
+      ]
+    },
+    "explanation_module": "This example shows a more complex application of abstract base classes. The conceptual purpose is to enforce a consistent API across a deep inheritance hierarchy. The `Pet` class adds functionality (`name`) but maintains the abstract contract, ensuring that any final, concrete subclass (like `Dog`) must fulfill the `Animal`'s requirements. This is a powerful tool for building large, well-structured, and predictable class libraries.",
+    "confidence_score": 0.97,
+    "hallucination_score": 0.02
+  },
+  {
+    "code_snippet": "from typing import Protocol, List\n\nclass SupportsGetItem(Protocol):\n    def __getitem__(self, key: int) -> int:\n        ...\n\n    def __len__(self) -> int:\n        ...\n\nclass CustomList:\n    def __init__(self, data: List[int]):\n        self.data = data\n\n    def __getitem__(self, key: int) -> int:\n        return self.data[key]\n\n    def __len__(self) -> int:\n        return len(self.data)\n\ndef process_data(data: SupportsGetItem):\n    print(f'Length: {len(data)}, First item: {data[0]}')\n\nprocess_data([1, 2, 3])\nprocess_data(CustomList([4, 5, 6]))",
+    "purpose": "To demonstrate structural subtyping with `typing.Protocol`, which is a key concept for writing code that is flexible and works with any object that 'looks like' a specific type, without requiring a formal inheritance relationship.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "Protocol": "A class from the `typing` module with the **property** of defining a structural type. Any class that implements the methods of a `Protocol` is considered to be of that type, even if it doesn't explicitly inherit from the `Protocol` class."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "class SupportsGetItem(Protocol):",
+          "cause": "A `Protocol` is defined.",
+          "effect": "This establishes a 'contract' that any class with `__getitem__` and `__len__` methods that match the type hints will satisfy this protocol."
+        },
+        {
+          "step": 2,
+          "action": "process_data(data: SupportsGetItem)",
+          "cause": "The `process_data` function is type-hinted to accept the protocol.",
+          "effect": "This tells a static type checker that `process_data` will work with any object that provides `__getitem__` and `__len__` methods, such as a regular `list` or the new `CustomList` class."
+        }
+      ]
+    },
+    "explanation_module": "Structural subtyping, or 'duck typing' formalized with type hints, is a key conceptual evolution in modern Python. While a `list` does not inherit from `SupportsGetItem`, a static type checker recognizes that it 'walks like a duck' (implements the methods) and therefore can be used with the function. This allows for highly flexible and decoupled code, which is a key concept in creating reusable and robust libraries.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "import asyncio\n\nasync def my_coroutine(name):\n    print(f'Starting {name}')\n    await asyncio.sleep(1)\n    print(f'Finishing {name}')\n\nasync def main():\n    task1 = asyncio.create_task(my_coroutine('Task 1'))\n    task2 = asyncio.create_task(my_coroutine('Task 2'))\n\n    await task1\n    await task2\n\nasyncio.run(main())",
+    "purpose": "To demonstrate the explicit creation and management of `asyncio.Task` objects for scheduling coroutines.",
+    "conceptual_breakdown": {
+      "concurrency_model": {
+        "asyncio.Task": "A class with the **property** of being a thin wrapper around a coroutine. It is a fundamental concept in `asyncio` for scheduling coroutines to run on the event loop."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "asyncio.create_task(...)",
+          "cause": "The `create_task` function is called with a coroutine.",
+          "effect": "It wraps the coroutine in a `Task` object and schedules it to run on the event loop immediately. Execution begins without `await`."
+        },
+        {
+          "step": 2,
+          "action": "await task1",
+          "cause": "The `main` coroutine awaits `task1`.",
+          "effect": "The `main` coroutine pauses and yields control to the event loop. The event loop then resumes `task1` until it completes, and then resumes `main` to await `task2`."
+        }
+      ]
+    },
+    "explanation_module": "While `asyncio.gather` is a common pattern, `asyncio.create_task` provides more explicit control over coroutine scheduling. It is a key conceptual tool for managing complex asynchronous workflows, as it allows you to start multiple tasks and then await them later in a different order or conditionally. This is an advanced `asyncio` concept for building sophisticated asynchronous applications.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "class Vector:\n    def __init__(self, x, y):\n        self.x = x\n        self.y = y\n\n    def __repr__(self):\n        return f'Vector(x={self.x}, y={self.y})'\n\n    def __str__(self):\n        return f'({self.x}, {self.y})'\n\nv = Vector(1, 2)\nprint(v)\nprint(f'{v!r}')",
+    "purpose": "To demonstrate the distinction between `__str__` (informal string representation) and `__repr__` (formal representation) dunder methods.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "__repr__()": "A dunder method that has the **purpose** of providing the 'official' string representation of an object. The goal is to produce a string that, if passed to `eval()`, would create the same object (where possible).",
+        "__str__()": "A dunder method that has the **purpose** of providing a user-friendly or 'informal' string representation of an object."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "print(v)",
+          "cause": "The `print` function is called on the object.",
+          "effect": "The `print` function internally looks for `__str__`. Since it is present, it uses that method's return value to print `(1, 2)`."
+        },
+        {
+          "step": 2,
+          "action": "print(f'{v!r}')",
+          "cause": "An f-string with the `!r` conversion flag is used.",
+          "effect": "This explicitly tells the f-string to use the object's `__repr__` method, which is `Vector(x=1, y=2)`, and print that value."
+        }
+      ]
+    },
+    "explanation_module": "Understanding `__str__` and `__repr__` is a key concept for writing well-behaved classes. `__repr__` is primarily for developers, providing a clear, unambiguous representation for debugging. `__str__` is for end-users, offering a human-readable format. Both are crucial for creating a robust and maintainable class API.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "class DynamicObject:\n    def __init__(self, **kwargs):\n        for key, value in kwargs.items():\n            setattr(self, key, value)\n\nobj = DynamicObject(name='Alice', age=30)\nprint(obj.name)\nprint(getattr(obj, 'age'))\nprint(hasattr(obj, 'city'))",
+    "purpose": "To demonstrate dynamic attribute access using the built-in functions `setattr()`, `getattr()`, and `hasattr()`.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "dynamic attribute access": "The **property** of manipulating an object's attributes at runtime using strings instead of hardcoded names."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "setattr(self, key, value)",
+          "cause": "The `setattr()` function is called inside `__init__`.",
+          "effect": "For each key-value pair passed in the dictionary (`name='Alice'`, `age=30`), a new attribute is created on the instance, equivalent to `self.name = 'Alice'` and `self.age = 30`."
+        },
+        {
+          "step": 2,
+          "action": "getattr(obj, 'age')",
+          "cause": "The `getattr()` function is called.",
+          "effect": "It retrieves the value of the attribute named by the string `'age'` from the `obj` instance, returning `30`."
+        },
+        {
+          "step": 3,
+          "action": "hasattr(obj, 'city')",
+          "cause": "The `hasattr()` function is called.",
+          "effect": "It checks if the attribute named by the string `'city'` exists on `obj` and returns `False`."
+        }
+      ]
+    },
+    "explanation_module": "These functions are powerful conceptual tools for meta-programming and introspection, allowing you to write code that can work with any object, regardless of its specific attributes. This is a key pattern in frameworks, ORMs (Object-Relational Mappers), and data processing pipelines where you need to access attributes dynamically.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "import json\n\njson_string = '{\"name\": \"Alice\", \"age\": 30}'\ndata = json.loads(json_string)\n\nprint(data['name'])\n\n# Example of using a custom JSON object hook\ndef dict_to_object(d):\n    return type('Person', (), d)\n\ndata_object = json.loads(json_string, object_hook=dict_to_object)\nprint(data_object.name)",
+    "purpose": "To demonstrate advanced JSON deserialization using a custom `object_hook` to convert a JSON object into a Python object.",
+    "conceptual_breakdown": {
+      "module_function": {
+        "json.loads()": "A function with the **purpose** of deserializing a JSON string into a Python object.",
+        "object_hook": "A keyword argument that has the **purpose** of providing a custom function that will be called with the dictionary representation of each JSON object, allowing for custom object creation."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "json.loads(json_string)",
+          "cause": "The `loads` function is called.",
+          "effect": "The JSON string is converted to a Python dictionary."
+        },
+        {
+          "step": 2,
+          "action": "json.loads(..., object_hook=...)",
+          "cause": "The `loads` function is called with a custom `object_hook`.",
+          "effect": "When the parser encounters a JSON object, it creates a dictionary and then passes it to `dict_to_object`, which dynamically creates and returns a new `Person` object. The final result is a custom object instead of a standard dictionary."
+        }
+      ]
+    },
+    "explanation_module": "The `object_hook` is a powerful and less-common feature of the `json` module. It is a key conceptual tool for advanced data deserialization, allowing you to map raw JSON data directly to your own custom data structures or classes. This is a crucial concept for creating a more robust and type-safe API, especially when working with complex JSON payloads.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "from itertools import groupby\n\ndata = [\n    {'name': 'Alice', 'group': 'A'},\n    {'name': 'Bob', 'group': 'B'},\n    {'name': 'Charlie', 'group': 'A'},\n    {'name': 'David', 'group': 'B'}\n]\n\ndata.sort(key=lambda x: x['group'])\n\nfor key, group in groupby(data, key=lambda x: x['group']):\n    print(f'Group {key}:')\n    for item in group:\n        print(f'  {item}')",
+    "purpose": "To demonstrate `itertools.groupby`, which is a powerful tool for grouping elements of an iterable based on a key.",
+    "conceptual_breakdown": {
+      "module_function": {
+        "groupby()": "A function from the `itertools` module with the **purpose** of returning an iterator that yields consecutive keys and groups from the iterable. A key conceptual point is that `groupby()` only works on a **sorted** iterable."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "data.sort(...)",
+          "cause": "The list is sorted by the `group` key.",
+          "effect": "The list becomes `[..., {'group': 'A'}, {'group': 'A'}, ..., {'group': 'B'}, {'group': 'B'}]`."
+        },
+        {
+          "step": 2,
+          "action": "groupby(data, key=...)",
+          "cause": "The `groupby` function is called on the sorted list.",
+          "effect": "It iterates through the data and, whenever the grouping key changes (`A` to `B`), it yields a new key-group pair. The group is a sub-iterator containing all the consecutive elements for that key."
+        },
+        {
+          "step": 3,
+          "action": "for item in group:",
+          "cause": "The inner loop iterates over the sub-iterator.",
+          "effect": "It consumes the elements for the current group until the sub-iterator is exhausted."
+        }
+      ]
+    },
+    "explanation_module": "`itertools.groupby` is a key concept in Python for efficient, memory-conscious data processing. Unlike a simple dictionary-based grouping, it yields groups one at a time, making it suitable for huge datasets that would not fit in memory. This pattern is a standard for data analysis and is a crucial part of the advanced Python developer's toolkit.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "from functools import lru_cache\n\n@lru_cache(maxsize=128)\ndef fibonacci(n):\n    if n <= 1:\n        return n\n    return fibonacci(n - 1) + fibonacci(n - 2)\n\nprint(fibonacci(10))",
+    "purpose": "To demonstrate the `@lru_cache` decorator for caching function results (memoization), which is a key concept for optimizing recursive or expensive functions.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "lru_cache": "A decorator from the `functools` module with the **purpose** of automatically caching a function's results in a 'Least Recently Used' (LRU) cache. When the function is called with the same arguments, the cached value is returned instantly instead of recomputing the result."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "@lru_cache(...)",
+          "cause": "The decorator is applied to the `fibonacci` function.",
+          "effect": "The function's behavior is wrapped with caching logic."
+        },
+        {
+          "step": 2,
+          "action": "fibonacci(10)",
+          "cause": "The function is called recursively.",
+          "effect": "When `fibonacci(8)` is called, for example, its result is computed and stored. The next time the function calls `fibonacci(8)` (from `fibonacci(9)`), the decorator intercepts the call and returns the cached value, preventing redundant computation."
+        }
+      ]
+    },
+    "explanation_module": "`@lru_cache` is a simple yet powerful tool for a specific type of performance optimization known as memoization. It's a key conceptual tool for dealing with 'expensive' functions in a way that is declarative and easy to read. This is a crucial concept for improving the performance of algorithms without writing complex manual caching logic.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "from pathlib import Path\n\n# Get the current working directory\ncurrent_path = Path.cwd()\nprint(f'Current directory: {current_path}')\n\n# Create a new path object for a file\nfile_path = current_path / 'data' / 'report.txt'\nprint(f'File path: {file_path}')\n\n# Check if a file exists\nprint(f'File exists: {file_path.exists()}')",
+    "purpose": "To demonstrate the use of `pathlib`, a modern, object-oriented module for file system path manipulation.",
+    "conceptual_breakdown": {
+      "module_function": {
+        "pathlib": "A standard library module with the **property** of providing a clean, object-oriented interface for working with file system paths, as an alternative to the string-based `os` module."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "Path.cwd()",
+          "cause": "The class method `cwd()` is called.",
+          "effect": "It returns a new `Path` object representing the current working directory."
+        },
+        {
+          "step": 2,
+          "action": "current_path / 'data' / 'report.txt'",
+          "cause": "The `/` operator is used with a `Path` object.",
+          "effect": "The `pathlib` module overloads the division operator to join path components in a cross-platform way, which is a key conceptual advantage over `os.path.join()`."
+        },
+        {
+          "step": 3,
+          "action": "file_path.exists()",
+          "cause": "The `.exists()` method is called on the `Path` object.",
+          "effect": "The `Path` object intelligently checks for the existence of the file or directory without needing an external function call."
+        }
+      ]
+    },
+    "explanation_module": "`pathlib` is the modern and recommended way to interact with file paths in Python. Its object-oriented design makes code cleaner, more readable, and less error-prone than the string-based `os.path` module. It is a key concept for writing portable and robust file system code.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "import asyncio\n\nasync def producer(queue):\n    for i in range(5):\n        print(f'Producer: Putting {i}')\n        await queue.put(i)\n        await asyncio.sleep(0.5)\n    print('Producer: Done')\n\nasync def consumer(queue):\n    while True:\n        item = await queue.get()\n        print(f'Consumer: Got {item}')\n        if item == 4:\n            break\n    print('Consumer: Done')\n\nasync def main():\n    queue = asyncio.Queue()\n    await asyncio.gather(producer(queue), consumer(queue))\n\nasyncio.run(main())",
+    "purpose": "To demonstrate a classic producer-consumer pattern using an `asyncio.Queue` for non-blocking communication between tasks.",
+    "conceptual_breakdown": {
+      "concurrency_model": {
+        "asyncio.Queue": "A class with the **property** of being a thread-safe and non-blocking queue. It is a fundamental concept for passing data between concurrently running `asyncio` tasks."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "asyncio.Queue()",
+          "cause": "A queue object is created.",
+          "effect": "This provides a channel for the `producer` and `consumer` tasks to communicate."
+        },
+        {
+          "step": 2,
+          "action": "await queue.put(i)",
+          "cause": "The `producer` task puts an item in the queue.",
+          "effect": "The task yields control and allows the event loop to run the `consumer` task."
+        },
+        {
+          "step": 3,
+          "action": "await queue.get()",
+          "cause": "The `consumer` task attempts to get an item.",
+          "effect": "If the queue is empty, the task pauses until an item becomes available, preventing a busy wait and allowing other tasks to run."
+        }
+      ]
+    },
+    "explanation_module": "The producer-consumer pattern is a key conceptual tool for designing concurrent systems. `asyncio.Queue` is a vital part of this, as it allows for safe, efficient, and non-blocking communication between tasks. It is an advanced concept for building robust and scalable applications that involve parallel data processing or event handling.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "class MyLogger:\n    def log(self, message):\n        print(f'LOG: {message}')\n\nclass NullLogger:\n    def log(self, message):\n        pass\n\ndef process_data(data, logger):\n    logger.log('Starting data processing...')\n    # ... processing logic ...\n    logger.log('Data processing complete.')\n\nprocess_data([1, 2, 3], MyLogger())\nprocess_data([4, 5, 6], NullLogger())",
+    "purpose": "To demonstrate the Null Object design pattern, which simplifies client code by providing a default, do-nothing object.",
+    "conceptual_breakdown": {
+      "design_pattern": {
+        "Null Object": "A design pattern with the **property** of providing an object that encapsulates the do-nothing behavior of a null or empty object. It is an alternative to using `None` and writing `if obj is not None:` checks."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "process_data(..., NullLogger())",
+          "cause": "The `NullLogger` object is passed to the function.",
+          "effect": "The `process_data` function doesn't need to check if a logger was provided. It simply calls the `.log()` method, which does nothing, but the client code remains clean and simple."
+        }
+      ]
+    },
+    "explanation_module": "The Null Object pattern is a powerful conceptual tool for reducing complexity and improving code readability. Instead of littering your code with conditional checks for `None`, you can rely on the consistent interface of the Null Object to handle the 'do nothing' case. This is a crucial concept for writing clean and maintainable code, especially in larger applications or frameworks.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "from collections import namedtuple\nfrom typing import NamedTuple\n\nclass Employee(NamedTuple):\n    name: str\n    id: int\n\n    def get_email(self):\n        return f'{self.name.lower()}@company.com'\n\nemp = Employee('Alice', 123)\nprint(emp.name)\nprint(emp.get_email())",
+    "purpose": "To demonstrate the modern, class-based syntax for creating a `NamedTuple`, which supports type hints and method definitions.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "NamedTuple": "A class from the `typing` module with the **property** of providing a clean, declarative way to create a `namedtuple`. Unlike `namedtuple()` (the factory function), this class-based approach supports full type hints and can have custom methods."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "class Employee(NamedTuple):",
+          "cause": "The class inherits from `NamedTuple`.",
+          "effect": "This tells Python to automatically generate an `__init__`, `__repr__`, and other `tuple`-like behaviors based on the type-hinted attributes."
+        },
+        {
+          "step": 2,
+          "action": "def get_email(self):",
+          "cause": "A new method is defined inside the class.",
+          "effect": "The `NamedTuple` class supports method definitions, allowing you to add custom behavior to your data object, which is not possible with the original `namedtuple()` factory function."
+        }
+      ]
+    },
+    "explanation_module": "This is the modern, recommended way to use `namedtuple`. It combines the best of both worlds: the immutability and memory efficiency of a tuple with the readability of named fields and the ability to add custom methods. It is a key conceptual tool for creating rich data objects that are both efficient and well-behaved.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "def example_decorator(arg1):\n    def wrapper(func):\n        def inner(*args, **kwargs):\n            print(f'Decorator received arg: {arg1}')\n            return func(*args, **kwargs)\n        return inner\n    return wrapper\n\n@example_decorator('Hello World')\ndef my_func():\n    print('Function executed')\n\nmy_func()",
+    "purpose": "To demonstrate a more complex decorator that is both a function and a class, and can accept arguments.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "decorator with arguments": "A powerful design pattern that uses a chain of nested functions to pass arguments to the decorator, which then applies the decoration."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "@example_decorator('Hello World')",
+          "cause": "The decorator is called as a function.",
+          "effect": "The `example_decorator` function is executed with the argument `'Hello World'`, and it returns the `wrapper` function."
+        },
+        {
+          "step": 2,
+          "action": "wrapper(my_func)",
+          "cause": "The returned `wrapper` function is then called with `my_func` as its argument.",
+          "effect": "It returns the `inner` function, which becomes the new `my_func`."
+        },
+        {
+          "step": 3,
+          "action": "my_func()",
+          "cause": "The decorated function is called.",
+          "effect": "The `inner` function is executed, printing the message from its closure, and then calling the original `my_func`."
+        }
+      ]
+    },
+    "explanation_module": "This is a more detailed look at the mechanism behind decorators with arguments. The key conceptual point is the three-level nesting: the outer function handles the arguments, the middle function performs the decoration, and the inner function is the actual wrapper that contains the core logic. This is a crucial concept for understanding and writing your own complex decorators.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "from abc import ABC, abstractmethod\n\nclass Engine(ABC):\n    @abstractmethod\n    def start(self):\n        pass\n\nclass Car:\n    def __init__(self, engine: Engine):\n        self.engine = engine\n\n    def start(self):\n        self.engine.start()\n\nclass ElectricEngine(Engine):\n    def start(self):\n        print('Electric engine starting...')\n\nclass GasEngine(Engine):\n    def start(self):\n        print('Gas engine starting...')\n\ncar1 = Car(ElectricEngine())\ncar1.start()\n\ncar2 = Car(GasEngine())\ncar2.start()",
+    "purpose": "To demonstrate the Dependency Inversion Principle using an Abstract Base Class to decouple high-level and low-level modules.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "Dependency Inversion Principle": "A design principle that has the **property** of stating that high-level modules should not depend on low-level modules. Both should depend on abstractions."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "class Car:",
+          "cause": "The `Car` class is a high-level module.",
+          "effect": "It depends on the `Engine` abstraction, not on a specific implementation like `ElectricEngine` or `GasEngine`. This is key."
+        },
+        {
+          "step": 2,
+          "action": "class ElectricEngine(Engine):",
+          "cause": "The `ElectricEngine` and `GasEngine` classes are low-level modules.",
+          "effect": "They also depend on the same `Engine` abstraction, ensuring they provide the required `start()` method."
+        },
+        {
+          "step": 3,
+          "action": "car1 = Car(ElectricEngine())",
+          "cause": "An instance of `Car` is created with a specific `Engine`.",
+          "effect": "The `Car` object works correctly with any object that adheres to the `Engine` abstraction, making it highly flexible and reusable."
+        }
+      ]
+    },
+    "explanation_module": "This is a key conceptual point for writing large, maintainable, and flexible software. By using an `ABC` (`Engine`) as an abstraction, the `Car` class is decoupled from the specific engine implementation. This means you can easily swap in new engine types without changing the `Car` class at all. This principle is a cornerstone of good software design and is a crucial concept for advanced Python development.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "def func1(x):\n    return f'Result from func1: {x}'\n\ndef func2(y):\n    return f'Result from func2: {y}'\n\ndef my_generator():\n    # yield from delegates to another generator\n    yield from [func1(1), func1(2)]\n    yield from [func2(3), func2(4)]\n\nfor result in my_generator():\n    print(result)",
+    "purpose": "To demonstrate `yield from`, which is a powerful syntax for delegating to a subgenerator or sub-iterable.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "yield from": "A syntax with the **purpose** of transparently delegating control to a subgenerator or iterable. It is a more powerful and concise alternative to a manual `for` loop over the sub-iterable."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "yield from [func1(1), func1(2)]",
+          "cause": "The generator encounters a `yield from` statement.",
+          "effect": "It hands off control to the list `[..., ...]` and yields each element one by one, as if the loop were inside the generator."
+        },
+        {
+          "step": 2,
+          "action": "yield from [func2(3), func2(4)]",
+          "cause": "The first `yield from` is exhausted, and the next line is executed.",
+          "effect": "The generator now delegates to the second list, yielding its elements."
+        }
+      ]
+    },
+    "explanation_module": "`yield from` is a key conceptual tool for simplifying the creation of complex generators. It flattens a nested generator structure, making it a more readable and efficient way to compose generators from smaller parts. It is a crucial concept for writing complex data pipelines and coroutines.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "class CustomError(Exception):\n    def __init__(self, message, error_code):\n        super().__init__(message)\n        self.error_code = error_code\n\ndef process_file(filename):\n    if not filename.endswith('.txt'):\n        raise CustomError('File must be a .txt file', 101)\n    \n    print(f'Processing {filename}')\n\ntry:\n    process_file('image.jpg')\nexcept CustomError as e:\n    print(f'Caught a custom error: {e.args[0]}')\n    print(f'Error code: {e.error_code}')",
+    "purpose": "To demonstrate creating and raising a custom exception with additional data.",
+    "conceptual_breakdown": {
+      "exception_handling": {
+        "custom exception": "A class that has the **property** of inheriting from `Exception` and provides a more specific and meaningful way to signal an error than using a generic built-in exception."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "class CustomError(Exception):",
+          "cause": "A new class is created that inherits from `Exception`.",
+          "effect": "This new class can now be raised and caught like any other exception."
+        },
+        {
+          "step": 2,
+          "action": "raise CustomError(...)",
+          "cause": "The `CustomError` is explicitly raised.",
+          "effect": "The program's normal flow is halted, and Python looks for a matching `except` block to handle the exception."
+        },
+        {
+          "step": 3,
+          "action": "except CustomError as e:",
+          "cause": "A `try/except` block catches the specific custom exception.",
+          "effect": "The code inside the `except` block is executed, allowing for specific error handling based on the type of exception raised and the custom data (`error_code`) attached to it."
+        }
+      ]
+    },
+    "explanation_module": "Creating custom exceptions is a key conceptual practice for writing robust and professional code. It provides more context than a generic error, which allows for more fine-grained error handling by the caller. This is a crucial concept for writing clean and maintainable APIs that are easy for other developers to use correctly.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "from collections import defaultdict\n\nmy_dict = defaultdict(lambda: {'count': 0, 'items': []})\nmy_dict['fruits']['count'] += 1\nmy_dict['fruits']['items'].append('apple')\nmy_dict['fruits']['count'] += 1\nmy_dict['fruits']['items'].append('banana')\n\nprint(my_dict)",
+    "purpose": "To demonstrate using `defaultdict` with a complex default factory (a `lambda` function) for advanced data aggregation.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "defaultdict": "A specialized dictionary with the **property** of automatically creating a default value for a missing key.",
+        "lambda function": "A small, anonymous function that can be used as a factory for the default value."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "defaultdict(lambda: {...})",
+          "cause": "The `defaultdict` is initialized with a `lambda` function that returns a dictionary.",
+          "effect": "Any time a new key is accessed, the `lambda` function is executed, returning a fresh dictionary with `count` and `items` keys."
+        },
+        {
+          "step": 2,
+          "action": "my_dict['fruits']['count']",
+          "cause": "The key `'fruits'` is accessed for the first time.",
+          "effect": "The `defaultdict` calls the `lambda`, creates `{'count': 0, 'items': []}`, and then the `count` is incremented."
+        }
+      ]
+    },
+    "explanation_module": "This example shows a more advanced application of `defaultdict`. By using a `lambda` as the default factory, you can easily create complex, nested data structures on the fly without needing multiple lines of boilerplate code. This is a key conceptual tool for writing concise and clean code for tasks like group-by aggregations or complex data parsing.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "class User:\n    def __init__(self, username, password):\n        self.username = username\n        self.password = password\n\n    def __del__(self):\n        print(f'{self.username} is being deleted from memory')\n\nuser = User('alice', '123')\n\n# The __del__ method will be called when the object is garbage collected.\n# We can explicitly delete the reference to force an immediate call.\ndel user",
+    "purpose": "To demonstrate the `__del__` dunder method, which is a key concept for defining a destructor that is called when an object is about to be garbage collected.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "__del__()": "A dunder method that has the **purpose** of defining the object's destructor. It is called when all references to the object have been deleted, and the object is ready to be garbage collected."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "user = User(...)",
+          "cause": "An instance of `User` is created, and a reference is assigned to `user`.",
+          "effect": "The object is now in memory and reachable."
+        },
+        {
+          "step": 2,
+          "action": "del user",
+          "cause": "The `del` statement removes the reference `user`.",
+          "effect": "Since no other references to the `User` object exist, the garbage collector recognizes the object is no longer needed and schedules the `__del__` method to be called, which prints a message before the object's memory is freed."
+        }
+      ]
+    },
+    "explanation_module": "The `__del__` method is a key conceptual tool for resource cleanup, but it should be used with extreme caution. Its timing is not guaranteed, and it may not be called at all in some circumstances. A `with` statement and a custom context manager are the preferred and more reliable way to handle resource cleanup. However, understanding `__del__` is crucial for a complete understanding of the Python object lifecycle.",
+    "confidence_score": 0.97,
+    "hallucination_score": 0.02
+  },
+  {
+    "code_snippet": "import weakref\n\nclass MyClass:\n    def __init__(self, name):\n        self.name = name\n        print(f'Object {self.name} created')\n\n    def __del__(self):\n        print(f'Object {self.name} is about to be deleted')\n\nobj = MyClass('strong_ref')\nweak_ref = weakref.ref(obj)\n\nprint(f'Weak reference exists: {weak_ref() is not None}')\n\ndel obj\n\nprint(f'Weak reference exists after deletion: {weak_ref() is not None}')",
+    "purpose": "To demonstrate `weakref`, a module for creating weak references that do not prevent an object from being garbage collected.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "weak reference": "A reference to an object that has the **property** of not increasing the object's reference count. If an object is only referenced by weak references, it will be garbage collected."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "obj = MyClass(...)",
+          "cause": "A `MyClass` object is created.",
+          "effect": "This creates a 'strong' reference to the object."
+        },
+        {
+          "step": 2,
+          "action": "weak_ref = weakref.ref(obj)",
+          "cause": "A weak reference to the object is created.",
+          "effect": "The `weak_ref` object points to `obj` but does not prevent `obj` from being garbage collected."
+        },
+        {
+          "step": 3,
+          "action": "del obj",
+          "cause": "The strong reference is deleted.",
+          "effect": "The object's reference count drops to zero, and it is garbage collected, which calls `__del__`. The weak reference now points to `None`."
+        }
+      ]
+    },
+    "explanation_module": "`weakref` is an advanced conceptual tool for dealing with circular references and memory management, particularly important for implementing caching, observer patterns, or other structures where objects need to be referenced without preventing their deletion. This is a crucial concept for building robust and memory-safe systems.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "from collections import UserDict\n\nclass DefaultDictWithLogging(UserDict):\n    def __getitem__(self, key):\n        if key not in self:\n            print(f'Key \"{key}\" not found. Returning a default value.')\n            self.data[key] = None\n        return self.data[key]\n\nmy_dict = DefaultDictWithLogging({'a': 1})\nprint(my_dict['a'])\nprint(my_dict['b'])",
+    "purpose": "To demonstrate subclassing `UserDict` to create a custom dictionary with modified behavior, which is a key concept for building more robust custom data structures than subclassing `dict` directly.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "UserDict": "A class that has the **property** of being a wrapper around a standard dictionary. Subclassing `UserDict` is the recommended way to create a custom dictionary-like object because it avoids the complexities and potential issues of subclassing the built-in `dict`."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "class DefaultDictWithLogging(UserDict):",
+          "cause": "The class inherits from `UserDict`.",
+          "effect": "This gives the class the full behavior of a dictionary but ensures that custom methods will work as expected, as all key operations are routed through the class's methods."
+        },
+        {
+          "step": 2,
+          "action": "def __getitem__(self, key):",
+          "cause": "The `__getitem__` method is overridden.",
+          "effect": "This allows custom logic (in this case, logging and a default value) to be executed whenever an item is accessed."
+        }
+      ]
+    },
+    "explanation_module": "While you can subclass `dict` directly, it is often discouraged due to the potential for unexpected behavior from its internal C implementation. `UserDict` provides a much safer and cleaner way to create a custom dictionary. It is a key conceptual tool for creating custom, robust, and well-behaved data structures.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  }
+]
