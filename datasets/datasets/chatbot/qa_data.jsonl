@@ -1,0 +1,85 @@
+{"prompt": "Why did the man run?", "conceptual_breakdown": {"Agent": "man", "Action": "run", "Reason": "to catch the bus", "Possibilities": ["can walk", "can run", "can drive"], "Properties": {"bus": "heavy", "man": "fast"}}}
+{"prompt": "How do you build a campfire?", "conceptual_breakdown": {"Agent": "you", "Action": "build", "Object": "campfire", "Cause": "to provide warmth and light", "Background": "outdoors", "Properties": {"wood": "flammable", "fire": "hot"}}}
+{"prompt": "Explain the five-step reasoning process.", "conceptual_breakdown": {"Agent": "protocol", "Action": "explain", "Object": "reasoning process", "Motion": "continuous", "Bridge": {"the five-step": "quantifier"}}}
+[
+ {
+    "prompt": "Turn off the light because it's too bright.",
+    "conceptual_breakdown": "Agent: (implied user). Action: Turn off. Object: the light. Bridge: because. Reason: it's too bright."
+  },
+  {
+    "prompt": "If you water the plant daily, it will grow tall.",
+    "conceptual_breakdown": "Agent: (implied user). Action: water. Object: the plant. Motion: daily. Cause: water the plant daily. Effect (implied Cause): it will grow tall."
+  },
+  {
+    "prompt": "A cat sleeping on a sunny windowsill.",
+    "conceptual_breakdown": "Agent: A cat. Motion: sleeping. Background: on a sunny windowsill. Possibilities: A cat can sleep."
+  },
+  {
+    "prompt": "Fix the bicycle's flat tire.",
+    "conceptual_breakdown": "Agent: (implied user). Action: Fix. Object: the bicycle's flat tire. Properties: flat tire implies a state to be changed."
+  },
+  {
+    ""prompt": "Why did the traffic jam occur on the highway?",
+    "conceptual_breakdown": "Action: occur. Object: the traffic jam. Background: on the highway. Reason: (expected from model)."
+  },
+  {
+    "prompt": "A robot painter creating a masterpiece with a palette of vibrant colors.",
+    "conceptual_breakdown": "Agent: A robot painter. Action: creating. Object: a masterpiece. Properties: vibrant colors."
+  },
+  {
+    "prompt": "Write a report about the impact of climate change on polar ice caps.",
+    "conceptual_breakdown": "Agent: (implied user). Action: Write. Object: a report. Cause: climate change. Effect (implied Cause): impact on polar ice caps."
+  },
+  {
+    "prompt": "The car stopped because it ran out of gas.",
+    "conceptual_breakdown": "Object: The car. Action: stopped. Bridge: because. Reason: it ran out of gas. Properties: ran out of gas implies a state that prevents an action."
+  },
+  {
+    "prompt": "Please summarize the main points of the Zenith whitepaper.",
+    "conceptual_breakdown": "Agent: (implied user). Action: summarize. Object: the main points of the Zenith whitepaper. Possibilities: The model can summarize a document."
+  },
+  {
+    "prompt": "A computer learning to play chess.",
+    "conceptual_breakdown": "Agent: A computer. Motion: learning to play. Object: chess. Possibilities: A computer can be trained to learn."
+  },
+  {
+    "prompt": "To make a cake, first mix the flour and sugar.",
+    "conceptual_breakdown": "Agent: (implied user). Action: mix. Object: the flour and sugar. Purpose (implied Reason): To make a cake."
+  },
+  {
+    "prompt": "The leaves turned red in the autumn.",
+    "conceptual_breakdown": "Object: The leaves. Action: turned. Color: red. Background: in the autumn. Cause: autumn. Effect (implied Cause): leaves turned red."
+  },
+  {
+    "prompt": "He bought a new jacket because his old one was torn.",
+    "conceptual_breakdown": "Agent: He. Action: bought. Object: a new jacket. Bridge: because. Reason: his old one was torn. Properties: torn implies a state that is undesirable and would require replacement."
+  },
+  {
+    "prompt": "What happens if you mix baking soda and vinegar?",
+    "conceptual_breakdown": "Agent: (implied user). Action: mix. Object: baking soda and vinegar. Cause: mixing baking soda and vinegar. Effect (implied Cause): what happens."
+  },
+  {
+    "prompt": "A child running in a field.",
+    "conceptual_breakdown": "Agent: A child. Motion: running. Background: in a field. Possibilities: A child can run."
+  },
+  {
+    "prompt": "Set the alarm for 7 AM.",
+    "conceptual_breakdown": "Agent: (implied user). Action: Set. Object: the alarm. Properties: 7 AM is a specific time to be set."
+  },
+  {
+    "prompt": "She was late to work because the bus was delayed.",
+    "conceptual_breakdown": "Agent: She. Action: was late. Bridge: because. Reason: the bus was delayed. Cause: the bus was delayed. Effect (implied Cause): she was late to work."
+  },
+  {
+    "prompt": "A musician playing a guitar on a stage.",
+    "conceptual_breakdown": "Agent: A musician. Motion: playing. Object: a guitar. Background: on a stage. Possibilities: A musician can play a guitar."
+  },
+  {
+    "prompt": "Please explain the concept of Hyper-Conceptual Thinking (HCT).",
+    "conceptual_breakdown": "Agent: (implied user). Action: explain. Object: the concept of Hyper-Conceptual Thinking (HCT). Possibilities: The model can explain HCT."
+  },
+  {
+    "prompt": "To boil water, heat it to 100 degrees Celsius.",
+    "conceptual_breakdown": "Agent: (implied user). Action: heat. Object: water. Properties: 100 degrees Celsius is a specific property. Reason (implied): To boil water."
+  }
+]
