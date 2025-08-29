@@ -19,7 +19,7 @@
     "conceptual_breakdown": "Agent: (implied user). Action: Fix. Object: the bicycle's flat tire. Properties: flat tire implies a state to be changed."
   },
   {
-    ""prompt": "Why did the traffic jam occur on the highway?",
+    "prompt": "Why did the traffic jam occur on the highway?",
     "conceptual_breakdown": "Action: occur. Object: the traffic jam. Background: on the highway. Reason: (expected from model)."
   },
   {
