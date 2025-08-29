@@ -874,3 +874,684 @@
     "hallucination_score": 0.01
   }
 ]
+[
+  {
+    "code_snippet": "class MyLogger:\n    def __init__(self):\n        self.log_messages = []\n\n    def __getattribute__(self, name):\n        if name == 'log_messages':\n            print('Accessing log_messages')\n        return super().__getattribute__(name)\n\n    def __getattr__(self, name):\n        if name == 'status':\n            return 'Ready'\n        raise AttributeError(f'No attribute named {name}')\n\nlogger = MyLogger()\nprint(logger.log_messages)\nprint(logger.status)\n\n# This would raise an AttributeError\n# print(logger.non_existent_attribute)",
+    "purpose": "To demonstrate the difference between `__getattribute__` and `__getattr__` for intercepting attribute access.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "__getattribute__()": "A dunder method that has the **purpose** of intercepting every single attribute access, including those that exist. It is a powerful tool for a full-scale attribute access control.",
+        "__getattr__()": "A dunder method that has the **purpose** of being called only when an attribute is not found by normal means. It is a more forgiving method for handling missing attributes."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "print(logger.log_messages)",
+          "cause": "An attribute that exists (`log_messages`) is accessed.",
+          "effect": "The `__getattribute__` method is called first, printing its message, and then `super().__getattribute__` is used to get the actual value."
+        },
+        {
+          "step": 2,
+          "action": "print(logger.status)",
+          "cause": "An attribute that does not exist (`status`) is accessed.",
+          "effect": "Python's normal lookup fails. It then calls `__getattr__`, which intercepts the call and returns a value. `__getattribute__` is **not** called for this case."
+        }
+      ]
+    },
+    "explanation_module": "Understanding the difference between these two methods is a key conceptual point for advanced meta-programming. `__getattribute__` is a very low-level hook and must be used carefully, as a mistake can lead to infinite recursion. `__getattr__` is much safer and is the preferred method for implementing behavior for 'missing' attributes. This is a crucial concept for building frameworks and proxies.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "from collections import Counter\n\ntext = 'this is a simple example of counting words'\nwords = text.split()\n\nword_counts = Counter(words)\nprint(word_counts)\n\nmost_common = word_counts.most_common(2)\nprint(most_common)",
+    "purpose": "To demonstrate `collections.Counter`, a powerful subclass of `dict` for counting hashable objects.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "Counter": "A specialized dictionary with the **purpose** of making it easy to count the frequency of items in a collection. It automatically initializes keys with a count of zero when they are first accessed."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "Counter(words)",
+          "cause": "The `Counter` is initialized with an iterable.",
+          "effect": "It iterates through the `words` list, creates a dictionary mapping each unique word to its frequency, and returns the result."
+        },
+        {
+          "step": 2,
+          "action": "word_counts.most_common(2)",
+          "cause": "The `most_common` method is called.",
+          "effect": "It returns a list of the two most common words and their counts, sorted in descending order."
+        }
+      ]
+    },
+    "explanation_module": "`collections.Counter` is a key conceptual tool for simplifying frequency counting and statistical analysis. It is far more concise and efficient than manually writing a loop and a dictionary. This is a crucial concept for writing clean, readable, and high-performance code for data analysis tasks.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "from functools import reduce\n\nnumbers = [1, 2, 3, 4]\nsum_of_numbers = reduce(lambda x, y: x + y, numbers)\nprint(f'Sum: {sum_of_numbers}')\n\nproduct_of_numbers = reduce(lambda x, y: x * y, numbers)\nprint(f'Product: {product_of_numbers}')",
+    "purpose": "To demonstrate `functools.reduce`, a functional programming tool for applying a function cumulatively to the items of a sequence.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "reduce": "A function with the **purpose** of applying a given function (`lambda x, y: x + y`) to the first two items in an iterable, then applying it to the result and the next item, and so on, until the iterable is exhausted."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "reduce(lambda x, y: x + y, [1, 2, 3, 4])",
+          "cause": "The `reduce` function is called.",
+          "effect": "It performs the following sequence of operations:\n1. `(1, 2)` -> `3`\n2. `(3, 3)` -> `6`\n3. `(6, 4)` -> `10`"
+        }
+      ]
+    },
+    "explanation_module": "`reduce` is a powerful conceptual tool from the functional programming paradigm. While some simple uses can be replaced with a `for` loop or `sum()`, `reduce` is the conceptually correct and concise tool for complex cumulative operations. It is a key concept for writing declarative and expressive code for data aggregation and transformation tasks.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "import itertools\n\nitems = ['A', 'B', 'C']\n\nprint('Combinations of size 2:')\nfor combo in itertools.combinations(items, 2):\n    print(combo)\n\nprint('\\nPermutations of size 2:')\nfor perm in itertools.permutations(items, 2):\n    print(perm)",
+    "purpose": "To demonstrate `itertools.combinations` and `itertools.permutations` for generating combinations and permutations of an iterable.",
+    "conceptual_breakdown": {
+      "module_function": {
+        "combinations()": "A function that has the **purpose** of returning all possible unique combinations of a given size from an iterable, without regard to order (`(A, B)` is the same as `(B, A)`).",
+        "permutations()": "A function that has the **purpose** of returning all possible unique ordered permutations of a given size from an iterable (`(A, B)` is different from `(B, A)`)."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "itertools.combinations(items, 2)",
+          "cause": "The function is called.",
+          "effect": "It returns an iterator that yields `('A', 'B')`, `('A', 'C')`, and `('B', 'C')`."
+        },
+        {
+          "step": 2,
+          "action": "itertools.permutations(items, 2)",
+          "cause": "The function is called.",
+          "effect": "It returns an iterator that yields `('A', 'B')`, `('A', 'C')`, `('B', 'A')`, `('B', 'C')`, `('C', 'A')`, and `('C', 'B')`."
+        }
+      ]
+    },
+    "explanation_module": "`itertools` is a key conceptual module for efficient, memory-conscious iteration. These functions are crucial for tasks in mathematics, statistics, and algorithm design. Using them is far more efficient and concise than writing your own manual loops. This is a crucial concept for a deep understanding of Python's standard library and for writing high-performance code.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "import logging\n\n# Configure logging to a file\nlogging.basicConfig(\n    level=logging.INFO,\n    format='%(asctime)s - %(levelname)s - %(message)s',\n    filename='app.log',\n    filemode='w'\n)\n\nlogging.debug('This message will not be logged.')\nlogging.info('This is an informational message.')\nlogging.warning('This is a warning message.')",
+    "purpose": "To demonstrate the `logging` module, which is a powerful and flexible tool for producing diagnostic output.",
+    "conceptual_breakdown": {
+      "module_function": {
+        "logging": "A standard library module with the **purpose** of providing a flexible framework for event logging. It is a key conceptual point to use `logging` instead of `print()` for production code, as it allows for fine-grained control over log levels, format, and destination."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "logging.basicConfig(...)",
+          "cause": "The basic configuration is set up.",
+          "effect": "This configures the root logger to send messages of `INFO` level and above to a file named `app.log` in a specific format."
+        },
+        {
+          "step": 2,
+          "action": "logging.debug(...)",
+          "cause": "A `DEBUG` level message is emitted.",
+          "effect": "It is ignored because the configured log level is `INFO`, so it is not written to the log file."
+        },
+        {
+          "step": 3,
+          "action": "logging.info(...)",
+          "cause": "An `INFO` level message is emitted.",
+          "effect": "It is written to the `app.log` file because the log level is met."
+        }
+      ]
+    },
+    "explanation_module": "The `logging` module is a cornerstone of professional Python development. Unlike `print()`, it allows you to control the verbosity of your output, send messages to different destinations (files, network, etc.), and include contextual information. This is a crucial concept for writing robust, maintainable, and debuggable applications.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "import sys\n\nclass MyList(list):\n    def __iadd__(self, other):\n        print('__iadd__ called!')\n        return super().__iadd__(other)\n\n    def __add__(self, other):\n        print('__add__ called!')\n        return super().__add__(other)\n\nmy_list = MyList([1, 2, 3])\n\n# The __iadd__ dunder method is called for in-place addition\nmy_list += [4, 5]\n\n# The __add__ dunder method is called for a new object\nnew_list = my_list + [6, 7]",
+    "purpose": "To demonstrate the difference between in-place (`__iadd__`) and non-in-place (`__add__`) arithmetic operators.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "in-place operators": "A class of dunder methods (e.g., `__iadd__`, `__isub__`) that have the **purpose** of performing an operation and modifying the object in place, without creating a new object.",
+        "non-in-place operators": "A class of dunder methods (e.g., `__add__`, `__sub__`) that have the **purpose** of performing an operation and returning a new object, leaving the original object unchanged."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_list += [4, 5]",
+          "cause": "The in-place addition operator (`+=`) is used.",
+          "effect": "The `__iadd__` dunder method is called, and the list is modified in place."
+        },
+        {
+          "step": 2,
+          "action": "new_list = my_list + [6, 7]",
+          "cause": "The non-in-place addition operator (`+`) is used.",
+          "effect": "The `__add__` dunder method is called, a new `MyList` object is created with the combined elements, and the original `my_list` remains unchanged."
+        }
+      ]
+    },
+    "explanation_module": "Understanding in-place and non-in-place operations is a key conceptual point for writing memory-efficient code and correctly handling object mutations. This is a crucial concept for designing a clean and predictable API for your custom data structures.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "def my_generator():\n    yield 1\n    yield 2\n    yield 3\n\nmy_iter = iter(my_generator())\n\nprint(next(my_iter))\nprint(next(my_iter))\nprint(next(my_iter))\n\n# This would raise a StopIteration exception\n# print(next(my_iter))",
+    "purpose": "To demonstrate the `StopIteration` exception, which signals that an iterator has been exhausted.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "StopIteration": "A built-in exception with the **purpose** of being raised by the `next()` function or an iterator's `__next__()` method to signal that there are no more items to be yielded by the iterator."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "next(my_iter)",
+          "cause": "The `next()` function is called on the iterator.",
+          "effect": "The generator resumes execution until a `yield` statement is hit, returning `1`."
+        },
+        {
+          "step": 2,
+          "action": "my_generator() is exhausted",
+          "cause": "The generator function reaches its end and returns.",
+          "effect": "The internal machinery of the generator raises a `StopIteration` exception, which signals to a `for` loop that it should terminate."
+        }
+      ]
+    },
+    "explanation_module": "`StopIteration` is a key conceptual point for understanding how Python's iteration protocol works. While a `for` loop handles this exception internally, an advanced developer must be aware of it when manually iterating over a generator or building custom iterators. This is a crucial concept for a deep understanding of Python's iteration protocol.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "from collections import namedtuple\n\n# Factory function syntax\nPoint = namedtuple('Point', ['x', 'y'])\n\np = Point(x=10, y=20)\nprint(f'Point object: {p}')\n\n# Accessing attributes\nprint(f'x: {p.x}')\nprint(f'y: {p.y}')\n\n# Named tuples are immutable\n# p.x = 100 # This would raise an AttributeError",
+    "purpose": "To demonstrate the `namedtuple` factory function, which creates a tuple subclass with named fields.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "namedtuple": "A factory function that has the **purpose** of creating a new tuple subclass. Instances of this class are tuples that are immutable but also allow access to their elements by a field name."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "Point = namedtuple('Point', ['x', 'y'])",
+          "cause": "The `namedtuple` factory is called.",
+          "effect": "A new class `Point` is created on the fly. This class has the same characteristics as a tuple but adds properties for `x` and `y`."
+        },
+        {
+          "step": 2,
+          "action": "p = Point(x=10, y=20)",
+          "cause": "An instance of the new class is created.",
+          "effect": "A tuple-like object is created. Its elements can be accessed by both index (`p[0]`) and by name (`p.x`)."
+        }
+      ]
+    },
+    "explanation_module": "`namedtuple` is a key conceptual tool for creating lightweight, immutable data objects. It is more readable than a regular tuple and more memory-efficient than a full-fledged class. While the class-based `NamedTuple` is often preferred in modern code, understanding the original factory function is crucial for a complete understanding of the topic.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "class MyClass:\n    pass\n\nobj = MyClass()\n\n# Set a new attribute on the instance\nsetattr(obj, 'my_attr', 123)\nprint(obj.my_attr)\n\n# Get an attribute dynamically\nvalue = getattr(obj, 'my_attr')\nprint(value)\n\n# Check for an attribute's existence\nprint(hasattr(obj, 'my_attr'))\nprint(hasattr(obj, 'non_existent'))",
+    "purpose": "To demonstrate the built-in functions for dynamic attribute manipulation: `setattr`, `getattr`, and `hasattr`.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "dynamic attribute access": "The **property** of manipulating an object's attributes at runtime using strings instead of hardcoded names."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "setattr(obj, 'my_attr', 123)",
+          "cause": "The `setattr()` function is called.",
+          "effect": "It adds a new attribute named `my_attr` to the `obj` instance with the value `123`."
+        },
+        {
+          "step": 2,
+          "action": "getattr(obj, 'my_attr')",
+          "cause": "The `getattr()` function is called.",
+          "effect": "It retrieves the value of the attribute named by the string `'my_attr'` from the `obj` instance."
+        },
+        {
+          "step": 3,
+          "action": "hasattr(obj, 'my_attr')",
+          "cause": "The `hasattr()` function is called.",
+          "effect": "It checks if the attribute named `'my_attr'` exists on the `obj` instance and returns `True`."
+        }
+      ]
+    },
+    "explanation_module": "These functions are powerful conceptual tools for meta-programming and introspection. They allow you to write code that can work with any object, regardless of its specific attributes, and are a key pattern in frameworks, ORMs (Object-Relational Mappers), and data processing pipelines where you need to access attributes dynamically.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "class CustomList(list):\n    def __init__(self, data):\n        super().__init__(data)\n\n    def __len__(self):\n        print('Custom __len__ called!')\n        return super().__len__()\n\n    def __getitem__(self, key):\n        print(f'Custom __getitem__ called with key: {key}')\n        return super().__getitem__(key)\n\nmy_list = CustomList([1, 2, 3])\n\nprint(len(my_list))\nprint(my_list[0])",
+    "purpose": "To demonstrate overriding dunder methods to customize the behavior of built-in functions like `len()` and attribute access.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "dunder methods": "A class of methods (e.g., `__len__`, `__getitem__`) that have the **property** of providing a hook for Python's built-in functions and syntax to work with a custom object."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "print(len(my_list))",
+          "cause": "The built-in `len()` function is called on a `CustomList` object.",
+          "effect": "Python internally looks for and calls the `__len__` method defined on the `CustomList` class."
+        },
+        {
+          "step": 2,
+          "action": "print(my_list[0])",
+          "cause": "Item access using `[]` syntax is used.",
+          "effect": "Python internally looks for and calls the `__getitem__` method defined on the `CustomList` class."
+        }
+      ]
+    },
+    "explanation_module": "Understanding dunder methods is a key conceptual point for writing Pythonic, well-behaved classes. By overriding them, you can make your custom objects work seamlessly with the rest of the language, such as being used in `for` loops, sliced, or used with `len()`. This is a crucial concept for building robust and intuitive class APIs.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "import sys\n\n# Create a simple generator\nmy_gen = (i for i in range(10))\n\n# Get the size of the generator object\nsize_of_gen = sys.getsizeof(my_gen)\n\n# Get the size of the equivalent list\nsize_of_list = sys.getsizeof([i for i in range(10)])\n\nprint(f'Size of generator: {size_of_gen} bytes')\nprint(f'Size of list: {size_of_list} bytes')",
+    "purpose": "To demonstrate the memory efficiency of a generator expression versus a list comprehension.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "generator expression": "A concise syntax with the **property** of creating an iterator that generates values on the fly, one at a time, instead of storing them all in memory at once."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_gen = (i for i in range(10))",
+          "cause": "A generator expression is used.",
+          "effect": "A generator object is created in memory. It holds the 'recipe' for creating the numbers but doesn't store the numbers themselves."
+        },
+        {
+          "step": 2,
+          "action": "size_of_list = sys.getsizeof([i for i in range(10)])",
+          "cause": "A list comprehension is used.",
+          "effect": "All ten numbers are created and stored in a list in memory at once, which requires significantly more space."
+        }
+      ]
+    },
+    "explanation_module": "This is a key conceptual point for writing memory-efficient and scalable code. Generators are a powerful tool for processing large datasets that would not fit in memory. Understanding when to use a generator (e.g., for large, one-pass data streams) versus a list (e.g., when you need random access to data) is a crucial concept for advanced Python development.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "import types\n\ndef my_func():\n    pass\n\nclass MyClass:\n    def my_method(self):\n        pass\n\nprint(isinstance(my_func, types.FunctionType))\nprint(isinstance(MyClass.my_method, types.FunctionType))\nprint(isinstance(MyClass().my_method, types.MethodType))",
+    "purpose": "To demonstrate using the `types` module for type-checking and understanding the difference between a function and a bound method.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "types module": "A standard library module with the **purpose** of providing a set of constants and functions that represent the various types in Python's object system."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "isinstance(my_func, types.FunctionType)",
+          "cause": "The `my_func` object is checked.",
+          "effect": "It is a standalone function, so the check returns `True`."
+        },
+        {
+          "step": 2,
+          "action": "isinstance(MyClass.my_method, types.FunctionType)",
+          "cause": "A method is accessed from a class.",
+          "effect": "It is still a regular function, so the check returns `True`."
+        },
+        {
+          "step": 3,
+          "action": "isinstance(MyClass().my_method, types.MethodType)",
+          "cause": "A method is accessed from an instance.",
+          "effect": "It becomes a 'bound method' that automatically passes the instance (`self`) as the first argument, so the check returns `True`."
+        }
+      ]
+    },
+    "explanation_module": "The `types` module is a key conceptual tool for introspection and meta-programming. Understanding the subtle differences between functions, methods, and bound methods is crucial for writing advanced code, particularly for decorators and frameworks. This is a crucial concept for a deep understanding of the Python object model.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "from collections import OrderedDict\n\n# An OrderedDict remembers the order in which items were inserted\nod = OrderedDict()\nod['a'] = 1\nod['b'] = 2\nod['c'] = 3\n\nprint(od.popitem())\nprint(od.popitem(last=False))\n\n# In modern Python, standard dicts also preserve insertion order, \n# but OrderedDict has additional features like popitem(last=False)",
+    "purpose": "To demonstrate `collections.OrderedDict`, which maintains the order of key-value pairs.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "OrderedDict": "A specialized dictionary with the **property** of remembering the order in which items were inserted. While standard dictionaries have this property since Python 3.7, `OrderedDict` provides additional methods and features."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "od['a'] = 1",
+          "cause": "Items are added in a specific order.",
+          "effect": "The `OrderedDict` internally stores the order of insertion."
+        },
+        {
+          "step": 2,
+          "action": "od.popitem()",
+          "cause": "The `popitem()` method is called without an argument.",
+          "effect": "It removes and returns the last key-value pair added (`'c'`, `3`), behaving like a LIFO stack."
+        },
+        {
+          "step": 3,
+          "action": "od.popitem(last=False)",
+          "cause": "The `popitem()` method is called with `last=False`.",
+          "effect": "It removes and returns the first key-value pair added (`'a'`, `1`), behaving like a FIFO queue."
+        }
+      ]
+    },
+    "explanation_module": "While modern standard dictionaries have largely superseded `OrderedDict` for simple use cases, understanding the `OrderedDict` is a key conceptual point for a complete understanding of Python's data structures. Its additional methods and guaranteed behavior make it the correct choice for specific use cases.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "import sys\n\n# Create a simple list with a single integer\nmy_list = [1]\n\n# The sys.getrefcount() function returns the reference count\nprint(f'Reference count before new variable: {sys.getrefcount(my_list)}')\n\n# Create a new reference to the same object\nnew_ref = my_list\n\nprint(f'Reference count after new variable: {sys.getrefcount(my_list)}')\n\n# A note on sys.getrefcount: it adds a temporary reference,\n# so the count is always at least 1 higher than expected.",
+    "purpose": "To demonstrate the concept of reference counting, a key mechanism of Python's garbage collector.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "reference counting": "A memory management technique that has the **property** of counting the number of references to an object. When the count drops to zero, the object's memory can be reclaimed."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_list = [1]",
+          "cause": "An object is created and a reference is assigned to `my_list`.",
+          "effect": "The object's reference count is 1 (plus the temporary one from `sys.getrefcount()`)."
+        },
+        {
+          "step": 2,
+          "action": "new_ref = my_list",
+          "cause": "A new reference to the same object is created.",
+          "effect": "The object's reference count is incremented. Both `my_list` and `new_ref` point to the same object."
+        }
+      ]
+    },
+    "explanation_module": "Reference counting is a key conceptual tool for understanding how Python's garbage collection works. While it is the primary mechanism, it cannot handle circular references. Python's cyclic garbage collector is used to clean up these cases. Understanding this concept is crucial for advanced memory management.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "class CustomContainer:\n    def __init__(self, data):\n        self.data = data\n\n    def __contains__(self, item):\n        print(f'__contains__ called for {item}')\n        return item in self.data\n\nmy_container = CustomContainer([1, 2, 3])\n\nprint(1 in my_container)\nprint(4 in my_container)",
+    "purpose": "To demonstrate the `__contains__` dunder method, which allows an object to work with the `in` operator.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "__contains__()": "A dunder method that has the **purpose** of defining the behavior for membership testing. When the `in` operator is used, Python calls this method on the object."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "1 in my_container",
+          "cause": "The `in` operator is used.",
+          "effect": "Python internally calls `my_container.__contains__(1)`, which then performs the membership test and returns `True`."
+        },
+        {
+          "step": 2,
+          "action": "4 in my_container",
+          "cause": "The `in` operator is used.",
+          "effect": "Python internally calls `my_container.__contains__(4)`, which then performs the membership test and returns `False`."
+        }
+      ]
+    },
+    "explanation_module": "`__contains__` is a key conceptual tool for creating Pythonic data structures. It allows your custom classes to be used with a standard, readable syntax. This is a crucial concept for creating well-behaved and intuitive class APIs.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "import sys\n\n# Change the recursion limit to allow for deeper recursion\nsys.setrecursionlimit(2000)\n\ndef factorial(n):\n    if n == 0:\n        return 1\n    return n * factorial(n-1)\n\n# The default recursion limit is usually around 1000\nprint(factorial(1500))",
+    "purpose": "To demonstrate `sys.setrecursionlimit`, a tool for increasing the maximum depth of the Python interpreter stack.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "recursion limit": "A safety mechanism with the **purpose** of preventing a stack overflow from infinite recursion. The default value is usually 1000."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "sys.setrecursionlimit(2000)",
+          "cause": "The recursion limit is changed.",
+          "effect": "The interpreter now allows for deeper recursion, which can be useful for algorithms that require it, such as deep tree traversals."
+        },
+        {
+          "step": 2,
+          "action": "factorial(1500)",
+          "cause": "A function is called with a large number of recursive calls.",
+          "effect": "Without the change to the recursion limit, this would raise a `RecursionError`. With the change, the function can execute successfully."
+        }
+      ]
+    },
+    "explanation_module": "Changing the recursion limit is an advanced conceptual tool that should be used with caution, as it can lead to stack overflow if not handled correctly. While it can be necessary for certain algorithms, the conceptually correct approach is often to refactor a recursive function to use an iterative approach instead. This is a crucial concept for understanding the trade-offs of recursion in Python.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "def simple_generator():\n    yield 'A'\n    yield 'B'\n\ngen = simple_generator()\n\nprint(next(gen))\n\n# The generator's state is saved, and we can resume it\nprint(next(gen))\n\n# This would raise a StopIteration\n# print(next(gen))",
+    "purpose": "To demonstrate the state-saving nature of a generator.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "generator": "A function with the **property** of being an iterator that generates values on the fly and saves its state between calls. The `yield` keyword is what turns a function into a generator."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "gen = simple_generator()",
+          "cause": "The generator function is called.",
+          "effect": "It returns a generator object but does not execute the code inside the function."
+        },
+        {
+          "step": 2,
+          "action": "print(next(gen))",
+          "cause": "The `next()` function is called on the generator object.",
+          "effect": "The function's code runs from the beginning until it hits the first `yield`, returns the value `'A'`, and then its state is saved at that point."
+        },
+        {
+          "step": 3,
+          "action": "print(next(gen))",
+          "cause": "The `next()` function is called again.",
+          "effect": "The function's code resumes from where it left off, runs until the next `yield`, returns `'B'`, and then saves its state again."
+        }
+      ]
+    },
+    "explanation_module": "Generators are a key conceptual tool for creating efficient, memory-conscious iterators. Understanding that they save their state is crucial for using them correctly in data pipelines and asynchronous programming. This is a foundational concept for advanced Python development.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "import types\n\nclass MyClass:\n    pass\n\nclass NewInt(int):\n    pass\n\nprint(isinstance(MyClass(), object))\nprint(isinstance(10, NewInt))\nprint(isinstance(10, int))",
+    "purpose": "To demonstrate the built-in `isinstance` function, which is a key concept for type checking and understanding the class hierarchy.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "isinstance()": "A built-in function that has the **purpose** of checking if an object is an instance of a given class or a subclass of that class."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "isinstance(MyClass(), object)",
+          "cause": "An instance of `MyClass` is checked against `object`.",
+          "effect": "Since all classes in Python implicitly inherit from `object`, this check returns `True`."
+        },
+        {
+          "step": 2,
+          "action": "isinstance(10, NewInt)",
+          "cause": "An integer is checked against a custom subclass of `int`.",
+          "effect": "This returns `False`, as the integer is not an instance of the specific subclass."
+        },
+        {
+          "step": 3,
+          "action": "isinstance(10, int)",
+          "cause": "An integer is checked against its own type.",
+          "effect": "This returns `True`."
+        }
+      ]
+    },
+    "explanation_module": "`isinstance()` is a key conceptual tool for writing flexible and robust code that can handle multiple types. It is often preferred over checking for a specific type (`type(obj) is MyClass`), as it respects the inheritance hierarchy. This is a crucial concept for writing a clean and reliable API.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "from abc import ABC, abstractmethod\n\nclass Shape(ABC):\n    @abstractmethod\n    def area(self):\n        pass\n\n    def description(self):\n        return 'This is a shape.'\n\nclass Circle(Shape):\n    def __init__(self, radius):\n        self.radius = radius\n    \n    def area(self):\n        return 3.14 * self.radius**2\n\ncircle = Circle(5)\nprint(circle.area())\nprint(circle.description())",
+    "purpose": "To demonstrate an Abstract Base Class (ABC) that has both abstract and concrete methods.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "abstract method": "A method with the **property** of being declared in an abstract class but having no implementation. Subclasses are required to provide their own implementation.",
+        "concrete method": "A method with the **property** of having a full implementation. It can be called directly on an instance of the abstract class's subclass."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "@abstractmethod def area(self):",
+          "cause": "The `area` method is decorated with `@abstractmethod`.",
+          "effect": "This forces any concrete subclass to provide a concrete implementation for `area`."
+        },
+        {
+          "step": 2,
+          "action": "def description(self):",
+          "cause": "The `description` method is not abstract.",
+          "effect": "It can be inherited and used by `Circle` without needing to be overridden."
+        }
+      ]
+    },
+    "explanation_module": "This is a key conceptual point for designing flexible and powerful class hierarchies. By mixing abstract and concrete methods in an ABC, you can enforce a specific API while also providing reusable, default behavior. This is a crucial concept for writing large, well-structured, and maintainable libraries.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "def simple_decorator(func):\n    def wrapper(*args, **kwargs):\n        print('Starting...')\n        result = func(*args, **kwargs)\n        print('Finishing...')\n        return result\n    return wrapper\n\n@simple_decorator\ndef add(a, b):\n    return a + b\n\nprint(add(2, 3))",
+    "purpose": "To demonstrate a basic decorator, which is a function that takes another function and extends its behavior without explicitly modifying it.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "decorator": "A function that has the **purpose** of wrapping another function to add new functionality (e.g., logging, timing, validation) to it. It is syntactic sugar for `add = simple_decorator(add)`."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "@simple_decorator",
+          "cause": "The `@` syntax is used.",
+          "effect": "The `add` function is passed as an argument to `simple_decorator`, which returns the `wrapper` function."
+        },
+        {
+          "step": 2,
+          "action": "add(2, 3)",
+          "cause": "The decorated function `add` is called.",
+          "effect": "The `wrapper` function is actually executed, which prints 'Starting...', calls the original `add` function, prints 'Finishing...', and returns the result."
+        }
+      ]
+    },
+    "explanation_module": "Decorators are a cornerstone of advanced Python programming. Understanding their mechanism is crucial for using and writing your own reusable code. They are a key conceptual tool for adding a layer of abstraction and cross-cutting concerns to a function or method.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "from enum import Enum, auto\n\nclass Color(Enum):\n    RED = auto()\n    GREEN = auto()\n    BLUE = auto()\n\nprint(Color.RED)\nprint(Color.RED.name)\nprint(Color.RED.value)\n\n# This would raise a TypeError\n# Color.RED = 'New Value'",
+    "purpose": "To demonstrate the `enum` module for creating a set of symbolic names (members) bound to unique, constant values.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "enum": "A class from the `enum` module that has the **purpose** of providing a way to define a set of named constants. Enum members are immutable and have a unique value."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "class Color(Enum):",
+          "cause": "The `Color` class inherits from `Enum`.",
+          "effect": "This makes the class an enumeration."
+        },
+        {
+          "step": 2,
+          "action": "RED = auto()",
+          "cause": "The `auto()` function is used.",
+          "effect": "This automatically assigns a unique, integer value to the `RED` member, which makes the code more robust against changes."
+        }
+      ]
+    },
+    "explanation_module": "The `enum` module is a key conceptual tool for creating code that is both more readable and safer. By using named constants instead of 'magic numbers' or strings, you can prevent bugs caused by typos and make your code more self-documenting. This is a crucial concept for writing clean, robust, and professional code.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  },
+  {
+    "code_snippet": "class MyClass:\n    pass\n\nobj = MyClass()\n\n# Check if an object is callable\nprint(f'Is obj callable? {callable(obj)}')\n\ndef my_func():\n    pass\n\n# Check if a function is callable\nprint(f'Is my_func callable? {callable(my_func)}')\n\nclass CallableClass:\n    def __call__(self, x):\n        print(f'__call__ was used with {x}')\n\ncallable_obj = CallableClass()\n\n# Call the object directly like a function\ncallable_obj(10)\nprint(f'Is callable_obj callable? {callable(callable_obj)}')",
+    "purpose": "To demonstrate the `callable()` built-in function and the `__call__` dunder method for making an object callable like a function.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "__call__()": "A dunder method that has the **purpose** of making an instance of a class callable like a function. It is a key conceptual tool for creating function-like objects with a persistent state."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "callable_obj(10)",
+          "cause": "An instance of `CallableClass` is called directly.",
+          "effect": "This invokes the `__call__` dunder method on the instance, passing `10` as an argument."
+        }
+      ]
+    },
+    "explanation_module": "The `__call__` dunder method is a key conceptual tool for creating highly flexible and powerful objects. It is often used in decorators that are implemented as classes, or for creating objects that act as proxies for a function call. This is a crucial concept for a deeper understanding of the Python object model and for writing advanced frameworks.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "def my_generator():\n    value = yield 1\n    print(f'Received: {value}')\n    yield 2\n\ngen = my_generator()\n\nprint(next(gen))\n\n# Send a value into the generator\nprint(gen.send('Hello World'))",
+    "purpose": "To demonstrate the `generator.send()` method, which allows a value to be sent back into a running generator.",
+    "conceptual_breakdown": {
+      "language_feature": {
+        "generator.send()": "A method with the **purpose** of resuming a generator's execution and sending a value to it. The value is received by the `yield` expression on the other side."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "print(next(gen))",
+          "cause": "The generator is started and runs until the first `yield`.",
+          "effect": "It yields `1` and pauses."
+        },
+        {
+          "step": 2,
+          "action": "print(gen.send('Hello World'))",
+          "cause": "The `send` method is called.",
+          "effect": "The generator resumes execution from where it left off. The `value = yield 1` expression now evaluates to `'Hello World'`. The generator continues to the next `yield`, returning `2`."
+        }
+      ]
+    },
+    "explanation_module": "The `generator.send()` method is a key conceptual tool for advanced generator usage, particularly for building coroutines and complex asynchronous data pipelines. It creates a bidirectional communication channel between the caller and the generator. This is a crucial concept for understanding `asyncio` and for writing sophisticated concurrent code.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "class MyClass:\n    def __init__(self, value):\n        self.value = value\n\n    def __lt__(self, other):\n        print(f'__lt__ called for {self.value} < {other.value}')\n        return self.value < other.value\n\n    def __gt__(self, other):\n        print(f'__gt__ called for {self.value} > {other.value}')\n        return self.value > other.value\n\nobj1 = MyClass(10)\nobj2 = MyClass(20)\n\nprint(obj1 < obj2)\nprint(obj1 > obj2)",
+    "purpose": "To demonstrate the comparison dunder methods (`__lt__` and `__gt__`), which allow for custom object comparisons.",
+    "conceptual_breakdown": {
+      "object_oriented_programming": {
+        "comparison dunder methods": "A set of dunder methods (e.g., `__lt__` for less than, `__gt__` for greater than) that have the **purpose** of defining the behavior of comparison operators for a custom object."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "obj1 < obj2",
+          "cause": "The less than (`<`) operator is used.",
+          "effect": "Python internally calls `obj1.__lt__(obj2)`, and the method's return value determines the result of the comparison."
+        },
+        {
+          "step": 2,
+          "action": "obj1 > obj2",
+          "cause": "The greater than (`>`) operator is used.",
+          "effect": "Python internally calls `obj1.__gt__(obj2)`, and the method's return value determines the result of the comparison."
+        }
+      ]
+    },
+    "explanation_module": "Overriding these dunder methods is a key conceptual point for creating custom objects that behave naturally with Python's operators. By defining them, you can make your objects sortable and comparable, which is crucial for creating a clean and intuitive API.",
+    "confidence_score": 0.98,
+    "hallucination_score": 0.01
+  },
+  {
+    "code_snippet": "import sys\n\n# Create a very large list\nmy_list = [1] * 10000\n\n# The sys.getsizeof function returns the size in bytes\nsize_of_list = sys.getsizeof(my_list)\n\n# Create a simple tuple\nmy_tuple = (1) * 10000\n\n# Get the size of the tuple\nsize_of_tuple = sys.getsizeof(my_tuple)\n\nprint(f'Size of list: {size_of_list} bytes')\nprint(f'Size of tuple: {size_of_tuple} bytes')",
+    "purpose": "To demonstrate the memory efficiency of a `tuple` versus a `list`.",
+    "conceptual_breakdown": {
+      "data_structure": {
+        "tuple": "An immutable sequence type with the **property** of being more memory-efficient than a list because it has a fixed size and doesn't need to allocate extra space for future appends."
+      },
+      "causal_chain": [
+        {
+          "step": 1,
+          "action": "my_list = [1] * 10000",
+          "cause": "A list is created.",
+          "effect": "Python allocates memory for the elements, plus some extra space for future appends, making it a larger object."
+        },
+        {
+          "step": 2,
+          "action": "my_tuple = (1) * 10000",
+          "cause": "A tuple is created.",
+          "effect": "Python allocates exactly the amount of memory needed for the elements, making it a smaller object."
+        }
+      ]
+    },
+    "explanation_module": "This is a key conceptual point for writing memory-efficient code. While the difference is negligible for small collections, for large datasets, using an immutable `tuple` where possible can save a significant amount of memory. This is a crucial concept for high-performance and data-intensive applications.",
+    "confidence_score": 0.99,
+    "hallucination_score": 0.0
+  }
+]
+
