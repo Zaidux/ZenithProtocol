@@ -49,19 +49,19 @@ This phase elevates the Zenith Protocol's intelligence by focusing on meta-level
 
  * Adversarial Module for Self-Correction: To ensure robustness and safety, an Adversarial Module has been introduced. This module deliberately generates confusing data or attempts to poison the model's knowledge. The ARLC then uses this information to activate its self-correction loop, training the model to be resilient against malicious or noisy data, and thereby increasing its overall trustworthiness.
 
-** New Core Components and Optimizations
+# ** New Core Components and Optimizations **
 
 To enhance the Zenith Protocol's efficiency and reasoning capabilities, several core components were implemented and optimized using a hybrid Python/C++ architecture.
 
-**Zenith Conceptual Encoders**: The visual, audio, and text encoders have been upgraded to go beyond simple feature extraction. They now use a Conceptual Attention Layer to distill raw data into a compact, semantically-rich vector, which dramatically reduces the number of "tokens" needed for a context window. The core encoding logic for these components is offloaded to a C++ backend (conceptual_encoder.cpp) for maximum performance.
+** Zenith Conceptual Encoders **: The visual, audio, and text encoders have been upgraded to go beyond simple feature extraction. They now use a Conceptual Attention Layer to distill raw data into a compact, semantically-rich vector, which dramatically reduces the number of "tokens" needed for a context window. The core encoding logic for these components is offloaded to a C++ backend (conceptual_encoder.cpp) for maximum performance.
 
-**Self-Supervised World Model (SSWM)**: The SSWM, which is the model's "predictive foresight", has been optimized in C++ (sswm_predictive_model.cpp). This allows the ARLC to run thousands of "what if" simulations in real time, making strategic planning significantly faster and more efficient.
+** Self-Supervised World Model (SSWM) **: The SSWM, which is the model's "predictive foresight", has been optimized in C++ (sswm_predictive_model.cpp). This allows the ARLC to run thousands of "what if" simulations in real time, making strategic planning significantly faster and more efficient.
 
-**Mixture of Experts (MoE) Router**: A key component for sustainable AI, the MoE router dynamically selects the most relevant "experts" for a given query. The core routing mechanism has been implemented in C++ (moe_router.cpp) and now uses conceptual context from the CKG to make more intelligent and efficient routing decisions. This helps to reduce computational load and power consumption.
+** Mixture of Experts (MoE) Router **: A key component for sustainable AI, the MoE router dynamically selects the most relevant "experts" for a given query. The core routing mechanism has been implemented in C++ (moe_router.cpp) and now uses conceptual context from the CKG to make more intelligent and efficient routing decisions. This helps to reduce computational load and power consumption.
 
-**Hyper-Conceptual Thinking (HCT)**: The pinnacle of the Zenith Protocol's capabilities, HCT enables the model to form novel, abstract concepts that were not explicitly taught. The high-performance calculations for this are handled by a dedicated C++ module (zenith_neural_calculations.cpp), which is faster and more resource-efficient than a pure Python implementation.
+** Hyper-Conceptual Thinking (HCT) **: The pinnacle of the Zenith Protocol's capabilities, HCT enables the model to form novel, abstract concepts that were not explicitly taught. The high-performance calculations for this are handled by a dedicated C++ module (zenith_neural_calculations.cpp), which is faster and more resource-efficient than a pure Python implementation.
 
-**Adaptive Self-Regulating Explainable Hybrid (ASREH) Model**: The core ASREH model, which provides a transparent and trustworthy framework for decision-making, has been integrated with the C++ backend (asreh_model.cpp). This allows the entire forward pass—from state encoding to conceptual attention and expert routing—to be executed with high-speed, low-level optimizations.
+** Adaptive Self-Regulating Explainable Hybrid (ASREH) Model **: The core ASREH model, which provides a transparent and trustworthy framework for decision-making, has been integrated with the C++ backend (asreh_model.cpp). This allows the entire forward pass—from state encoding to conceptual attention and expert routing—to be executed with high-speed, low-level optimizations.
 
 Technologies Used 💻
  * PyTorch: The primary deep learning framework.
