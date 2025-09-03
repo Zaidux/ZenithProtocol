@@ -2,7 +2,7 @@
 
 import torch
 import torch.nn as nn
-from typing import Tuple
+from typing import Tuple, Dict, List
 
 # New Imports to use the C++ backend
 from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
@@ -20,7 +20,7 @@ class SSWM(nn.Module):
         # Store CKG and Web Access instances
         self.ckg = ckg
         self.web_access = web_access
-        
+
         # Initialize the C++ SSWM instance
         self.cpp_sswm = sswm_predictive_model_cpp.SSWMPredictiveModel(input_dim, hidden_dim)
         # Initialize the C++ mock CKG and WebAccess
@@ -66,3 +66,22 @@ class SSWM(nn.Module):
         
         final_state_rep = torch.from_numpy(final_state_np)
         return final_state_rep, total_reward
+
+    def simulate_multiple_what_if_scenarios(self,
+                                            start_state_rep: torch.Tensor,
+                                            hypothetical_moves: List[int],
+                                            num_steps: int) -> Dict[int, Tuple[torch.Tensor, float]]:
+        """
+        New method to simulate multiple scenarios for counterfactual explanations.
+        """
+        outcomes = {}
+        for move in hypothetical_moves:
+            final_state_np, total_reward = self.cpp_sswm.simulate_what_if_scenario(
+                start_state_rep.detach().cpu().numpy(),
+                move,
+                num_steps,
+                self.cpp_ckg,
+                self.cpp_web_access
+            )
+            outcomes[move] = (torch.from_numpy(final_state_np), total_reward)
+        return outcomes
