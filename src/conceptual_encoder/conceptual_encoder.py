@@ -6,6 +6,10 @@ from typing import Dict, List, Tuple, Any
 from collections import defaultdict
 import numpy as np
 
+# Import the compiled C++ module for the conceptual encoder.
+# We will assume a C++ module is created and compiled with a similar name.
+import conceptual_encoder_cpp
+
 # A simplified model for Semantic Role Labeling (SRL) based on a pre-trained concept map.
 # In a full implementation, this would be a sophisticated NLP model like a fine-tuned BERT model.
 class ConceptualAttentionLayer:
@@ -19,7 +23,7 @@ class ConceptualAttentionLayer:
         """
         tokens = text.lower().split()
         conceptual_roles = defaultdict(list)
-        
+
         # A simplified, rule-based approach to tag concepts.
         for token in tokens:
             found = False
@@ -40,11 +44,11 @@ class ConceptualAttentionLayer:
             summary["action"] = conceptual_roles["action"][0]
         if "object" in conceptual_roles:
             summary["object"] = conceptual_roles["object"]
-        
+
         # More advanced logic for finding causal relationships, like "Reason"
         if "because" in conceptual_roles["bridge"] and "motion" in conceptual_roles:
             summary["reason"] = f"{conceptual_roles['motion'][0]} complete"
-        
+
         return summary
 
 class ZenithConceptualEncoder(nn.Module):
@@ -75,6 +79,9 @@ class ZenithConceptualEncoder(nn.Module):
         self.concept_to_id = {concept: i for i, concept in enumerate(all_concepts)}
         self.prop_to_id = {prop: i for i, prop in enumerate(all_props)}
         self.embedding_layer = nn.Embedding(len(all_concepts) + len(all_props) + 1, embedding_dim)
+        
+        # Initialize the C++ encoder instance.
+        self.cpp_encoder = conceptual_encoder_cpp.get_encoder()
 
     def forward(self, text: str) -> torch.Tensor:
         """
@@ -82,13 +89,17 @@ class ZenithConceptualEncoder(nn.Module):
         """
         conceptual_summary = self.conceptual_attention_layer.identify_conceptual_roles(text)
         
-        # Encode the conceptual summary into a single vector.
-        conceptual_vector = self.encode_conceptual_vector(conceptual_summary)
-        return conceptual_vector.unsqueeze(0)
+        # Offload the encoding to the C++ backend for performance.
+        conceptual_vector_np = self.cpp_encoder.encode_conceptual_vector(conceptual_summary)
+        
+        # Convert the numpy array back to a PyTorch tensor.
+        return torch.from_numpy(conceptual_vector_np).unsqueeze(0)
 
     def encode_conceptual_vector(self, conceptual_summary: Dict[str, Any]) -> torch.Tensor:
         """
         Compresses the conceptual summary into a single, dense vector.
+        
+        NOTE: This Python function is now just a wrapper for the C++ call.
         """
         combined_embeddings = []
         for role, words in conceptual_summary.items():
@@ -112,16 +123,16 @@ class ZenithConceptualEncoder(nn.Module):
         # If no concepts were found, return a zero tensor.
         if not combined_embeddings:
             return torch.zeros(self.embedding_dim)
-
+        
         # Sum the embeddings to get a single, dense conceptual vector.
         # This is the "semantic compression" step.
         return torch.sum(torch.stack(combined_embeddings), dim=0)
 
-
 if __name__ == '__main__':
+    # Simple test of the encoder
     encoder = ZenithConceptualEncoder(embedding_dim=128)
-    
-    # Test cases from the whitepaper
+
+    # Test case 1: A simple sentence
     sentence1 = "He closed the book because he was done writing"
     encoded_vector1 = encoder(sentence1)
     print(f"Original sentence: '{sentence1}'")
@@ -129,9 +140,16 @@ if __name__ == '__main__':
     print(f"Encoded vector (first 5 values): {encoded_vector1[0][:5].detach().numpy()}")
     print("-" * 20)
 
+    # Test case 2: A different sentence with different concepts
     sentence2 = "The hungry cat ate the fish"
     encoded_vector2 = encoder(sentence2)
     print(f"Original sentence: '{sentence2}'")
     print(f"Encoded vector shape: {encoded_vector2.shape}")
     print(f"Encoded vector (first 5 values): {encoded_vector2[0][:5].detach().numpy()}")
     print("-" * 20)
+This video is a great resource to learn about the process of calling C++ code from Python using a library like Pybind11.
+
+[Calling C++ code from Python](https://www.youtube.com/watch?v=q_bne9UvjAI)
+http://googleusercontent.com/youtube_content/1 *YouTube video views will be stored in your YouTube History, and your data will be stored and used by YouTube according to its [Terms of Service](https://www.youtube.com/static?template=terms)*
+
+
