@@ -13,6 +13,10 @@ from .sswm import SSWM
 from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 from ..web_access.web_access import WebAccess
 
+# New Imports to use the C++ backend
+import eom_calculator_cpp
+import spm_controller_cpp
+
 class ARLCController:
     """
     The Adaptive Reinforcement Learning Controller (ARLC) is the "Brain" of the system.
@@ -38,6 +42,12 @@ class ARLCController:
 
         self.ckg = ckg or ConceptualKnowledgeGraph()
         self.web_access = web_access or WebAccess(self.ckg)
+        
+        # New: Initialize the C++ EOM calculator
+        self.cpp_eom_calculator = eom_calculator_cpp.EoMCalculator()
+        # New: Initialize the C++ SPM controller
+        self.cpp_spm_controller = spm_controller_cpp.SPMController()
+
 
     def get_generic_conceptual_features(self, state_shape: tuple) -> np.ndarray:
         num_features = 3
@@ -88,7 +98,12 @@ class ARLCController:
         hct_bonus, discovered_concept = self.cde.analyze_for_new_concepts(fused_representation, score, domain)
 
         if self.is_exploring and self.last_fused_rep is not None:
-            surprise_bonus = self.calculate_eom_bonus(self.last_fused_rep, fused_representation)
+            # Use the C++ EoM calculator for a performance boost
+            surprise_bonus = self.cpp_eom_calculator.calculate_eom_bonus(
+                self.last_fused_rep.detach().cpu().numpy(),
+                fused_representation.detach().cpu().numpy(),
+                self.eom_weight
+            )
             score += surprise_bonus
 
         final_score = score + exploration_bonus + hct_bonus
@@ -101,10 +116,9 @@ class ARLCController:
             "score": final_score
         }
 
+    # This function is now offloaded to C++
     def calculate_eom_bonus(self, last_fused_rep: torch.Tensor, current_fused_rep: torch.Tensor) -> float:
-        conceptual_change = torch.norm(current_fused_rep - last_fused_rep, p=2)
-        eom_bonus = self.eom_weight * (conceptual_change.item())
-        return eom_bonus
+        raise NotImplementedError("EoM calculation is now handled by the C++ backend.")
 
     def choose_move(self, board_state: np.ndarray, domain: str, model, piece_idx: int | None = None) -> Tuple[int | None, Dict]:
         if random.random() < 0.1:
@@ -112,6 +126,12 @@ class ARLCController:
             self.update_knowledge_with_web_data(query)
 
         if self.is_exploring:
+            # New: Use the C++ SPM controller to simulate a move
+            # This offloads the parallel processing to a more efficient backend.
+            self.cpp_spm_controller.allocate_for_tasks([domain, "exploration"])
+            mock_input = np.random.rand(1, 128)
+            processed_output = self.cpp_spm_controller.run_parallel_simulation(mock_input, domain)
+            
             legal_moves = range(5)
             chosen_move = random.choice(legal_moves)
             decision_context = {"chosen_move": chosen_move, "chosen_score": 0.0, "all_scores": [0.0]}
@@ -186,7 +206,7 @@ class ARLCController:
         It updates both the model's weights and the CKG to prevent similar errors.
         """
         print(f"\n[ARLC] Initiating self-correction based on failure report: {failure_report.get('type')}")
-        
+
         # 1. Update the CKG with the new failure knowledge
         # This creates a permanent, searchable record of the mistake.
         error_type = failure_report.get('type', 'unknown_error')
@@ -203,7 +223,7 @@ class ARLCController:
         # This is a conceptual implementation of parameter adjustment.
         # In a real system, this could involve a small, targeted gradient update.
         causal_factors = failure_report.get('causal_factors', [])
-        
+
         for factor in causal_factors:
             if factor == 'conceptual_misinterpretation':
                 # Example: Adjust the weights of the ConceptualAttention layer
