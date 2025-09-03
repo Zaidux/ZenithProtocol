@@ -51,11 +51,11 @@ This phase elevates the Zenith Protocol's intelligence by focusing on meta-level
 
 # **New Core Components and Optimizations**
 
-To enhance the Zenith Protocol's efficiency and reasoning capabilities, several core components were implemented and optimized using a hybrid Python/C++ architecture.
+To enhance the Zenith Protocol's efficiency and reasoning capabilities, several core components were implemented and optimized using a hybrid Python/C++ architecture. This approach was chosen to achieve significant performance gains and lower power consumption, which is critical for real-time applications and sustainable AI.
 
 **Zenith Conceptual Encoders**: The visual, audio, and text encoders have been upgraded to go beyond simple feature extraction. They now use a Conceptual Attention Layer to distill raw data into a compact, semantically-rich vector, which dramatically reduces the number of "tokens" needed for a context window. The core encoding logic for these components is offloaded to a C++ backend (conceptual_encoder.cpp) for maximum performance.
 
-**Self-Supervised World Model (SSWM)**: The SSWM, which is the model's "predictive foresight", has been optimized in C++ (sswm_predictive_model.cpp). This allows the ARLC to run thousands of "what if" simulations in real time, making strategic planning significantly faster and more efficient.
+**Self-Supervised World Model (SSWM)**: The SSWM, which is the model's "predictive foresight," has been optimized in C++ (sswm_predictive_model.cpp). This allows the ARLC to run thousands of "what if" simulations in real time, making strategic planning significantly faster and more efficient.
 
 **Mixture of Experts (MoE) Router**: A key component for sustainable AI, the MoE router dynamically selects the most relevant "experts" for a given query. The core routing mechanism has been implemented in C++ (moe_router.cpp) and now uses conceptual context from the CKG to make more intelligent and efficient routing decisions. This helps to reduce computational load and power consumption.
 
@@ -82,6 +82,7 @@ Note: The AGPLv3 version of this project explicitly prohibits its use in certain
 
 *Project Roadmap 🛣️*
 Based on the impressive progress from a foundational model to one with autonomous learning and rapid adaptation, here are some potential next steps for the Zenith Protocol project:
+
 # Phase 6: Real-World Deployment and API Development 🚀
 The project is currently a local prototype. This phase would focus on making the Zenith Protocol accessible and practical for external use.
 
@@ -91,14 +92,14 @@ The project is currently a local prototype. This phase would focus on making the
 
  * Decentralized Marketplace: Explore the creation of a decentralized platform where users can contribute their on-device gameplay data in exchange for a share of the model's performance improvements or tokens. This would build on the federated learning framework and incentivize data contribution.
 
-# Phase 7: Advanced Explainability and Human-in-the-Loop 🤝
+Phase 7: Advanced Explainability and Human-in-the-Loop 🤝
 The current Explainability Module is a great start, but it can be made more robust and interactive.
 
- * Conceptual "Why" Chains: Go beyond explaining "what" the AI did and create a system that explains "why." This would involve tracing the decision-making process back through the conceptual layers to show the user the high-level reasons for a choice (e.g., "I chose this move because it aligns with the 'king safety' strategic goal").
+ ** Conceptual "Why" Chains **: Go beyond explaining "what" the AI did and create a system that explains "why." This would involve tracing the decision-making process back through the conceptual layers to show the user the high-level reasons for a choice (e.g., "I chose this move because it aligns with the 'king safety' strategic goal"). This process would trace the logic through the zenith_neural_calculations.cpp module, providing a complete, auditable log of the model's reasoning process.
 
- * Interactive Explainability: Build a user interface that allows the user to challenge the AI's reasoning or provide feedback. For instance, a user could ask, "Why not move the pawn to C3?" and the AI would respond with its predicted outcome and counter-arguments, which the user could then accept or reject, further training the model.
+ ** Interactive Explainability **: Build a user interface that allows the user to challenge the AI's reasoning or provide feedback. For instance, a user could ask, "Why not move the pawn to C3?" and the AI would respond with its predicted outcome and counter-arguments, which the user could then accept or reject, further training the model.
 
- * Unsupervised Concept Discovery: Enhance the Hyper-Conceptual Thinking (HCT) module to not just discover new concepts but to name and articulate them in a human-readable format, such as "discovered 'pawn chain' concept" or "identified 'tetris-T-spin' maneuver."
+ ** Unsupervised Concept Discovery **: Enhance the Hyper-Conceptual Thinking (HCT) module to not just discover new concepts but to name and articulate them in a human-readable format, such as "discovered 'pawn chain' concept" or "identified 'tetris-T-spin' maneuver". This feature would be handled by the C++ HCT module, which would then update the CKG and the Explainability Module.
 
 # Phase 8: General Intelligence and Transfer Learning 💡
 With the groundwork of meta-learning established, the final frontier is to push the model's boundaries to truly general intelligence.
