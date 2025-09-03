@@ -13,12 +13,19 @@ class CommandParser:
         self.ckg = ckg
         # Use a simplified conceptual mapping instead of a flat keyword list.
         self.command_map = {
-            "explain": ["reasoning", "justification"],
-            "strategy": ["plan", "goal"],
+            "explain": ["reasoning", "justification", "explain"],
+            "strategy": ["plan", "goal", "strategy"],
             "board_state": ["situation"],
-            "eval_move": ["assess", "value"],
+            "eval_move": ["assess", "value", "evaluate"],
             "what_if": ["hypothetical", "simulate"]
         }
+        # A simple NLP model is loaded to handle part-of-speech tagging.
+        try:
+            self.nlp = spacy.load("en_core_web_sm")
+        except:
+            print("Spacy model not found. Please run: python -m spacy download en_core_web_sm")
+            self.nlp = None
+
         # Pre-load the base ontology for a basic understanding
         self._initialize_conceptual_parser()
 
@@ -40,32 +47,50 @@ class CommandParser:
         Returns:
             Dict: A dictionary containing the command and any relevant parameters.
         """
-        lower_query = query.lower()
+        if not self.nlp:
+            return {"command": "error", "entities": {}, "error_message": "Spacy model not loaded."}
         
-        # Step 1: Identify key concepts in the query using the CKG
-        detected_concepts = []
-        for word in lower_query.split():
-            node_info = self.ckg.query(word)
-            if node_info and node_info['node'].get('type') == 'command_keyword':
-                detected_concepts.append(node_info['node'])
-
-        # Step 2: Determine the command based on the detected concepts
+        doc = self.nlp(query.lower())
         command = "unknown"
-        for concept in detected_concepts:
-            cmd = concept.get('command')
-            if cmd:
-                command = cmd
+        entities = {}
+
+        # Step 1: Identify the command based on conceptual mapping
+        for token in doc:
+            if token.text in self.command_map:
+                command = token.text
+                break
+            # Check for synonyms in the CKG
+            node_info = self.ckg.query(token.text)
+            if node_info and node_info['node'].get('type') == 'command_keyword':
+                command = node_info['node'].get('command')
                 break
 
-        # Step 3: Extract entities based on the command context
-        entities = {}
-        tokens = lower_query.split()
-        if 'move' in tokens:
-            try:
-                move_idx = tokens[tokens.index('move') + 1]
-                entities['move'] = int(move_idx)
-            except (ValueError, IndexError):
-                pass
+        # Step 2: Extract entities with improved logic
+        if command in ["eval_move", "what_if"]:
+            # This logic can be enhanced with more sophisticated entity recognition.
+            for token in doc:
+                # Assuming numbers are moves
+                if token.like_num:
+                    entities['move'] = int(token.text)
+                # Check for chess move notation (e.g., 'e4', 'Nf3')
+                elif command == "eval_move" and len(token.text) == 2 and token.text[0].isalpha() and token.text[1].isdigit():
+                    entities['move'] = token.text
+        
+        # This is for commands with a specific structure, like "move pawn to c3"
+        elif command == "move":
+            for token in doc:
+                if token.dep_ == 'dobj' or token.dep_ == 'pobj':
+                    entities['object'] = token.text
+                if token.text == 'to' and token.head.text == 'move':
+                    entities['destination'] = token.text
+        
+        # Step 3: Use the CKG for deeper entity resolution
+        if entities and 'move' in entities:
+            move_entity = entities['move']
+            move_node = self.ckg.query(str(move_entity))
+            if move_node and move_node['node'].get('type') == 'move':
+                # This could be used for advanced logic, like checking if the move is legal.
+                print(f"Recognized move '{move_entity}' as a known concept in the CKG.")
 
         return {
             "command": command,
