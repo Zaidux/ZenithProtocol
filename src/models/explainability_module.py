@@ -98,8 +98,14 @@ class ExplainabilityModule:
         explanation['moe_reasoning'] = moe_explanation
         eom_explanation = self._analyze_eom_contribution(decision_context)
         explanation['eom_reasoning'] = eom_explanation
+        
+        # New: Analyze counterfactuals
+        counterfactual_narrative = self._analyze_counterfactuals(decision_context, fused_representation)
+        explanation['counterfactual_reasoning'] = counterfactual_narrative
+        
         confidence_score = self._get_confidence_score(decision_context)
         explanation['confidence_score'] = confidence_score
+        
         final_explanation = self._formulate_narrative(explanation)
         explanation['narrative'] = final_explanation
         return explanation
@@ -110,13 +116,13 @@ class ExplainabilityModule:
         and its reliance on verifiable facts from the CKG.
         """
         chosen_score = decision_context.get('chosen_score', 0)
-        
+
         # Step 1: Base score from the model's output
         confidence_score = (chosen_score / max(decision_context.get('all_scores', [chosen_score]))) if decision_context.get('all_scores') else 0.5
-        
+
         # Step 2: Adjust based on CKG knowledge
         conceptual_factors = decision_context.get('conceptual_factors', [])
-        
+
         for concept in conceptual_factors:
             node = self.ckg.query(concept)
             if node:
@@ -130,7 +136,7 @@ class ExplainabilityModule:
         # Step 3: Check for counterfactuals (demonstrates causal reasoning)
         if decision_context.get('counterfactuals'):
             confidence_score += 0.05
-            
+
         # Ensure the score is within a valid range
         return max(0.0, min(1.0, confidence_score))
 
@@ -168,6 +174,51 @@ class ExplainabilityModule:
         else:
             eom_text = self.ckg.query("low_eom_change")['node'].get('description', 'low conceptual energy, indicating a minor, tactical adjustment.')
         return f"The move generated {eom_text}."
+        
+    def _analyze_counterfactuals(self, decision_context: Dict, current_fused_rep: torch.Tensor) -> str:
+        """
+        Compares the chosen move's outcome with top rejected moves to generate a counterfactual explanation.
+        """
+        chosen_move = decision_context.get('chosen_move')
+        all_scores = decision_context.get('all_scores', [])
+        
+        if not all_scores or len(all_scores) < 2:
+            return "Counterfactual analysis not available."
+
+        # Find the best rejected move
+        sorted_scores = sorted(zip(all_scores, range(len(all_scores))), reverse=True)
+        best_rejected_move_info = None
+        for score, move_idx in sorted_scores:
+            if move_idx != chosen_move:
+                best_rejected_move_info = (score, move_idx)
+                break
+        
+        if not best_rejected_move_info:
+            return "Counterfactual analysis not available."
+            
+        best_rejected_score, best_rejected_move = best_rejected_move_info
+        
+        # Simulate outcomes for both the chosen move and the best rejected move
+        sim_outcomes = self.sswm.simulate_multiple_what_if_scenarios(
+            start_state_rep=current_fused_rep,
+            hypothetical_moves=[chosen_move, best_rejected_move],
+            num_steps=1
+        )
+        
+        chosen_reward = sim_outcomes[chosen_move][1]
+        rejected_reward = sim_outcomes[best_rejected_move][1]
+        
+        chosen_outcome_desc = "a positive outcome" if chosen_reward > 0 else "a neutral outcome"
+        rejected_outcome_desc = "a positive outcome" if rejected_reward > 0 else "a neutral outcome"
+
+        # Formulate the counterfactual narrative
+        narrative = (
+            f"While move {best_rejected_move} also had a high score, the SSWM predicted that your chosen move, {chosen_move}, "
+            f"would lead to a more favorable outcome with a reward of {chosen_reward:.2f} compared to {rejected_reward:.2f}. "
+            f"The chosen move was selected to prioritize a more strategic long-term goal."
+        )
+        
+        return narrative
 
     def _analyze_decision_context(self, context: Dict) -> str:
         chosen_move = context.get('chosen_move', 'an unknown move')
@@ -185,7 +236,9 @@ class ExplainabilityModule:
         moe_text = explanation.get('moe_reasoning', '')
         eom_text = explanation.get('eom_reasoning', '')
         decision_text = explanation.get('decision_narrative', '')
-        return f"{confidence_text} {conceptual_text} {moe_text} {eom_text} {decision_text}"
+        counterfactual_text = explanation.get('counterfactual_reasoning', '')
+        
+        return f"{confidence_text} {conceptual_text} {moe_text} {eom_text} {decision_text} {counterfactual_text}"
 
     # New Method: Phase 6 - Failure Diagnosis
     def analyze_and_report_failure(self, 
