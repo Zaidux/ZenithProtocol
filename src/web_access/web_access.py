@@ -2,9 +2,11 @@
 
 import requests
 import json
-from typing import Dict, List, Optional
-from datetime import datetime
+from typing import Dict, List, Optional, Any
+from datetime import datetime, timedelta # Import timedelta
 import time
+import os
+import re
 
 class WebAccess:
     """
@@ -12,16 +14,15 @@ class WebAccess:
     to query real-time information from the internet. It handles search queries,
     retrieves results, and summarizes them for knowledge graph integration.
     """
-    def __init__(self, api_key: str = "DUMMY_API_KEY"):
-        """Initializes the WebAccess module.
+    def __init__(self, ckg: Any, api_key: str = "DUMMY_API_KEY"):
+        """Initializes the WebAccess module with a CKG instance.
         
         Args:
+            ckg: An instance of the ConceptualKnowledgeGraph for data integration.
             api_key: A placeholder for a real search engine API key.
         """
+        self.ckg = ckg
         self.api_key = api_key
-        # For a real implementation, you would use a library like 'google-api-python-client'
-        # or an API from a service like SerpApi or a similar search API.
-        # self.search_service = build("customsearch", "v1", developerKey=self.api_key)
         self.cache: Dict[str, Dict] = {} # A simple cache to avoid redundant searches
 
     def _execute_search(self, query: str) -> Optional[Dict]:
@@ -30,16 +31,10 @@ class WebAccess:
         
         This is a dummy function to demonstrate the concept.
         In a production environment, this would call a real search API.
-        
-        Args:
-            query: The search query string.
-            
-        Returns:
-            A dictionary of mock search results.
         """
         print(f"Executing web search for: '{query}'...")
-        time.sleep(1) # Simulate network latency
-        
+        time.sleep(0.5) # Simulate network latency
+
         # Simple mock results for common queries
         mock_results = {
             "latest ai news": {
@@ -57,48 +52,59 @@ class WebAccess:
                 ]
             }
         }
-        
+
         # Check if query is in mock results
         return mock_results.get(query.lower(), {"items": []})
+        
+    def _scrape_data_from_source(self, url: str) -> str:
+        """
+        Simulates scraping content from a URL.
+        In a real scenario, this would use a library like BeautifulSoup or Scrapy.
+        """
+        print(f"Scraping data from mock URL: {url}...")
+        time.sleep(0.5)
+        
+        # Dummy content
+        mock_html_content = (
+            "<html><body><h1>This is a web page about AI.</h1>"
+            "<p>A causal reasoning model helps an AI understand the 'why' behind events.</p>"
+            "<p>This new approach is crucial for building trustworthy AI systems.</p></body></html>"
+        )
+        
+        # Simple text extraction
+        cleaned_text = re.sub('<[^>]*>', '', mock_html_content)
+        return cleaned_text
 
     def search_and_summarize(self, query: str) -> Optional[str]:
         """
         Performs a web search, filters for relevance, and summarizes the results.
-        
-        Args:
-            query: The search query string from the ARLC.
-            
-        Returns:
-            A summarized string of the most relevant information or None if no
-            relevant information is found.
+        It can also scrape content from a URL for a deeper dive.
         """
-        # Check cache first
         if query in self.cache:
             print("Retrieving from cache.")
             return self.cache[query]["summary"]
-            
+
         search_results = self._execute_search(query)
-        
+
         if not search_results or "items" not in search_results:
             print("No search results found.")
             return None
         
-        # Simple relevance filtering based on keyword presence in title or snippet
-        relevant_snippets = [
-            item["snippet"] for item in search_results["items"]
-            if query.lower() in item["title"].lower() or query.lower() in item["snippet"].lower()
-        ]
-        
-        if not relevant_snippets:
-            # If no direct match, return a summary of all results
-            relevant_snippets = [item["snippet"] for item in search_results["items"]]
+        relevant_content = []
+        for item in search_results["items"]:
+            # Prioritize a deep dive into the first most relevant result
+            if len(relevant_content) == 0 and query.lower() in item["title"].lower():
+                # Simulate scraping the full page
+                full_text = self._scrape_data_from_source("[http://mock-url.com](http://mock-url.com)")
+                relevant_content.append(full_text)
+            else:
+                relevant_content.append(item["snippet"])
 
-        # Simple summarization: concatenate the top snippets
-        summary = " ".join(relevant_snippets)
-        if not summary:
+        if not relevant_content:
             return None
 
-        # Store in cache
+        summary = " ".join(relevant_content)
+
         self.cache[query] = {
             "summary": summary,
             "timestamp": datetime.now().isoformat()
@@ -106,30 +112,25 @@ class WebAccess:
         
         print("Search results summarized and cached.")
         return summary
-        
+
     def check_for_update(self, query: str, time_limit_minutes: int = 60) -> bool:
         """
         Checks if a cached result is outdated and needs a fresh search.
-        
-        Args:
-            query: The search query to check.
-            time_limit_minutes: The number of minutes after which a cached
-                                result is considered stale.
-                                
-        Returns:
-            True if the data is stale and needs an update, False otherwise.
         """
         if query not in self.cache:
             return True
-        
+
         cached_time = datetime.fromisoformat(self.cache[query]["timestamp"])
         time_since_cached = (datetime.now() - cached_time).total_seconds() / 60
-        
+
         return time_since_cached > time_limit_minutes
 
 # --- Example Usage ---
 if __name__ == '__main__':
-    web_access = WebAccess()
+    # This example requires a CKG instance for the new WebAccess
+    from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
+    mock_ckg = ConceptualKnowledgeGraph()
+    web_access = WebAccess(ckg=mock_ckg)
     
     # 1. First search for a new query
     print("--- First Search ---")
@@ -139,18 +140,16 @@ if __name__ == '__main__':
         print(f"\nZenith received this information:\n'{info}'")
     else:
         print("\nNo relevant information received.")
-    
+
     # 2. Search the same query (should be from cache)
     print("\n--- Second Search (from cache) ---")
     info_cached = web_access.search_and_summarize(query_1)
     if info_cached:
         print(f"\nZenith received this information:\n'{info_cached}'")
-    
+
     # 3. Check for an update (simulated stale data)
     print("\n--- Checking for update (simulating time passing) ---")
-    # Simulate the cache entry being 90 minutes old
-    web_access.cache[query_1]["timestamp"] = (datetime.now() - datetime.timedelta(minutes=90)).isoformat()
-    
+    web_access.cache[query_1]["timestamp"] = (datetime.now() - timedelta(minutes=90)).isoformat()
+
     needs_update = web_access.check_for_update(query_1)
     print(f"Does the knowledge for '{query_1}' need an update? {needs_update}")
-
