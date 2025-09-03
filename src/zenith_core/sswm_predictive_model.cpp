@@ -4,6 +4,16 @@
 #include <iostream>
 #include <random>
 #include <cmath>
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/numpy.h>
+#include <pybind11/complex.h>
+#include <pybind11/functional.h>
+#include <pybind11/chrono.h>
+#include <pybind11/pybind11.h>
+#include <tuple>
+
+namespace py = pybind11;
 
 // Mock CKG and WebAccess implementations
 void MockCKG::update_from_web_data(const std::string& data) {
@@ -124,6 +134,50 @@ std::tuple<py::array_t<double>, double> SSWMPredictiveModel::simulate_what_if_sc
     return std::make_tuple(final_state, total_predicted_reward);
 }
 
+py::list SSWMPredictiveModel::simulate_multiple_what_if_scenarios(
+    py::array_t<double> start_state_rep,
+    const py::list& hypothetical_moves,
+    int num_steps,
+    MockCKG& ckg,
+    MockWebAccess& web_access) {
+    
+    py::list results;
+    for (const auto& move_obj : hypothetical_moves) {
+        int move = move_obj.cast<int>();
+        
+        py::buffer_info buf = start_state_rep.request();
+        auto ptr = static_cast<double*>(buf.ptr);
+        std::vector<double> current_rep(ptr, ptr + buf.size);
+        
+        double total_predicted_reward = 0.0;
+        
+        if (move >= 0 && move < current_rep.size()) {
+            current_rep[move] += 1.0;
+        }
+        
+        for (int i = 0; i < num_steps; ++i) {
+            if (total_predicted_reward < -0.5) {
+                std::string real_world_data = web_access.search_and_summarize("poor outcome for this strategy");
+                if (!real_world_data.empty()) {
+                    ckg.update_from_web_data(real_world_data);
+                    current_rep[0] += 0.1;
+                }
+            }
+            std::vector<double> predicted_next_state;
+            double predicted_reward;
+            std::tie(predicted_next_state, predicted_reward) = _forward_pass(current_rep);
+            current_rep = predicted_next_state;
+            total_predicted_reward += predicted_reward;
+        }
+        
+        auto result_capsule = py::capsule(new std::vector<double>(current_rep), [](void *p) { delete reinterpret_cast<std::vector<double>*>(p); });
+        py::array_t<double> final_state(current_rep.size(), current_rep.data(), result_capsule);
+        
+        results.append(py::make_tuple(final_state, total_predicted_reward));
+    }
+    return results;
+}
+
 PYBIND11_MODULE(sswm_predictive_model_cpp, m) {
     m.doc() = "C++ module for Zenith Self-Supervised World Model.";
     
@@ -138,6 +192,6 @@ PYBIND11_MODULE(sswm_predictive_model_cpp, m) {
     py::class_<SSWMPredictiveModel>(m, "SSWMPredictiveModel")
         .def(py::init<int, int>())
         .def("predict", &SSWMPredictiveModel::predict)
-        .def("simulate_what_if_scenario", &SSWMPredictiveModel::simulate_what_if_scenario);
+        .def("simulate_what_if_scenario", &SSWMPredictiveModel::simulate_what_if_scenario)
+        .def("simulate_multiple_what_if_scenarios", &SSWMPredictiveModel::simulate_multiple_what_if_scenarios);
 }
-
