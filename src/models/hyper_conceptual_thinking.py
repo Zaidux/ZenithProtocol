@@ -4,7 +4,8 @@ import torch
 import numpy as np
 from sklearn.cluster import MiniBatchKMeans
 from typing import Dict, List, Tuple
-from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph # New import
+from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
+import zenith_hct  # Import the compiled C++ module
 
 class ConceptDiscoveryEngine:
     """
@@ -13,7 +14,7 @@ class ConceptDiscoveryEngine:
     high-value conceptual patterns and stores them persistently in the CKG.
     """
     def __init__(self, ckg: ConceptualKnowledgeGraph, num_clusters: int = 5, discovery_threshold: float = 0.5):
-        self.ckg = ckg # New: CKG instance
+        self.ckg = ckg  # CKG instance
         self.num_clusters = num_clusters
         self.discovery_threshold = discovery_threshold
         self.kmeans_model = None
@@ -35,34 +36,40 @@ class ConceptDiscoveryEngine:
             return 0.0, None
 
         data = fused_representation.detach().cpu().numpy().reshape(1, -1)
+        
+        # New: Use the C++ module to perform the high-performance calculation
+        # This function would perform the actual neural calculations on the fused representation
+        # and integrate with the CKG for optimal performance.
+        # The result is a new, conceptually-processed vector.
+        processed_data = zenith_hct.perform_hct_calculations(data, self.ckg)
 
         if self.kmeans_model is None:
-            self.kmeans_model = MiniBatchKMeans(n_clusters=self.num_clusters, n_init=3).fit(data)
+            self.kmeans_model = MiniBatchKMeans(n_clusters=self.num_clusters, n_init=3).fit(processed_data)
             self.concept_counter += 1
             concept_name = f"HCT_Concept_{domain}_{self.concept_counter}"
             
-            # New: Store the discovered concept in the CKG
+            # Store the discovered concept in the CKG
             self.ckg.add_node(
                 concept_name,
                 {"type": "discovered_concept", "domain": domain, "reward": reward, "description": f"An emergent pattern in the {domain} domain."}
             )
             return 10.0, concept_name
 
-        new_cluster = self.kmeans_model.predict(data)[0]
-        distances = self.kmeans_model.transform(data)
+        new_cluster = self.kmeans_model.predict(processed_data)[0]
+        distances = self.kmeans_model.transform(processed_data)
         min_distance = np.min(distances)
 
         if min_distance > 1.0:
-            self.kmeans_model.partial_fit(data)
+            self.kmeans_model.partial_fit(processed_data)
             self.concept_counter += 1
             concept_name = f"HCT_Concept_{domain}_{self.concept_counter}"
-            
-            # New: Store the new concept in the CKG
+
+            # Store the new concept in the CKG
             self.ckg.add_node(
                 concept_name,
                 {"type": "discovered_concept", "domain": domain, "reward": reward, "description": "A significantly different pattern from known concepts."}
             )
-            # New: Add a relationship to the domain
+            # Add a relationship to the domain
             self.ckg.add_edge(domain, concept_name, "HAS_DISCOVERED_CONCEPT")
 
             return 5.0, concept_name
