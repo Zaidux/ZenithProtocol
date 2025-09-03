@@ -38,7 +38,15 @@ public:
         int num_steps,
         MockCKG& ckg,
         MockWebAccess& web_access);
-    
+
+    // New: Simulates multiple scenarios simultaneously for counterfactual explanations.
+    py::list simulate_multiple_what_if_scenarios(
+        py::array_t<double> start_state_rep,
+        const py::list& hypothetical_moves,
+        int num_steps,
+        MockCKG& ckg,
+        MockWebAccess& web_access);
+        
 private:
     int input_dim_;
     int hidden_dim_;
