@@ -105,15 +105,34 @@ class ExplainabilityModule:
         return explanation
 
     def _get_confidence_score(self, decision_context: Dict) -> float:
+        """
+        Calculates a confidence and hallucination score based on the model's reasoning path
+        and its reliance on verifiable facts from the CKG.
+        """
         chosen_score = decision_context.get('chosen_score', 0)
-        move_info = self.ckg.query(f"Move_{decision_context.get('chosen_move')}")
-        is_known_good_move = move_info and 'is_high_value' in move_info['node'].get('properties', {})
-        if is_known_good_move:
-            return 0.95
-        elif chosen_score > 1.0:
-            return 0.75
-        else:
-            return 0.40
+        
+        # Step 1: Base score from the model's output
+        confidence_score = (chosen_score / max(decision_context.get('all_scores', [chosen_score]))) if decision_context.get('all_scores') else 0.5
+        
+        # Step 2: Adjust based on CKG knowledge
+        conceptual_factors = decision_context.get('conceptual_factors', [])
+        
+        for concept in conceptual_factors:
+            node = self.ckg.query(concept)
+            if node:
+                # If the concept is an established fact, increase confidence
+                if node['node'].get('source') == 'training_data' or node['node'].get('verifiability_score', 0) > 0.8:
+                    confidence_score += 0.1
+                # If it's a new, emergent concept (HCT), slightly decrease confidence
+                elif node['node'].get('source') == 'HCT':
+                    confidence_score -= 0.1
+
+        # Step 3: Check for counterfactuals (demonstrates causal reasoning)
+        if decision_context.get('counterfactuals'):
+            confidence_score += 0.05
+            
+        # Ensure the score is within a valid range
+        return max(0.0, min(1.0, confidence_score))
 
     def _analyze_conceptual_contribution(self, conceptual_features: torch.Tensor, domain: str) -> str:
         feature_names = self.conceptual_feature_names.get(domain, [])
@@ -180,7 +199,7 @@ class ExplainabilityModule:
         """
         # Calculate the divergence between outputs
         output_divergence = F.mse_loss(original_output, adversarial_output).item()
-        
+
         # Analyze the difference in the input
         input_change = F.mse_loss(original_input, adversarial_input).item()
 
@@ -205,7 +224,7 @@ class ExplainabilityModule:
                 "input_change": input_change
             }
         }
-        
+
         # New: Store the failure report in the CKG for long-term memory
         report_hash = hashlib.sha256(str(failure_report).encode()).hexdigest()
         self.ckg.add_node(f"Adversarial_Failure_{report_hash}", {
@@ -219,7 +238,7 @@ class ExplainabilityModule:
 
         self.last_failure_report = failure_report
         return failure_report
-        
+
     def get_last_failure_report(self) -> Dict | None:
         """Returns the last failure report generated."""
         return self.last_failure_report
