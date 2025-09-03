@@ -149,7 +149,4 @@ if __name__ == '__main__':
     print("-" * 20)
 This video is a great resource to learn about the process of calling C++ code from Python using a library like Pybind11.
 
-[Calling C++ code from Python](https://www.youtube.com/watch?v=q_bne9UvjAI)
-http://googleusercontent.com/youtube_content/1 *YouTube video views will be stored in your YouTube History, and your data will be stored and used by YouTube according to its [Terms of Service](https://www.youtube.com/static?template=terms)*
-
 
