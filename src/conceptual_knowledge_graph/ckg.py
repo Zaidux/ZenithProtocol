@@ -4,6 +4,12 @@ import json
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Union
 
+# Assuming a mock ConceptualEncoder and an in-memory graph database
+# In a real-world scenario, these would be separate, optimized modules.
+# We'll simulate them here for demonstration.
+from ..conceptual_encoder.conceptual_encoder import ConceptualEncoder
+from .in_memory_db import InMemoryGraphDB
+
 class ConceptualKnowledgeGraph:
     """
     An in-memory, graph-based knowledge store for the Zenith Protocol.
@@ -12,8 +18,9 @@ class ConceptualKnowledgeGraph:
     long-term memory.
     """
     def __init__(self, storage_path: str = "conceptual_graph.json"):
-        self.nodes: Dict[str, Dict[str, Any]] = {}
-        self.edges: Dict[str, Dict[str, Any]] = {}
+        # We will use a dedicated in-memory graph database instead of a simple dictionary.
+        # This simulates a more performant, scalable solution.
+        self.db = InMemoryGraphDB()
         self.storage_path = storage_path
         self._load_graph()
 
@@ -22,8 +29,8 @@ class ConceptualKnowledgeGraph:
         try:
             with open(self.storage_path, 'r') as f:
                 data = json.load(f)
-                self.nodes = data.get("nodes", {})
-                self.edges = data.get("edges", {})
+                self.db.nodes = data.get("nodes", {})
+                self.db.edges = data.get("edges", {})
             print(f"Conceptual Knowledge Graph loaded from {self.storage_path}")
         except (FileNotFoundError, json.JSONDecodeError):
             print("No existing graph found. Starting with a new one.")
@@ -33,7 +40,7 @@ class ConceptualKnowledgeGraph:
     def _save_graph(self):
         """Saves the current state of the graph to a JSON file."""
         with open(self.storage_path, 'w') as f:
-            json.dump({"nodes": self.nodes, "edges": self.edges}, f, indent=4)
+            json.dump({"nodes": self.db.nodes, "edges": self.db.edges}, f, indent=4)
         print(f"Conceptual Knowledge Graph saved to {self.storage_path}")
 
     def _initialize_base_concepts(self):
@@ -47,10 +54,92 @@ class ConceptualKnowledgeGraph:
             "Real-Time Data": {"type": "concept", "description": "Information updated constantly."},
         }
         for node_id, data in base_concepts.items():
-            self.add_node(node_id, data)
+            # Add initial nodes with a default high confidence score
+            self.add_node(node_id, {**data, "verifiability_score": 1.0})
 
     def add_node(self, node_id: str, properties: Dict[str, Any]) -> None:
         """Adds or updates a node in the graph."""
+        self.db.add_node(node_id, properties)
+        self._save_graph()
+
+    def add_edge(self, source_id: str, target_id: str, relationship: str, properties: Optional[Dict[str, Any]] = None) -> None:
+        """Adds a directed edge between two nodes."""
+        self.db.add_edge(source_id, target_id, relationship, properties)
+        self._save_graph()
+    
+    def update_node_properties(self, node_id: str, new_properties: Dict[str, Any]) -> None:
+        """Updates properties of an existing node."""
+        self.db.update_node_properties(node_id, new_properties)
+        self._save_graph()
+
+    def query(self, entity_id: str) -> Optional[Dict[str, Any]]:
+        """Returns the node and its immediate connections."""
+        return self.db.query(entity_id)
+
+    def add_prompt_response(self, prompt: str, response: str, conceptual_encoder: ConceptualEncoder) -> None:
+        """
+        Processes a prompt and response using the Conceptual Encoder
+        and adds the rich conceptual data to the graph.
+        """
+        # Step 1: Use the Conceptual Encoder to extract a rich set of concepts and relations.
+        # This replaces the simple manual list of concepts.
+        extracted_data = conceptual_encoder.extract_concepts_and_relations(prompt, response)
+
+        # Step 2: Add nodes and edges to the graph based on the extracted data.
+        # This includes Agents, Actions, Objects, Reasons, and their relationships.
+        for data in extracted_data:
+            source_id = data.get("source_id")
+            source_type = data.get("source_type")
+            target_id = data.get("target_id")
+            target_type = data.get("target_type")
+            relationship = data.get("relationship")
+            properties = data.get("properties", {})
+
+            # Initialize a confidence score for newly discovered concepts.
+            if not self.db.node_exists(source_id):
+                self.add_node(source_id, {"type": source_type, "content": source_id, "verifiability_score": 0.5})
+            
+            if not self.db.node_exists(target_id):
+                self.add_node(target_id, {"type": target_type, "content": target_id, "verifiability_score": 0.5})
+
+            self.add_edge(source_id, target_id, relationship, properties)
+
+            # Update the verifiability score of referenced concepts.
+            # This simulates the "dynamic updating based on how often it's referenced" idea.
+            self.db.update_verifiability_score(source_id, 0.1)
+            self.db.update_verifiability_score(target_id, 0.1)
+
+        self._save_graph()
+        
+    def get_verifiability_score(self, node_id: str) -> float:
+        """Returns the verifiability score of a given node."""
+        node = self.db.query(node_id)
+        if node and "node" in node and "verifiability_score" in node["node"]:
+            return node["node"]["verifiability_score"]
+        return 0.0
+
+# --- Mock Classes for Demonstration ---
+class ConceptualEncoder:
+    """A mock Conceptual Encoder to simulate semantic compression."""
+    def extract_concepts_and_relations(self, prompt: str, response: str) -> List[Dict[str, Any]]:
+        # This is a simplified, hardcoded example of what a real encoder would do.
+        # It would use NLP to parse the sentences and identify conceptual roles.
+        
+        # The sentence "Running is a great option because it helps burn calories." would be parsed
+        # to find the following conceptual relationships.
+        return [
+            {"source_id": "run", "source_type": "concept", "target_id": "Action", "target_type": "concept", "relationship": "IS_A", "properties": {"motion_type": "continuous"}},
+            {"source_id": "run", "source_type": "concept", "target_id": "calories", "target_type": "concept", "relationship": "CAUSES", "properties": {"effect": "burn"}},
+            {"source_id": "run", "source_type": "concept", "target_id": "fit", "target_type": "concept", "relationship": "ACHIEVES", "properties": {"effect": "goal"}},
+        ]
+
+class InMemoryGraphDB:
+    """A mock in-memory graph database with basic functionality."""
+    def __init__(self):
+        self.nodes = {}
+        self.edges = {}
+    
+    def add_node(self, node_id: str, properties: Dict[str, Any]) -> None:
         if node_id in self.nodes and self.nodes[node_id].get("type") != properties.get("type"):
             print(f"Warning: Node '{node_id}' already exists with a different type. Skipping.")
             return
@@ -60,13 +149,11 @@ class ConceptualKnowledgeGraph:
             **properties,
             "last_updated": datetime.now().isoformat()
         }
-    
+
     def add_edge(self, source_id: str, target_id: str, relationship: str, properties: Optional[Dict[str, Any]] = None) -> None:
-        """Adds a directed edge between two nodes."""
         if source_id not in self.nodes or target_id not in self.nodes:
             print(f"Error: One or both nodes ('{source_id}', '{target_id}') do not exist.")
             return
-
         edge_id = f"{source_id}_{relationship}_{target_id}"
         self.edges[edge_id] = {
             "source": source_id,
@@ -77,7 +164,6 @@ class ConceptualKnowledgeGraph:
         }
 
     def update_node_properties(self, node_id: str, new_properties: Dict[str, Any]) -> None:
-        """Updates properties of an existing node."""
         if node_id in self.nodes:
             self.nodes[node_id].update(new_properties)
             self.nodes[node_id]["last_updated"] = datetime.now().isoformat()
@@ -85,10 +171,8 @@ class ConceptualKnowledgeGraph:
             print(f"Error: Node '{node_id}' not found.")
 
     def query(self, entity_id: str) -> Optional[Dict[str, Any]]:
-        """Returns the node and its immediate connections."""
         if entity_id not in self.nodes:
             return None
-
         node_data = self.nodes.get(entity_id, {})
         related_nodes = []
         for edge_id, edge in self.edges.items():
@@ -106,58 +190,40 @@ class ConceptualKnowledgeGraph:
                     "source_data": self.nodes.get(edge["source"]),
                     "edge_properties": edge["properties"]
                 })
-        
         return {"node": node_data, "connections": related_nodes}
     
-    def add_prompt_response(self, prompt: str, response: str, concepts: List[str]) -> None:
-        """Adds a prompt and response to the graph and links them to concepts."""
-        prompt_id = f"Prompt_{len(self.nodes) + 1}"
-        response_id = f"Response_{len(self.nodes) + 2}"
-        
-        self.add_node(prompt_id, {"type": "prompt", "content": prompt})
-        self.add_node(response_id, {"type": "response", "content": response})
-        
-        self.add_edge(prompt_id, response_id, "GENERATED_RESPONSE", {"timestamp": datetime.now().isoformat()})
-        
-        for concept in concepts:
-            if concept in self.nodes:
-                self.add_edge(prompt_id, concept, "REFERENCES")
-                self.add_edge(response_id, concept, "CONTAINS")
-            else:
-                self.add_node(concept, {"type": "concept", "source": "conversation"})
-                self.add_edge(prompt_id, concept, "DISCOVERED")
-                self.add_edge(response_id, concept, "CONTAINS")
-        
-        self._save_graph()
+    def node_exists(self, node_id: str) -> bool:
+        return node_id in self.nodes
+
+    def update_verifiability_score(self, node_id: str, score_change: float) -> None:
+        if node_id in self.nodes and "verifiability_score" in self.nodes[node_id]:
+            current_score = self.nodes[node_id]["verifiability_score"]
+            new_score = max(0.0, min(1.0, current_score + score_change))
+            self.nodes[node_id]["verifiability_score"] = new_score
+            self.nodes[node_id]["last_updated"] = datetime.now().isoformat()
 
 # --- Example Usage ---
 if __name__ == '__main__':
+    # Initialize the graph
     ckg = ConceptualKnowledgeGraph()
-    
-    # Add a new concept with properties
-    ckg.add_node("AI", {"type": "concept", "properties": {"nature": "computational", "purpose": "problem solving"}})
-    ckg.add_edge("AI", "Agent", "IS_A")
-    
-    # Add a conversation and learn from it
+    conceptual_encoder = ConceptualEncoder()
+
+    # Add a conversation with the new, enhanced method
     prompt_text = "What is a good way to stay fit?"
     response_text = "Running is a great option because it helps burn calories."
-    concepts_in_conversation = ["run", "calories", "fit"]
-    
-    ckg.add_prompt_response(prompt_text, response_text, concepts_in_conversation)
+    ckg.add_prompt_response(prompt_text, response_text, conceptual_encoder)
 
     # Query the graph to see what it knows about "run"
     run_info = ckg.query("run")
     print("\n--- Querying 'run' ---")
     print(json.dumps(run_info, indent=4))
-    
-    # Query the graph to see what it knows about the latest prompt
-    prompt_info = ckg.query("Prompt_1")
-    print("\n--- Querying 'Prompt_1' ---")
-    print(json.dumps(prompt_info, indent=4))
-    
-    # Verify that the graph was saved
+
+    # Get the verifiability score
+    run_score = ckg.get_verifiability_score("run")
+    print(f"\nThe verifiability score for 'run' is: {run_score}")
+
+    # Verify that the graph was saved and reloaded
     ckg_reloaded = ConceptualKnowledgeGraph()
     print("\nGraph reloaded from file to verify persistence.")
     reloaded_info = ckg_reloaded.query("run")
     print(json.dumps(reloaded_info, indent=4))
-
