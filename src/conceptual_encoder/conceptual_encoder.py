@@ -147,6 +147,5 @@ if __name__ == '__main__':
     print(f"Encoded vector shape: {encoded_vector2.shape}")
     print(f"Encoded vector (first 5 values): {encoded_vector2[0][:5].detach().numpy()}")
     print("-" * 20)
-This video is a great resource to learn about the process of calling C++ code from Python using a library like Pybind11.
 
 
