@@ -1,18 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="A multi-modal, explainable AI interface for the Zenith Protocol."
-    />
-    <title>Zenith Protocol UI</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Zenith Protocol UI – A modern, minimalistic AI-driven interface with futuristic aesthetics." />
+  <title>Zenith Protocol UI</title>
+  <style>
+    /* Global reset */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Dark theme */
+    body {
+      background-color: #0d0d0d; /* deep charcoal */
+      color: #e6e6e6;
+      font-family: "Inter", "Roboto", "Segoe UI", sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Futuristic typography */
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: #39ff88; /* subtle vibrant green accent */
+      text-align: center;
+      margin-top: 2rem;
+    }
+
+    /* Accent divider */
+    .accent-bar {
+      width: 80px;
+      height: 3px;
+      background: linear-gradient(90deg, #39ff88, #00c46c);
+      margin: 1rem auto 2rem auto;
+      border-radius: 2px;
+    }
+
+    /* Root mount point */
+    #root {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
 </head>
 <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
+  <h1>Zenith Protocol UI</h1>
+  <div class="accent-bar"></div>
+  <div id="root"></div>
 </body>
 </html>
-
