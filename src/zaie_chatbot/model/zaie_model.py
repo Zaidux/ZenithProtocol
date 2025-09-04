@@ -4,126 +4,127 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils.rnn import pad_sequence
+from typing import Dict, List, Tuple, Any
 
-# Assuming ASREHModel and other core components are in src/models
-from models.asreh_model import ASREHModel
-from models.arlc_controller import ARLC
+# Import the core Zenith Protocol components
+from models.arlc_controller import ARLCController
 from models.explainability_module import ExplainabilityModule
-from models.spl_model import SplitMind
-from models.sswm_model import SSWM
+from models.sswm import SSWM
+from models.strategic_planner import StrategicPlanner
+from conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
+from web_access.web_access import WebAccess
 
-class ZAIEModel(ASREHModel):
-    def __init__(self, vocab_size, conceptual_embedding_size,
-                 hidden_dim, num_experts, num_heads, num_layers):
+# Import the C++ backends
+import conceptual_encoder_cpp
+import moe_router_cpp
+import asreh_model_cpp
+
+class ZAIEModel(nn.Module):
+    """
+    The Ziver Adaptive Intelligence Engine (ZAIE) is the commercial embodiment of the
+    Zenith Protocol's core principles for conversational AI.
+    It is a high-level orchestrator that composes C++-optimized modules for maximum efficiency.
+    """
+    def __init__(self,
+                 vocab_size: int,
+                 input_dim: int,
+                 hct_dim: int,
+                 num_experts: int,
+                 num_heads: int,
+                 ckg: ConceptualKnowledgeGraph,
+                 web_access: WebAccess):
         
-        # We call the parent constructor to inherit all the core components.
-        # The ASREHModel will initialize the ConceptualAttentionLayer,
-        # SplitMind (MoE), ARLC, and EM.
-        super().__init__(
-            conceptual_embedding_size=conceptual_embedding_size,
-            hidden_dim=hidden_dim,
-            num_experts=num_experts,
-            num_heads=num_heads,
-            num_layers=num_layers
+        super().__init__()
+        
+        # --- Core Zenith Components (Python Orchestrators) ---
+        self.ckg = ckg
+        self.web_access = web_access
+        self.sswm = SSWM(input_dim=hct_dim, hidden_dim=hct_dim, ckg=ckg, web_access=web_access)
+        self.strategic_planner = StrategicPlanner()
+        
+        # We pass a reference to the model to the ARLC and EM for self-correction and explainability
+        # This is a circular dependency, but it's a core part of the self-regulating design
+        self.arlc = ARLCController(
+            strategic_planner=self.strategic_planner,
+            sswm=self.sswm,
+            ckg=self.ckg,
+            web_access=self.web_access,
+            model=self
+        )
+        self.explainability_module = ExplainabilityModule(
+            model=self,
+            sswm=self.sswm,
+            ckg=self.ckg
         )
         
-        # --- New Components for Conversational AI ---
-        # 1. Token Embeddings: Converts text tokens into dense vectors.
-        # This is the "sensory" input.
-        self.token_embedding = nn.Embedding(vocab_size, hidden_dim)
+        # --- C++ Optimized Backends ---
+        self.cpp_conceptual_encoder = conceptual_encoder_cpp.ConceptualEncoder()
+        self.cpp_moe_router = moe_router_cpp.ConceptualAwareRouter(
+            input_dim=hct_dim,
+            num_experts=num_experts,
+            top_k=2
+        )
+        self.cpp_asreh_model = asreh_model_cpp.ASREHModel(
+            in_channels=1, # This is a placeholder as ZAIE is text-based
+            hct_dim=hct_dim,
+            num_experts=num_experts
+        )
+        
+        # --- Model Layers for Conversational AI ---
+        self.token_embedding = nn.Embedding(vocab_size, hct_dim)
+        self.output_layer = nn.Linear(hct_dim, vocab_size)
 
-        # 2. Conceptual Encoder: Processes the structured conceptual data.
-        # This is the "conceptual" input.
-        self.conceptual_encoder = nn.Linear(conceptual_embedding_size, hidden_dim)
-
-        # 3. Output Layer: Maps the final hidden state to a vocabulary
-        # for generating text.
-        self.output_layer = nn.Linear(hidden_dim, vocab_size)
-
-        # 4. Split Mind Module for text (MoE)
-        self.split_mind = SplitMind(input_dim=hidden_dim, num_experts=num_experts)
-
-        # 5. Strategic Planner (Placeholder for now)
-        self.strategic_planner = nn.Linear(hidden_dim, num_experts) # Router
-
-    def forward(self, text_input, conceptual_input, is_training=True):
+        # The ASREHModel's components are now composed directly here,
+        # rather than through inheritance.
+        
+    def forward(self, text_input: torch.Tensor, conceptual_input: torch.Tensor, is_training: bool = True) -> Tuple[torch.Tensor, Any]:
         """
         The forward pass of the ZAIE model.
         
         Args:
-            text_input (Tensor): A tensor of token IDs representing the user's message.
+            text_input (Tensor): A tensor of token IDs.
             conceptual_input (Tensor): A tensor of conceptual feature vectors.
-            is_training (bool): Flag to control behavior during training vs. inference.
-        
+            is_training (bool): Flag for training vs. inference.
+            
         Returns:
             A tuple containing:
             - output_logits (Tensor): The raw logits for the next token.
-            - conceptual_reasoning (Tensor): A conceptual vector used by the EM.
+            - decision_context (Dict): A conceptual dictionary for the EM.
         """
-        # 1. Process text input and conceptual input in parallel.
-        # The text is our new "visual" data.
+        # 1. Process text input and conceptual input.
         text_embedded = self.token_embedding(text_input)
         
-        # The conceptual input is our "conceptual" data.
-        conceptual_encoded = self.conceptual_encoder(conceptual_input)
-
-        # 2. The Conceptual Attention Layer fuses the two.
-        # This is the core of our "Understanding is Key" principle.
-        fused_output, attn_weights = self.conceptual_attention_layer(text_embedded, conceptual_encoded)
-        
-        # 3. Use the Split Mind (MoE) to handle different conversational domains.
-        # The strategic_planner acts as a router.
-        expert_weights = F.softmax(self.strategic_planner(fused_output), dim=-1)
-        moe_output = self.split_mind(fused_output, expert_weights)
-
-        # 4. Use the ARLC to guide the model towards a better response.
-        # In this context, the ARLC's "reward" is the conversational score.
-        # For simplicity in this forward pass, we'll assume ARLC provides
-        # a final hidden state.
-        final_hidden_state = moe_output
-
-        # 5. Generate the final output logits.
-        output_logits = self.output_layer(final_hidden_state)
-        
-        # The EM will analyze the final hidden state and attention weights
-        # to generate an explanation.
-        conceptual_reasoning = attn_weights
-
-        return output_logits, conceptual_reasoning
-
-
-class ARLC(nn.Module):
-    # This is a placeholder ARLC to make the code runnable.
-    def forward(self, input):
-        return input
-
-class ExplainabilityModule(nn.Module):
-    # This is a placeholder EM to make the code runnable.
-    def forward(self, conceptual_reasoning):
-        return "Explanation based on conceptual reasoning."
-
-class SplitMind(nn.Module):
-    # This is a placeholder SplitMind to make the code runnable.
-    def __init__(self, input_dim, num_experts):
-        super().__init__()
-        self.experts = nn.ModuleList([nn.Linear(input_dim, input_dim) for _ in range(num_experts)])
-
-    def forward(self, input, weights):
-        # A simple weighted sum of expert outputs
-        expert_outputs = torch.stack([expert(input) for expert in self.experts], dim=0)
-        return torch.sum(expert_outputs * weights.unsqueeze(0), dim=0)
-
-class SSWM(nn.Module):
-    # This is a placeholder SSWM to make the code runnable.
-    def forward(self, input):
-        return input
-
-class ASREHModel(nn.Module):
-    # This is a minimal placeholder to allow ZAIEModel to inherit.
-    def __init__(self, conceptual_embedding_size, hidden_dim, num_experts, num_heads, num_layers):
-        super().__init__()
-        self.conceptual_attention_layer = nn.MultiheadAttention(
-            embed_dim=hidden_dim, num_heads=num_heads, batch_first=True
+        # 2. Fuse the two inputs using the C++ backend for the conceptual attention.
+        # We're passing the text embeddings as the "visual" features for the ASREH model's fusion.
+        fused_representation_np = self.cpp_asreh_model.forward(
+            text_embedded.detach().cpu().numpy(),
+            conceptual_input.detach().cpu().numpy()
         )
+        fused_representation = torch.from_numpy(fused_representation_np)
+        
+        # 3. Use the C++ MoE router to select the conversational expert.
+        # We need a conceptual context to feed to the router.
+        conceptual_context = moe_router_cpp.ConceptualContext()
+        conceptual_context.context_map = {'topic': ['conversation']}
+        
+        top_k_indices_np = self.cpp_moe_router.route(
+            fused_representation.detach().cpu().numpy(),
+            conceptual_context
+        )
+        top_k_indices = torch.from_numpy(top_k_indices_np).long()
 
+        # For a simplified example, we'll assume a single expert is selected.
+        # In a real system, we'd use the top_k_indices to route to different experts.
+        moe_output = fused_representation # Placeholder for the expert's output
+        
+        # 4. Generate the final output logits.
+        output_logits = self.output_layer(moe_output)
+        
+        # 5. Prepare the conceptual context for the Explainability Module.
+        decision_context = {
+            'chosen_expert': top_k_indices[0].item(),
+            'conceptual_factors': ['conversation', 'dialogue']
+        }
+        
+        return output_logits, decision_context
 
