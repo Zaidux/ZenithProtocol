@@ -3,12 +3,20 @@
 import json
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Union
+import hashlib
 
 # Assuming a mock ConceptualEncoder and an in-memory graph database
 # In a real-world scenario, these would be separate, optimized modules.
 # We'll simulate them here for demonstration.
 from ..conceptual_encoder.conceptual_encoder import ConceptualEncoder
 from .in_memory_db import InMemoryGraphDB
+
+# New: Import the optional C++ blockchain interface
+try:
+    import blockchain_interface_cpp
+except ImportError:
+    blockchain_interface_cpp = None
+    print("Warning: Blockchain interface not found. Running in local-only mode.")
 
 class ConceptualKnowledgeGraph:
     """
@@ -23,6 +31,11 @@ class ConceptualKnowledgeGraph:
         self.db = InMemoryGraphDB()
         self.storage_path = storage_path
         self._load_graph()
+
+        # New: Initialize the optional blockchain interface
+        self.blockchain_enabled = blockchain_interface_cpp is not None
+        if self.blockchain_enabled:
+            self.blockchain_client = blockchain_interface_cpp.BlockchainInterface()
 
     def _load_graph(self):
         """Loads the graph from a JSON file if it exists."""
@@ -39,6 +52,12 @@ class ConceptualKnowledgeGraph:
 
     def _save_graph(self):
         """Saves the current state of the graph to a JSON file."""
+        # New: Store a verifiable record on the blockchain if enabled
+        if self.blockchain_enabled:
+            data_to_store = json.dumps({"nodes": self.db.nodes, "edges": self.db.edges}, sort_keys=True)
+            self.blockchain_client.add_to_blockchain(data_to_store)
+            print("Graph state hashed and stored on the mock blockchain.")
+
         with open(self.storage_path, 'w') as f:
             json.dump({"nodes": self.db.nodes, "edges": self.db.edges}, f, indent=4)
         print(f"Conceptual Knowledge Graph saved to {self.storage_path}")
@@ -60,13 +79,15 @@ class ConceptualKnowledgeGraph:
     def add_node(self, node_id: str, properties: Dict[str, Any]) -> None:
         """Adds or updates a node in the graph."""
         self.db.add_node(node_id, properties)
+        # New: Automatically save after adding a node for a verifiable ledger
         self._save_graph()
 
     def add_edge(self, source_id: str, target_id: str, relationship: str, properties: Optional[Dict[str, Any]] = None) -> None:
         """Adds a directed edge between two nodes."""
         self.db.add_edge(source_id, target_id, relationship, properties)
+        # New: Automatically save after adding an edge
         self._save_graph()
-    
+
     def update_node_properties(self, node_id: str, new_properties: Dict[str, Any]) -> None:
         """Updates properties of an existing node."""
         self.db.update_node_properties(node_id, new_properties)
@@ -76,13 +97,12 @@ class ConceptualKnowledgeGraph:
         """Returns the node and its immediate connections."""
         return self.db.query(entity_id)
 
-    def add_prompt_response(self, prompt: str, response: str, conceptual_encoder: ConceptualEncoder) -> None:
+    def add_prompt_response(self, prompt: str, response: str, conceptual_encoder) -> None:
         """
         Processes a prompt and response using the Conceptual Encoder
         and adds the rich conceptual data to the graph.
         """
         # Step 1: Use the Conceptual Encoder to extract a rich set of concepts and relations.
-        # This replaces the simple manual list of concepts.
         extracted_data = conceptual_encoder.extract_concepts_and_relations(prompt, response)
 
         # Step 2: Add nodes and edges to the graph based on the extracted data.
@@ -98,7 +118,7 @@ class ConceptualKnowledgeGraph:
             # Initialize a confidence score for newly discovered concepts.
             if not self.db.node_exists(source_id):
                 self.add_node(source_id, {"type": source_type, "content": source_id, "verifiability_score": 0.5})
-            
+
             if not self.db.node_exists(target_id):
                 self.add_node(target_id, {"type": target_type, "content": target_id, "verifiability_score": 0.5})
 
@@ -110,7 +130,7 @@ class ConceptualKnowledgeGraph:
             self.db.update_verifiability_score(target_id, 0.1)
 
         self._save_graph()
-        
+
     def get_verifiability_score(self, node_id: str) -> float:
         """Returns the verifiability score of a given node."""
         node = self.db.query(node_id)
@@ -118,19 +138,35 @@ class ConceptualKnowledgeGraph:
             return node["node"]["verifiability_score"]
         return 0.0
 
+    # New: Add a method to retrieve a verifiable record from the blockchain
+    def get_verifiable_record(self, data_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieves a verifiable record from the blockchain and returns it.
+        """
+        if self.blockchain_enabled:
+            # Hash the data_id to find the record on the blockchain
+            record_hash = self.blockchain_client.generate_hash(data_id)
+            tx = self.blockchain_client.get_from_blockchain(record_hash)
+            
+            if tx.data_hash:
+                # The data itself is not stored on the blockchain, only the hash.
+                # We can verify that the local record matches the hash on the blockchain.
+                local_record = self.query(data_id)
+                local_data_string = json.dumps(local_record, sort_keys=True)
+                if self.blockchain_client.verify_transaction(tx, local_data_string):
+                    print(f"Verifiable record for '{data_id}' found on blockchain.")
+                    return {"local_data": local_record, "blockchain_record": tx}
+                else:
+                    print(f"Warning: Local data for '{data_id}' does not match blockchain record.")
+                    return None
+        return None
+
 # --- Mock Classes for Demonstration ---
 class ConceptualEncoder:
     """A mock Conceptual Encoder to simulate semantic compression."""
     def extract_concepts_and_relations(self, prompt: str, response: str) -> List[Dict[str, Any]]:
-        # This is a simplified, hardcoded example of what a real encoder would do.
-        # It would use NLP to parse the sentences and identify conceptual roles.
-        
-        # The sentence "Running is a great option because it helps burn calories." would be parsed
-        # to find the following conceptual relationships.
         return [
             {"source_id": "run", "source_type": "concept", "target_id": "Action", "target_type": "concept", "relationship": "IS_A", "properties": {"motion_type": "continuous"}},
-            {"source_id": "run", "source_type": "concept", "target_id": "calories", "target_type": "concept", "relationship": "CAUSES", "properties": {"effect": "burn"}},
-            {"source_id": "run", "source_type": "concept", "target_id": "fit", "target_type": "concept", "relationship": "ACHIEVES", "properties": {"effect": "goal"}},
         ]
 
 class InMemoryGraphDB:
@@ -138,12 +174,10 @@ class InMemoryGraphDB:
     def __init__(self):
         self.nodes = {}
         self.edges = {}
-    
+
     def add_node(self, node_id: str, properties: Dict[str, Any]) -> None:
         if node_id in self.nodes and self.nodes[node_id].get("type") != properties.get("type"):
-            print(f"Warning: Node '{node_id}' already exists with a different type. Skipping.")
             return
-
         self.nodes[node_id] = {
             **self.nodes.get(node_id, {}),
             **properties,
@@ -152,7 +186,6 @@ class InMemoryGraphDB:
 
     def add_edge(self, source_id: str, target_id: str, relationship: str, properties: Optional[Dict[str, Any]] = None) -> None:
         if source_id not in self.nodes or target_id not in self.nodes:
-            print(f"Error: One or both nodes ('{source_id}', '{target_id}') do not exist.")
             return
         edge_id = f"{source_id}_{relationship}_{target_id}"
         self.edges[edge_id] = {
@@ -168,7 +201,7 @@ class InMemoryGraphDB:
             self.nodes[node_id].update(new_properties)
             self.nodes[node_id]["last_updated"] = datetime.now().isoformat()
         else:
-            print(f"Error: Node '{node_id}' not found.")
+            pass
 
     def query(self, entity_id: str) -> Optional[Dict[str, Any]]:
         if entity_id not in self.nodes:
@@ -191,7 +224,7 @@ class InMemoryGraphDB:
                     "edge_properties": edge["properties"]
                 })
         return {"node": node_data, "connections": related_nodes}
-    
+
     def node_exists(self, node_id: str) -> bool:
         return node_id in self.nodes
 
