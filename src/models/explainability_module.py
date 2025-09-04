@@ -98,14 +98,14 @@ class ExplainabilityModule:
         explanation['moe_reasoning'] = moe_explanation
         eom_explanation = self._analyze_eom_contribution(decision_context)
         explanation['eom_reasoning'] = eom_explanation
-        
+
         # New: Analyze counterfactuals
         counterfactual_narrative = self._analyze_counterfactuals(decision_context, fused_representation)
         explanation['counterfactual_reasoning'] = counterfactual_narrative
-        
+
         confidence_score = self._get_confidence_score(decision_context)
         explanation['confidence_score'] = confidence_score
-        
+
         final_explanation = self._formulate_narrative(explanation)
         explanation['narrative'] = final_explanation
         return explanation
@@ -137,6 +137,13 @@ class ExplainabilityModule:
         if decision_context.get('counterfactuals'):
             confidence_score += 0.05
 
+        # New: Step 4: Verify against blockchain record for a trust boost
+        # A move with a verifiable record on the blockchain gets a significant confidence boost.
+        chosen_move_id = f"Move_{decision_context.get('chosen_move')}"
+        verifiable_record = self.ckg.get_verifiable_record(chosen_move_id)
+        if verifiable_record:
+            confidence_score += 0.2
+            
         # Ensure the score is within a valid range
         return max(0.0, min(1.0, confidence_score))
 
