@@ -63,6 +63,26 @@ To enhance the Zenith Protocol's efficiency and reasoning capabilities, several 
 
 **Adaptive Self-Regulating Explainable Hybrid (ASREH) Model**: The core ASREH model, which provides a transparent and trustworthy framework for decision-making, has been integrated with the C++ backend (asreh_model.cpp). This allows the entire forward pass—from state encoding to conceptual attention and expert routing—to be executed with high-speed, low-level optimizations.
 
+**Upgraded Explainable World Modeling feature**
+The new feature significantly enhances the model's transparency and causal reasoning. Here's a breakdown of how it works:
+
+**Causal Reasoning and Counterfactuals**: A core limitation of many AI systems is that they can't explain why a decision was made beyond statistical correlations. Our new feature addresses this by introducing a counterfactual element to the explanation. This means the model can reason about hypothetical scenarios and articulate why a different action would have led to a worse outcome. This provides a level of human-like justification that is critical for high-stakes environments like medicine and finance.
+
+**Upgraded SSWM for Batch Simulation**: We added a new method to the Self-Supervised World Model (SSWM) in both Python and C++: simulate_multiple_what_if_scenarios. This method efficiently runs simulations for several hypothetical moves in a single call, which is much faster than running them one by one. The C++ backend is crucial for this, as it allows the model to perform these complex calculations at high speed, a key part of the project's efficiency philosophy.
+
+**Upgraded ExplainabilityModule for Comparative Analysis**: The ExplainabilityModule now receives the outcomes of these batch simulations and compares them. It analyzes the predicted rewards and states of the chosen move against the best rejected alternative. This comparative analysis is then used to generate a detailed narrative that explains the model's decision-making process.
+
+**A More Robust Narrative**: The final explanation is no longer just a single reason; it's a multi-layered narrative that includes the primary reason for the chosen move, a summary of why an alternative was rejected, and the predicted reward for the chosen move versus the alternative, providing a clear, quantitative justification.
+
+**Blockchain Integration 🔗**
+A new, optional C++ module (blockchain_interface.cpp) has been added to provide an immutable and verifiable record of the model's key activities. This enables:
+
+Decentralized Conceptual Knowledge Graph (CKG): The CKG can now store a verifiable record of all new concepts and self-correction events on a mock blockchain. This creates a verifiable and auditable history of the model's entire learning process.  
+
+Verifiable Explanations: The Explainability Module can now provide a verifiable "Truthfulness" or Confidence and Hallucination Score by cross-referencing its explanations with the immutable data on the blockchain.
+
+This creates an auditable record of the model's learning and reasoning, making it fundamentally more trustworthy and transparent.  
+
 Technologies Used 💻
  * PyTorch: The primary deep learning framework.
  * NumPy & Pillow: For efficient data manipulation and image processing.
