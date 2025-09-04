@@ -5,6 +5,7 @@ import torch.nn as nn
 import numpy as np
 import hashlib
 import random
+import json # New: Import json for data serialization
 from typing import Dict, List, Tuple
 from ..utils.config import Config
 from .hyper_conceptual_thinking import ConceptDiscoveryEngine
@@ -12,14 +13,15 @@ from .strategic_planner import StrategicPlanner
 from .sswm import SSWM
 from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 from ..web_access.web_access import WebAccess
-from datetime import datetime # New: Import datetime
+from datetime import datetime
 
 # New Imports to use the C++ backend
 import eom_calculator_cpp
 import spm_controller_cpp
 
-# New import for the Self-Evolving Knowledge Agent
+# New import for the Self-Evolving Knowledge Agent and Local Execution Agent
 from .self_evolving_knowledge_agent import SelfEvolvingKnowledgeAgent
+from ..local_agent.LocalExecutionAgent import LocalExecutionAgent # New import
 
 class ARLCController:
     """
@@ -48,13 +50,13 @@ class ARLCController:
         self.ckg = ckg or ConceptualKnowledgeGraph()
         self.web_access = web_access or WebAccess(self.ckg)
         self.model = model
-        
+
         # New: Initialize the C++ EOM calculator
         self.cpp_eom_calculator = eom_calculator_cpp.EoMCalculator()
         # New: Initialize the C++ SPM controller
         self.cpp_spm_controller = spm_controller_cpp.SPMController()
-        
-        # New: Initialize the SEKA
+
+        # New: Initialize the SEKA and LEA
         from ..conceptual_encoder.conceptual_encoder import ZenithConceptualEncoder
         self.seka = SelfEvolvingKnowledgeAgent(
             model=model, 
@@ -63,6 +65,7 @@ class ARLCController:
             web_access=self.web_access,
             conceptual_encoder=ZenithConceptualEncoder()
         )
+        self.lea = LocalExecutionAgent(ckg=self.ckg, arlc=self, em=None) # EM will be set later
 
     def get_generic_conceptual_features(self, state_shape: tuple) -> np.ndarray:
         num_features = 3
@@ -113,7 +116,6 @@ class ARLCController:
         hct_bonus, discovered_concept = self.cde.analyze_for_new_concepts(fused_representation, score, domain)
 
         if self.is_exploring and self.last_fused_rep is not None:
-            # Use the C++ EoM calculator for a performance boost
             surprise_bonus = self.cpp_eom_calculator.calculate_eom_bonus(
                 self.last_fused_rep.detach().cpu().numpy(),
                 fused_representation.detach().cpu().numpy(),
@@ -135,11 +137,9 @@ class ARLCController:
         raise NotImplementedError("EoM calculation is now handled by the C++ backend.")
 
     def choose_move(self, board_state: np.ndarray, domain: str, model, piece_idx: int | None = None) -> Tuple[int | None, Dict]:
-        # New logic to trigger autonomous learning
         gaps = self.check_for_knowledge_gaps(f"board state {domain}")
         if gaps:
             print(f"[ARLC] Detected knowledge gaps: {gaps}. Triggering autonomous learning.")
-            # For simplicity, we'll learn about the first gap found
             self.seka.initiate_knowledge_acquisition(gaps[0])
 
         if random.random() < 0.1:
@@ -147,7 +147,6 @@ class ARLCController:
             self.update_knowledge_with_web_data(query)
 
         if self.is_exploring:
-            # Use the C++ SPM controller to simulate a move
             self.cpp_spm_controller.allocate_for_tasks([domain, "exploration"])
             mock_input = np.random.rand(1, 128)
             processed_output = self.cpp_spm_controller.run_parallel_simulation(mock_input, domain)
@@ -170,7 +169,6 @@ class ARLCController:
             'current_strategy': self.strategic_planner.current_goal
         }
 
-        # New: Add a verifiable record of the decision to the CKG and blockchain
         decision_data = json.dumps({
             "prompt": f"Board State Hash: {hashlib.sha256(board_state.tobytes()).hexdigest()}",
             "response": f"Chosen Move: {chosen_move} with score {chosen_score}",
@@ -179,6 +177,43 @@ class ARLCController:
         self.ckg.add_verifiable_record(decision_data, concepts=[domain, "move", str(chosen_move), "score"])
 
         return chosen_move, decision_context
+        
+    # New Method: Generates a plan for the Local Execution Agent
+    def generate_action_plan(self, command_intent: str, entities: Dict) -> Dict:
+        """
+        Generates a detailed, safe action plan from a user command.
+        This is a conceptual representation of the ARLC's planning process.
+        """
+        print(f"[ARLC] Generating action plan for intent: '{command_intent}'")
+        
+        if command_intent == "organize_files":
+            plan = {
+                "action": "organize_files",
+                "folder_name": entities.get("folder_name", "Zenith_Organized_Files"),
+                "source_directory": entities.get("source_directory", "Downloads"),
+                "file_types": entities.get("file_types", ["jpg", "png", "jpeg"]),
+                "conceptual_filters": {
+                    "newly_added": True,
+                    "content_tags": entities.get("content_tags", [])
+                }
+            }
+            return plan
+        else:
+            return {"status": "error", "message": "Unknown command intent."}
+
+    # New Method: Reports a failure to the self-correction loop
+    def report_failure(self, error_type: str, explanation: str, causal_factors: Optional[List[str]] = None):
+        """
+        Reports a failure to the ARLC, which initiates the self-correction process.
+        """
+        failure_report = {
+            "type": error_type,
+            "explanation": explanation,
+            "causal_factors": causal_factors or [],
+            "timestamp": datetime.now().isoformat()
+        }
+        self.self_correct_from_failure(failure_report, self.model)
+
 
     def adjust_score_for_strategy(self, scores: list, game_state: np.ndarray, domain: str) -> list:
         conceptual_features_for_goal_selection = self.strategic_planner.model.get_conceptual_features(game_state)
@@ -246,8 +281,6 @@ class ARLCController:
             if factor == 'conceptual_misinterpretation':
                 print("  - Adjusting ConceptualAttention weights to correct misinterpretation.")
                 with torch.no_grad():
-                    # This is a conceptual implementation of parameter adjustment.
-                    # A real system could do a targeted gradient update.
                     for param in model.conceptual_attention.parameters():
                         param.add_(torch.randn_like(param) * 0.001)
 
