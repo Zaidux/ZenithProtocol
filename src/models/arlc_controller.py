@@ -12,6 +12,7 @@ from .strategic_planner import StrategicPlanner
 from .sswm import SSWM
 from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 from ..web_access.web_access import WebAccess
+from datetime import datetime # New: Import datetime
 
 # New Imports to use the C++ backend
 import eom_calculator_cpp
@@ -46,7 +47,7 @@ class ARLCController:
 
         self.ckg = ckg or ConceptualKnowledgeGraph()
         self.web_access = web_access or WebAccess(self.ckg)
-        self.model = model # New: The ARLC needs a reference to the main model for self-correction.
+        self.model = model
         
         # New: Initialize the C++ EOM calculator
         self.cpp_eom_calculator = eom_calculator_cpp.EoMCalculator()
@@ -150,7 +151,7 @@ class ARLCController:
             self.cpp_spm_controller.allocate_for_tasks([domain, "exploration"])
             mock_input = np.random.rand(1, 128)
             processed_output = self.cpp_spm_controller.run_parallel_simulation(mock_input, domain)
-            
+
             legal_moves = range(5)
             chosen_move = random.choice(legal_moves)
             decision_context = {"chosen_move": chosen_move, "chosen_score": 0.0, "all_scores": [0.0]}
@@ -169,11 +170,13 @@ class ARLCController:
             'current_strategy': self.strategic_planner.current_goal
         }
 
-        self.ckg.add_prompt_response(
-            prompt=f"Board State Hash: {hashlib.sha256(board_state.tobytes()).hexdigest()}",
-            response=f"Chosen Move: {chosen_move} with score {chosen_score}",
-            concepts=[domain, "move", str(chosen_move), "score"]
-        )
+        # New: Add a verifiable record of the decision to the CKG and blockchain
+        decision_data = json.dumps({
+            "prompt": f"Board State Hash: {hashlib.sha256(board_state.tobytes()).hexdigest()}",
+            "response": f"Chosen Move: {chosen_move} with score {chosen_score}",
+            "timestamp": datetime.now().isoformat()
+        })
+        self.ckg.add_verifiable_record(decision_data, concepts=[domain, "move", str(chosen_move), "score"])
 
         return chosen_move, decision_context
 
@@ -226,14 +229,16 @@ class ARLCController:
         print(f"\n[ARLC] Initiating self-correction based on failure report: {failure_report.get('type')}")
 
         error_type = failure_report.get('type', 'unknown_error')
-        self.ckg.add_node(f"Failure_{hashlib.sha256(str(failure_report).encode()).hexdigest()}", {
-            "type": "error", 
-            "subtype": error_type, 
+        
+        # New: Add a verifiable, immutable record of the failure to the blockchain
+        failure_data = json.dumps({
+            "type": error_type, 
+            "subtype": failure_report.get('subtype', 'n/a'),
             "description": failure_report.get('explanation', 'No explanation provided.'),
             "causal_factors": failure_report.get('causal_factors', []),
             "timestamp": datetime.now().isoformat()
         })
-        self.ckg.add_edge("ASREHModel", f"Failure_{hashlib.sha256(str(failure_report).encode()).hexdigest()}", "CAUSED_BY")
+        self.ckg.add_verifiable_record(failure_data, concepts=["self_correction", "failure", error_type])
 
         causal_factors = failure_report.get('causal_factors', [])
 
