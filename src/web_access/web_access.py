@@ -3,10 +3,17 @@
 import requests
 import json
 from typing import Dict, List, Optional, Any
-from datetime import datetime, timedelta # Import timedelta
+from datetime import datetime, timedelta
 import time
 import os
 import re
+
+# New: Import the optional C++ blockchain interface
+try:
+    import blockchain_interface_cpp
+except ImportError:
+    blockchain_interface_cpp = None
+    print("Warning: Blockchain interface not found. WebAccess cannot verify records.")
 
 class WebAccess:
     """
@@ -24,6 +31,7 @@ class WebAccess:
         self.ckg = ckg
         self.api_key = api_key
         self.cache: Dict[str, Dict] = {} # A simple cache to avoid redundant searches
+        self.blockchain_enabled = blockchain_interface_cpp is not None
 
     def _execute_search(self, query: str) -> Optional[Dict]:
         """
@@ -33,7 +41,7 @@ class WebAccess:
         In a production environment, this would call a real search API.
         """
         print(f"Executing web search for: '{query}'...")
-        time.sleep(0.5) # Simulate network latency
+        time.sleep(0.5)
 
         # Simple mock results for common queries
         mock_results = {
@@ -53,7 +61,6 @@ class WebAccess:
             }
         }
 
-        # Check if query is in mock results
         return mock_results.get(query.lower(), {"items": []})
         
     def _scrape_data_from_source(self, url: str) -> str:
@@ -64,14 +71,12 @@ class WebAccess:
         print(f"Scraping data from mock URL: {url}...")
         time.sleep(0.5)
         
-        # Dummy content
         mock_html_content = (
             "<html><body><h1>This is a web page about AI.</h1>"
             "<p>A causal reasoning model helps an AI understand the 'why' behind events.</p>"
             "<p>This new approach is crucial for building trustworthy AI systems.</p></body></html>"
         )
         
-        # Simple text extraction
         cleaned_text = re.sub('<[^>]*>', '', mock_html_content)
         return cleaned_text
 
@@ -80,6 +85,14 @@ class WebAccess:
         Performs a web search, filters for relevance, and summarizes the results.
         It can also scrape content from a URL for a deeper dive.
         """
+        # New: Check for a verifiable record on the blockchain first.
+        if self.blockchain_enabled:
+            print(f"[WebAccess] Checking for verifiable record for '{query}'...")
+            verifiable_record = self.ckg.get_verifiable_record(query)
+            if verifiable_record:
+                print("[WebAccess] Found a verifiable record. Prioritizing over web search.")
+                return verifiable_record['local_data']['node'].get('content', '')
+
         if query in self.cache:
             print("Retrieving from cache.")
             return self.cache[query]["summary"]
@@ -92,9 +105,7 @@ class WebAccess:
         
         relevant_content = []
         for item in search_results["items"]:
-            # Prioritize a deep dive into the first most relevant result
             if len(relevant_content) == 0 and query.lower() in item["title"].lower():
-                # Simulate scraping the full page
                 full_text = self._scrape_data_from_source("[http://mock-url.com](http://mock-url.com)")
                 relevant_content.append(full_text)
             else:
@@ -127,12 +138,10 @@ class WebAccess:
 
 # --- Example Usage ---
 if __name__ == '__main__':
-    # This example requires a CKG instance for the new WebAccess
     from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
     mock_ckg = ConceptualKnowledgeGraph()
     web_access = WebAccess(ckg=mock_ckg)
-    
-    # 1. First search for a new query
+
     print("--- First Search ---")
     query_1 = "latest AI news"
     info = web_access.search_and_summarize(query_1)
@@ -141,13 +150,11 @@ if __name__ == '__main__':
     else:
         print("\nNo relevant information received.")
 
-    # 2. Search the same query (should be from cache)
     print("\n--- Second Search (from cache) ---")
     info_cached = web_access.search_and_summarize(query_1)
     if info_cached:
         print(f"\nZenith received this information:\n'{info_cached}'")
 
-    # 3. Check for an update (simulated stale data)
     print("\n--- Checking for update (simulating time passing) ---")
     web_access.cache[query_1]["timestamp"] = (datetime.now() - timedelta(minutes=90)).isoformat()
 
