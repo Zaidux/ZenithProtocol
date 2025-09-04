@@ -1,1 +1,56 @@
+/* src/styles/global.css */
+
+/* Define CSS Variables for the "Modern Cyber-Green" Palette */
+:root {
+    --color-dark-bg: #0D0D0D;
+    --color-light-bg: #FFFFFF;
+    --color-text: #E0E0E0;
+    --color-text-dark: #333333;
+    --color-accent: #00FF80; /* Vibrant, energetic green */
+    --color-secondary-blue: #3498db;
+    --color-secondary-purple: #9b59b6;
+
+    /* Typography */
+    --font-primary: 'Inter', sans-serif;
+    --font-secondary: 'Poppins', sans-serif;
+}
+
+/* Global Styles */
+body {
+    font-family: var(--font-primary);
+    background-color: var(--color-dark-bg);
+    color: var(--color-text);
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-secondary);
+    font-weight: 700;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    font-family: var(--font-primary);
+    font-size: 1rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+}
+
+/* Scrollbar styles for a futuristic look */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--color-dark-bg);
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: var(--color-accent);
+    border-radius: 4px;
+}
 
