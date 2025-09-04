@@ -1,4 +1,4 @@
-# /src/nlp/command_parser.py
+# src/nlp/command_parser.py
 
 import spacy
 from typing import Dict, Any, List
@@ -17,7 +17,8 @@ class CommandParser:
             "strategy": ["plan", "goal", "strategy"],
             "board_state": ["situation"],
             "eval_move": ["assess", "value", "evaluate"],
-            "what_if": ["hypothetical", "simulate"]
+            "what_if": ["hypothetical", "simulate"],
+            "organize_files": ["gather", "organize", "collect"] # New: Command for local tasks
         }
         # A simple NLP model is loaded to handle part-of-speech tagging.
         try:
@@ -40,16 +41,10 @@ class CommandParser:
         """
         Takes a natural language query and returns a structured command
         by identifying and linking concepts from the CKG.
-        
-        Args:
-            query (str): The user's input string.
-            
-        Returns:
-            Dict: A dictionary containing the command and any relevant parameters.
         """
         if not self.nlp:
             return {"command": "error", "entities": {}, "error_message": "Spacy model not loaded."}
-        
+
         doc = self.nlp(query.lower())
         command = "unknown"
         entities = {}
@@ -59,7 +54,6 @@ class CommandParser:
             if token.text in self.command_map:
                 command = token.text
                 break
-            # Check for synonyms in the CKG
             node_info = self.ckg.query(token.text)
             if node_info and node_info['node'].get('type') == 'command_keyword':
                 command = node_info['node'].get('command')
@@ -67,31 +61,33 @@ class CommandParser:
 
         # Step 2: Extract entities with improved logic
         if command in ["eval_move", "what_if"]:
-            # This logic can be enhanced with more sophisticated entity recognition.
             for token in doc:
-                # Assuming numbers are moves
                 if token.like_num:
                     entities['move'] = int(token.text)
-                # Check for chess move notation (e.g., 'e4', 'Nf3')
                 elif command == "eval_move" and len(token.text) == 2 and token.text[0].isalpha() and token.text[1].isdigit():
                     entities['move'] = token.text
         
-        # This is for commands with a specific structure, like "move pawn to c3"
-        elif command == "move":
-            for token in doc:
-                if token.dep_ == 'dobj' or token.dep_ == 'pobj':
-                    entities['object'] = token.text
-                if token.text == 'to' and token.head.text == 'move':
-                    entities['destination'] = token.text
-        
-        # Step 3: Use the CKG for deeper entity resolution
-        if entities and 'move' in entities:
-            move_entity = entities['move']
-            move_node = self.ckg.query(str(move_entity))
-            if move_node and move_node['node'].get('type') == 'move':
-                # This could be used for advanced logic, like checking if the move is legal.
-                print(f"Recognized move '{move_entity}' as a known concept in the CKG.")
-
+        # New: Logic for extracting entities for on-device tasks
+        if command == "organize_files":
+            folder_name = None
+            file_types = []
+            conceptual_filters = []
+            
+            # Look for a folder name (a noun with "folder" or "named")
+            for i, token in enumerate(doc):
+                if token.text == 'folder' and i + 1 < len(doc) and doc[i+1].text == 'named':
+                    folder_name = doc[i+2].text.strip('"')
+                elif 'photos' in token.text or 'images' in token.text:
+                    file_types.extend(['.jpg', '.png', '.jpeg'])
+                elif 'dog' in token.text or 'cat' in token.text:
+                    conceptual_filters.append('pets')
+            
+            entities = {
+                "folder_name": folder_name,
+                "file_types": file_types,
+                "conceptual_filters": conceptual_filters
+            }
+            
         return {
             "command": command,
             "entities": entities
