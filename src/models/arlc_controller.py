@@ -15,15 +15,16 @@ from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 from ..web_access.web_access import WebAccess
 from datetime import datetime
 from .meta_learner import MetaLearner
-
-import eom_calculator_cpp
-import spm_controller_cpp
-
+from .self_architecting_agent import SelfArchitectingAgent # New Import
 from .self_evolving_knowledge_agent import SelfEvolvingKnowledgeAgent
 from ..local_agent.LocalExecutionAgent import LocalExecutionAgent
 from ..conceptual_encoder.conceptual_encoder import ZenithConceptualEncoder
 
 class ARLCController:
+    """
+    The Adaptive Reinforcement Learning Controller (ARLC) is the "Brain" of the system.
+    It now acts as the orchestrator for the self-evolving architecture.
+    """
     def __init__(self, 
                  strategic_planner: StrategicPlanner, 
                  sswm: SSWM, 
@@ -39,18 +40,15 @@ class ARLCController:
         self.eom_weight = eom_weight
         self.visited_states = {}
         self.reward_coeffs = Config.ARLC_REWARD_COEFFS
-
         self.ckg = ckg or ConceptualKnowledgeGraph()
         self.model = model
-        self.cde = ConceptDiscoveryEngine(ckg=self.ckg)
+        # Pass the model instance to the CDE for architectural suggestions
+        self.cde = ConceptDiscoveryEngine(ckg=self.ckg, model=self.model)
         self.last_fused_rep = None
         self.is_exploring = False
-
         self.web_access = web_access or WebAccess(self.ckg)
-
         self.cpp_eom_calculator = eom_calculator_cpp.EoMCalculator()
         self.cpp_spm_controller = spm_controller_cpp.SPMController()
-
         self.seka = SelfEvolvingKnowledgeAgent(
             model=self.model, 
             arlc=self, 
@@ -59,8 +57,14 @@ class ARLCController:
             conceptual_encoder=ZenithConceptualEncoder(ckg=self.ckg)
         )
         self.lea = LocalExecutionAgent(ckg=self.ckg, arlc=self, em=None)
-
         self.meta_learner = meta_learner
+        # New: Initialize the Self-Architecting Agent
+        self.self_architecting_agent = SelfArchitectingAgent(
+            sswm=self.sswm, 
+            ckg=self.ckg, 
+            model=self.model, 
+            em=self.model.explainability_module if hasattr(self.model, 'explainability_module') else None
+        )
 
     def get_generic_conceptual_features(self, state_shape: tuple) -> np.ndarray:
         num_features = 3
@@ -102,14 +106,11 @@ class ARLCController:
                     (self.reward_coeffs['chess']['center_control'] * (conceptual_features[3] - conceptual_features[4]))
         elif self.is_exploring:
             score = 0.0
-
         state_hash = hashlib.sha256(conceptual_features.tobytes()).hexdigest()
         visits = self.visited_states.get(state_hash, 0)
         exploration_bonus = self.exploration_weight / (1 + visits)
         self.visited_states[state_hash] = visits + 1
-
         hct_bonus, discovered_concept = self.cde.analyze_for_new_concepts(fused_representation, confidence_score, score, domain)
-
         if self.is_exploring and self.last_fused_rep is not None:
             surprise_bonus = self.cpp_eom_calculator.calculate_eom_bonus(
                 self.last_fused_rep.detach().cpu().numpy(),
@@ -117,9 +118,7 @@ class ARLCController:
                 self.eom_weight
             )
             score += surprise_bonus
-
         final_score = score + exploration_bonus + hct_bonus
-
         return {
             "conceptual_score": score,
             "exploration_bonus": exploration_bonus,
@@ -134,53 +133,54 @@ class ARLCController:
             print(f"[ARLC] Detected knowledge gaps: {gaps}. Triggering autonomous learning.")
             self.seka.initiate_knowledge_acquisition(gaps[0])
             self.rapid_adaptation_to_new_domain(new_domain_data=[])
-
         if random.random() < 0.1:
             query = "latest AI news"
             self.update_knowledge_with_web_data(query)
-
         if self.model.is_struggling():
             print("[ARLC] Model is struggling. Initiating mini meta-learning loop.")
             self.meta_learner.run_mini_meta_training(self.model, self.ckg)
+
+        # New: ARLC now asks the self-architecting agent for a feature-need prediction
+        prediction = self.self_architecting_agent.predict_future_need(
+            conceptual_prompt="model is performing well, but could be more efficient"
+        )
+        if prediction['upgrade_type'] != 'none':
+            self.self_architecting_agent.propose_upgrade(
+                upgrade_type=prediction['upgrade_type'],
+                reasoning=prediction['reasoning']
+            )
 
         if self.is_exploring:
             self.cpp_spm_controller.allocate_for_tasks([domain, "exploration"])
             mock_input = np.random.rand(1, 128)
             processed_output = self.cpp_spm_controller.run_parallel_simulation(mock_input, domain)
-            
             legal_moves = range(5)
             chosen_move = random.choice(legal_moves)
             decision_context = {"chosen_move": chosen_move, "chosen_score": 0.0, "all_scores": [0.0]}
             return chosen_move, decision_context
-
         all_scores = [1.5, 2.1, 0.8, 1.9, 2.5]
         adjusted_scores = self.adjust_score_for_strategy(all_scores, board_state, domain)
         adjusted_scores = self.predictive_score_adjustment(adjusted_scores, self.last_fused_rep, domain)
         chosen_move = np.argmax(adjusted_scores)
         chosen_score = adjusted_scores[chosen_move]
-
         decision_context = {
             'chosen_move': chosen_move,
             'chosen_score': chosen_score,
             'all_scores': all_scores,
             'current_strategy': self.strategic_planner.current_goal
         }
-
         decision_data = json.dumps({
             "prompt": f"Board State Hash: {hashlib.sha256(board_state.tobytes()).hexdigest()}",
             "response": f"Chosen Move: {chosen_move} with score {chosen_score}",
             "timestamp": datetime.now().isoformat()
         })
         self.ckg.add_verifiable_record(decision_data, concepts=[domain, "move", str(chosen_move), "score"])
-
         return chosen_move, decision_context
 
     def generate_action_plan(self, command_intent: str, entities: Dict) -> Dict:
-        # New: The ARLC can now access and reason about multimodal context from the CKG
         context_info = self.ckg.query("Socio-Linguistic_Context")
         tone = context_info['node']['properties'].get('tone', 'neutral') if context_info else 'neutral'
         print(f"[ARLC] Generating action plan for intent: '{command_intent}' with tone: {tone}")
-
         if command_intent == "organize_files":
             plan = {
                 "action": "organize_files",
@@ -255,7 +255,6 @@ class ARLCController:
             "timestamp": datetime.now().isoformat()
         })
         self.ckg.add_verifiable_record(failure_data, concepts=["self_correction", "failure", error_type])
-
         causal_factors = failure_report.get('causal_factors', [])
         for factor in causal_factors:
             if factor == 'conceptual_misinterpretation':
@@ -268,5 +267,4 @@ class ARLCController:
                 with torch.no_grad():
                     for param in self.sswm.state_predictor.parameters():
                         param.add_(torch.randn_like(param) * -0.002)
-
         print("[ARLC] Self-correction complete. New knowledge integrated into CKG and model weights adjusted.")
