@@ -17,12 +17,14 @@ except ImportError:
 class ConceptualKnowledgeGraph:
     """
     An in-memory, graph-based knowledge store for the Zenith Protocol.
-    It now handles multimodal and socio-linguistic properties.
+    It now handles multimodal, socio-linguistic, and architectural properties.
     """
     def __init__(self, storage_path: str = "conceptual_graph.json"):
         self.db = InMemoryGraphDB()
         self.storage_path = storage_path
         self._load_graph()
+        # New: Add a counter for proposals to ensure unique IDs
+        self.proposal_counter = 0
 
         self.blockchain_enabled = blockchain_interface_cpp is not None
         if self.blockchain_enabled:
@@ -38,10 +40,11 @@ class ConceptualKnowledgeGraph:
             "ACTS_ON": {"description": "Links an Action to an Object."},
             "HAS_REASON": {"description": "Links an Action to its Reason."},
             "HAS_DISCOVERED_CONCEPT": {"description": "Links a domain to a discovered concept."},
-            # New relationships for multimodal and socio-linguistic data
             "IS_VISUAL": {"description": "Links a concept to a visual element."},
             "IS_AUDIO": {"description": "Links a concept to an audio element."},
             "HAS_TONE": {"description": "Links a concept to a socio-linguistic tone."},
+            "PROPOSED_UPGRADE": {"description": "Links a component to an architectural upgrade proposal."}, # New
+            "FINALIZED": {"description": "Links a human decision to an architectural proposal."}, # New
         }
 
     def _load_graph(self):
@@ -83,7 +86,6 @@ class ConceptualKnowledgeGraph:
             "Reason": {"type": "concept", "description": "The 'why' behind an action."},
             "Internet": {"type": "concept", "description": "A global network of computers."},
             "Real-Time Data": {"type": "concept", "description": "Information updated constantly."},
-            # New base concepts for multimodal data
             "Visual_Data": {"type": "modality", "description": "Represents information from an image or video."},
             "Audio_Data": {"type": "modality", "description": "Represents information from an audio clip."},
             "Socio-Linguistic_Context": {"type": "modality", "description": "Represents conversational tone and style."},
@@ -93,6 +95,8 @@ class ConceptualKnowledgeGraph:
 
     def add_node(self, node_id: str, properties: Dict[str, Any]) -> None:
         self.db.add_node(node_id, properties)
+        if node_id.startswith("proposal_"):
+            self.proposal_counter += 1
         self._save_graph()
 
     def add_edge(self, source_id: str, target_id: str, relationship: str, properties: Optional[Dict[str, Any]] = None) -> None:
@@ -109,6 +113,18 @@ class ConceptualKnowledgeGraph:
 
     def query(self, entity_id: str) -> Optional[Dict[str, Any]]:
         return self.db.query(entity_id)
+
+    def query_by_property(self, key: str, value: Any) -> List[Dict[str, Any]]:
+        """
+        New Method: Queries the graph for all nodes that match a specific key-value pair in their properties.
+        This is crucial for finding all pending architectural proposals.
+        """
+        matching_nodes = []
+        for node_id, node_data in self.db.nodes.items():
+            if node_data.get(key) == value:
+                # Return the full node data with its connections.
+                matching_nodes.append(self.query(node_id))
+        return matching_nodes
 
     def add_prompt_response(self, prompt: str, response: str, conceptual_encoder: 'ZenithConceptualEncoder') -> None:
         extracted_data = conceptual_encoder.extract_concepts_and_relations(prompt, response)
