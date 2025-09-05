@@ -14,22 +14,16 @@ from .sswm import SSWM
 from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 from ..web_access.web_access import WebAccess
 from datetime import datetime
-from .meta_learner import MetaLearner # New: Import MetaLearner
+from .meta_learner import MetaLearner
 
-# New Imports to use the C++ backend
 import eom_calculator_cpp
 import spm_controller_cpp
 
-# New import for the Self-Evolving Knowledge Agent and Local Execution Agent
 from .self_evolving_knowledge_agent import SelfEvolvingKnowledgeAgent
 from ..local_agent.LocalExecutionAgent import LocalExecutionAgent
+from ..conceptual_encoder.conceptual_encoder import ZenithConceptualEncoder
 
 class ARLCController:
-    """
-    The Adaptive Reinforcement Learning Controller (ARLC) is the "Brain" of the system.
-    It evaluates possible moves and chooses the best one based on a scoring heuristic.
-    This version includes an integrated self-correction mechanism and proactive learning.
-    """
     def __init__(self, 
                  strategic_planner: StrategicPlanner, 
                  sswm: SSWM, 
@@ -38,14 +32,14 @@ class ARLCController:
                  ckg: ConceptualKnowledgeGraph = None, 
                  web_access: WebAccess = None,
                  model: nn.Module = None,
-                 meta_learner: Optional[MetaLearner] = None): # New: Accept a MetaLearner instance
+                 meta_learner: Optional[MetaLearner] = None):
         self.strategic_planner = strategic_planner
         self.sswm = sswm
         self.exploration_weight = exploration_weight
         self.eom_weight = eom_weight
         self.visited_states = {}
         self.reward_coeffs = Config.ARLC_REWARD_COEFFS
-        
+
         self.ckg = ckg or ConceptualKnowledgeGraph()
         self.model = model
         self.cde = ConceptDiscoveryEngine(ckg=self.ckg)
@@ -53,24 +47,19 @@ class ARLCController:
         self.is_exploring = False
 
         self.web_access = web_access or WebAccess(self.ckg)
-        
-        # New: Initialize the C++ EOM calculator
+
         self.cpp_eom_calculator = eom_calculator_cpp.EoMCalculator()
-        # New: Initialize the C++ SPM controller
         self.cpp_spm_controller = spm_controller_cpp.SPMController()
 
-        # New: Initialize the SEKA, LEA, and MetaLearner
-        from ..conceptual_encoder.conceptual_encoder import ZenithConceptualEncoder
         self.seka = SelfEvolvingKnowledgeAgent(
             model=self.model, 
             arlc=self, 
             ckg=self.ckg, 
             web_access=self.web_access,
-            conceptual_encoder=ZenithConceptualEncoder()
+            conceptual_encoder=ZenithConceptualEncoder(ckg=self.ckg)
         )
         self.lea = LocalExecutionAgent(ckg=self.ckg, arlc=self, em=None)
-        
-        # New: The MetaLearner instance is now a property of the ARLC
+
         self.meta_learner = meta_learner
 
     def get_generic_conceptual_features(self, state_shape: tuple) -> np.ndarray:
@@ -119,7 +108,6 @@ class ARLCController:
         exploration_bonus = self.exploration_weight / (1 + visits)
         self.visited_states[state_hash] = visits + 1
 
-        # New: Pass the confidence score to the CDE.
         hct_bonus, discovered_concept = self.cde.analyze_for_new_concepts(fused_representation, confidence_score, score, domain)
 
         if self.is_exploring and self.last_fused_rep is not None:
@@ -141,19 +129,17 @@ class ARLCController:
         }
 
     def choose_move(self, board_state: np.ndarray, domain: str, model, piece_idx: int | None = None) -> Tuple[int | None, Dict]:
-        # New: Proactively check for knowledge gaps and trigger the SEKA
         gaps = self.check_for_knowledge_gaps(f"board state {domain}")
         if gaps:
             print(f"[ARLC] Detected knowledge gaps: {gaps}. Triggering autonomous learning.")
             self.seka.initiate_knowledge_acquisition(gaps[0])
-            self.rapid_adaptation_to_new_domain(new_domain_data=[]) # Trigger adaptation for the new info
+            self.rapid_adaptation_to_new_domain(new_domain_data=[])
 
         if random.random() < 0.1:
             query = "latest AI news"
             self.update_knowledge_with_web_data(query)
 
-        # New: Trigger a mini meta-learning loop when facing a difficult problem
-        if self.model.is_struggling(): # Hypothetical method
+        if self.model.is_struggling():
             print("[ARLC] Model is struggling. Initiating mini meta-learning loop.")
             self.meta_learner.run_mini_meta_training(self.model, self.ckg)
 
@@ -190,7 +176,10 @@ class ARLCController:
         return chosen_move, decision_context
 
     def generate_action_plan(self, command_intent: str, entities: Dict) -> Dict:
-        print(f"[ARLC] Generating action plan for intent: '{command_intent}'")
+        # New: The ARLC can now access and reason about multimodal context from the CKG
+        context_info = self.ckg.query("Socio-Linguistic_Context")
+        tone = context_info['node']['properties'].get('tone', 'neutral') if context_info else 'neutral'
+        print(f"[ARLC] Generating action plan for intent: '{command_intent}' with tone: {tone}")
 
         if command_intent == "organize_files":
             plan = {
