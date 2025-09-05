@@ -37,6 +37,20 @@ class ConceptualKnowledgeGraph:
         if self.blockchain_enabled:
             self.blockchain_client = blockchain_interface_cpp.BlockchainInterface()
 
+        # New: Initialize a registry for relationship types
+        self.relationship_types = self._get_default_relationship_types()
+
+    def _get_default_relationship_types(self) -> Dict[str, Dict[str, Any]]:
+        """Defines the initial set of allowed relationships."""
+        return {
+            "IS_A": {"description": "A conceptual inheritance."},
+            "HAS_PROPERTY": {"description": "Links a concept to its property."},
+            "PERFORMS": {"description": "Links an Agent to an Action."},
+            "ACTS_ON": {"description": "Links an Action to an Object."},
+            "HAS_REASON": {"description": "Links an Action to its Reason."},
+            "HAS_DISCOVERED_CONCEPT": {"description": "Links a domain to a discovered concept."},
+        }
+
     def _load_graph(self):
         """Loads the graph from a JSON file if it exists."""
         try:
@@ -44,22 +58,31 @@ class ConceptualKnowledgeGraph:
                 data = json.load(f)
                 self.db.nodes = data.get("nodes", {})
                 self.db.edges = data.get("edges", {})
+                # New: Load dynamic relationship types
+                self.relationship_types = data.get("relationship_types", self._get_default_relationship_types())
             print(f"Conceptual Knowledge Graph loaded from {self.storage_path}")
-        except (FileNotFoundError, json.JSONDecodeError):
+        except (FileNotFound-Error, json.JSONDecodeError):
             print("No existing graph found. Starting with a new one.")
             self._initialize_base_concepts()
             self._save_graph()
 
     def _save_graph(self):
         """Saves the current state of the graph to a JSON file."""
-        # New: Store a verifiable record on the blockchain if enabled
         if self.blockchain_enabled:
-            data_to_store = json.dumps({"nodes": self.db.nodes, "edges": self.db.edges}, sort_keys=True)
+            data_to_store = json.dumps({
+                "nodes": self.db.nodes,
+                "edges": self.db.edges,
+                "relationship_types": self.relationship_types # New
+            }, sort_keys=True)
             self.blockchain_client.add_to_blockchain(data_to_store)
             print("Graph state hashed and stored on the mock blockchain.")
 
         with open(self.storage_path, 'w') as f:
-            json.dump({"nodes": self.db.nodes, "edges": self.db.edges}, f, indent=4)
+            json.dump({
+                "nodes": self.db.nodes,
+                "edges": self.db.edges,
+                "relationship_types": self.relationship_types # New
+            }, f, indent=4)
         print(f"Conceptual Knowledge Graph saved to {self.storage_path}")
 
     def _initialize_base_concepts(self):
@@ -73,19 +96,21 @@ class ConceptualKnowledgeGraph:
             "Real-Time Data": {"type": "concept", "description": "Information updated constantly."},
         }
         for node_id, data in base_concepts.items():
-            # Add initial nodes with a default high confidence score
             self.add_node(node_id, {**data, "verifiability_score": 1.0})
 
     def add_node(self, node_id: str, properties: Dict[str, Any]) -> None:
         """Adds or updates a node in the graph."""
         self.db.add_node(node_id, properties)
-        # New: Automatically save after adding a node for a verifiable ledger
         self._save_graph()
 
     def add_edge(self, source_id: str, target_id: str, relationship: str, properties: Optional[Dict[str, Any]] = None) -> None:
         """Adds a directed edge between two nodes."""
+        # New: Check if the relationship type is in the schema before adding
+        if relationship not in self.relationship_types:
+            print(f"Warning: Relationship type '{relationship}' is not in the schema. Adding a default entry.")
+            self.propose_new_relationship_type(relationship, "Dynamically created relationship.")
+
         self.db.add_edge(source_id, target_id, relationship, properties)
-        # New: Automatically save after adding an edge
         self._save_graph()
 
     def update_node_properties(self, node_id: str, new_properties: Dict[str, Any]) -> None:
@@ -102,11 +127,8 @@ class ConceptualKnowledgeGraph:
         Processes a prompt and response using the Conceptual Encoder
         and adds the rich conceptual data to the graph.
         """
-        # Step 1: Use the Conceptual Encoder to extract a rich set of concepts and relations.
         extracted_data = conceptual_encoder.extract_concepts_and_relations(prompt, response)
 
-        # Step 2: Add nodes and edges to the graph based on the extracted data.
-        # This includes Agents, Actions, Objects, Reasons, and their relationships.
         for data in extracted_data:
             source_id = data.get("source_id")
             source_type = data.get("source_type")
@@ -115,21 +137,28 @@ class ConceptualKnowledgeGraph:
             relationship = data.get("relationship")
             properties = data.get("properties", {})
 
-            # Initialize a confidence score for newly discovered concepts.
             if not self.db.node_exists(source_id):
                 self.add_node(source_id, {"type": source_type, "content": source_id, "verifiability_score": 0.5})
-
             if not self.db.node_exists(target_id):
                 self.add_node(target_id, {"type": target_type, "content": target_id, "verifiability_score": 0.5})
 
             self.add_edge(source_id, target_id, relationship, properties)
-
-            # Update the verifiability score of referenced concepts.
-            # This simulates the "dynamic updating based on how often it's referenced" idea.
             self.db.update_verifiability_score(source_id, 0.1)
             self.db.update_verifiability_score(target_id, 0.1)
 
         self._save_graph()
+    
+    # New: Method to propose a new relationship type. This is the key to dynamic ontology.
+    def propose_new_relationship_type(self, relationship_name: str, description: str, is_vulnerability: bool = False):
+        if relationship_name not in self.relationship_types:
+            self.relationship_types[relationship_name] = {
+                "description": description,
+                "is_vulnerability": is_vulnerability,
+                "created_by": "HCT" if not is_vulnerability else "AdversarialModule",
+                "timestamp": datetime.now().isoformat()
+            }
+            print(f"Proposed new relationship type: '{relationship_name}'")
+            self._save_graph()
 
     def get_verifiability_score(self, node_id: str) -> float:
         """Returns the verifiability score of a given node."""
@@ -138,19 +167,15 @@ class ConceptualKnowledgeGraph:
             return node["node"]["verifiability_score"]
         return 0.0
 
-    # New: Add a method to retrieve a verifiable record from the blockchain
     def get_verifiable_record(self, data_id: str) -> Optional[Dict[str, Any]]:
         """
         Retrieves a verifiable record from the blockchain and returns it.
         """
         if self.blockchain_enabled:
-            # Hash the data_id to find the record on the blockchain
             record_hash = self.blockchain_client.generate_hash(data_id)
             tx = self.blockchain_client.get_from_blockchain(record_hash)
-            
+
             if tx.data_hash:
-                # The data itself is not stored on the blockchain, only the hash.
-                # We can verify that the local record matches the hash on the blockchain.
                 local_record = self.query(data_id)
                 local_data_string = json.dumps(local_record, sort_keys=True)
                 if self.blockchain_client.verify_transaction(tx, local_data_string):
