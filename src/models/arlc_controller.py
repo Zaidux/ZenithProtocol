@@ -19,6 +19,8 @@ from .self_architecting_agent import SelfArchitectingAgent # New Import
 from .self_evolving_knowledge_agent import SelfEvolvingKnowledgeAgent
 from ..local_agent.LocalExecutionAgent import LocalExecutionAgent
 from ..conceptual_encoder.conceptual_encoder import ZenithConceptualEncoder
+import eom_calculator_cpp
+import spm_controller_cpp
 
 class ARLCController:
     """
