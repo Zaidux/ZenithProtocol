@@ -12,7 +12,6 @@
 namespace py = pybind11;
 
 // A class to represent the simplified Conceptual Ontology.
-// In a full implementation, this would be a more complex data structure.
 class ConceptualOntology {
 public:
     std::map<std::string, std::vector<std::string>> ontology_map;
@@ -20,8 +19,7 @@ public:
     int next_id = 0;
 
     ConceptualOntology();
-    
-    // Function to get the ID for a given concept.
+
     int get_concept_id(const std::string& concept);
 };
 
@@ -29,15 +27,18 @@ public:
 class ConceptualEncoder {
 public:
     ConceptualOntology ontology;
-    // A function to extract concepts from text.
-    std::map<std::string, std::string> identify_conceptual_roles(const std::string& text);
-    
-    // A function to encode the identified concepts into a vector.
-    py::array_t<double> encode_conceptual_vector(const std::map<std::string, std::string>& conceptual_summary);
+
+    // New: The function now accepts a context map.
+    std::map<std::string, std::string> identify_conceptual_roles(const std::string& text, const py::dict& context_py);
+
+    py::array_t<double> encode_conceptual_vector(const py::dict& conceptual_summary_py);
+
+private:
+    // New: Helper function to convert a Python dict to a C++ map.
+    std::map<std::string, std::string> _py_dict_to_cpp_map(const py::dict& py_dict);
 };
 
 // Function declaration for the Python module.
 void init_conceptual_encoder(py::module &m);
 
 #endif // CONCEPTUAL_ENCODER_H
-
