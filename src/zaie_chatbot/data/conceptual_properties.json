@@ -8,34 +8,7 @@
         "can_perform_actions",
         "has_attributes"
       ],
-      "examples": [
-        {
-          "sentence": "He placed the book on the table because it was dusty.",
-          "breakdown": {
-            "he": {
-              "element": "agent",
-              "attributes": [
-                "gender:male",
-                "is_human"
-              ],
-              "purpose": "initiates the action of placing the book"
-            }
-          }
-        },
-        {
-          "sentence": "The robot moved the box.",
-          "breakdown": {
-            "the robot": {
-              "element": "agent",
-              "attributes": [
-                "is_machine",
-                "can_manipulate_objects"
-              ],
-              "purpose": "initiates the action of moving"
-            }
-          }
-        }
-      ]
+      "examples": [...]
     },
     "object": {
       "definition": "A static entity with useful properties, often manipulated by an agent.",
@@ -46,32 +19,7 @@
         "has_reason",
         "is_manipulable"
       ],
-      "examples": [
-        {
-          "sentence": "He placed the book on the table because it was dusty.",
-          "breakdown": {
-            "book": {
-              "element": "object",
-              "properties": [
-                "is_physical",
-                "has_function:reading",
-                "has_reason: entertainment, knowledge",
-                "has_material:paper"
-              ],
-              "purpose": "the item being manipulated"
-            },
-            "table": {
-              "element": "object",
-              "properties": [
-                "is_physical",
-                "has_function:surface",
-                "has_material:wood"
-              ],
-              "purpose": "the destination of the manipulated item"
-            }
-          }
-        }
-      ]
+      "examples": [...]
     },
     "action": {
       "definition": "A process executed by an agent with a specific purpose or reason.",
@@ -81,18 +29,7 @@
         "changes_state",
         "has_temporal_context"
       ],
-      "examples": [
-        {
-          "sentence": "He placed the book on the table because it was dusty.",
-          "breakdown": {
-            "placed": {
-              "element": "action",
-              "initiator": "he",
-              "purpose": "to remove dust"
-            }
-          }
-        }
-      ]
+      "examples": [...]
     },
     "motion": {
       "definition": "Something constant, a process already happening, or a state of being.",
@@ -101,17 +38,7 @@
         "is_process",
         "describes_agent_state"
       ],
-      "examples": [
-        {
-          "sentence": "The river is flowing.",
-          "breakdown": {
-            "is flowing": {
-              "element": "motion",
-              "description": "an ongoing process"
-            }
-          }
-        }
-      ]
+      "examples": [...]
     },
     "bridge": {
       "definition": "Relational words that connect conceptual elements and clarify relationships.",
@@ -120,17 +47,7 @@
         "clarifies_causality",
         "indicates_purpose"
       ],
-      "examples": [
-        {
-          "sentence": "He placed the book on the table because it was dusty.",
-          "breakdown": {
-            "because": {
-              "element": "bridge",
-              "purpose": "connects the action ('placed') to its reason ('it was dusty')"
-            }
-          }
-        }
-      ]
+      "examples": [...]
     },
     "properties": {
       "definition": "Foundational, detailed data that provides a profound conceptual understanding of the world.",
@@ -139,13 +56,74 @@
         "provides_causal_context",
         "defines_attributes"
       ],
+      "examples": [...]
+    },
+    "socio-linguistic_context": {
+      "definition": "Concepts that describe the social and cultural context of language use.",
+      "properties": [
+        "tone",
+        "style",
+        "sentiment",
+        "demographic_info"
+      ],
       "examples": [
         {
-          "sentence": "He placed the book on the table because it was dusty.",
+          "phrase": "What's up?",
           "breakdown": {
-            "dusty": {
-              "element": "property",
-              "purpose": "provides the reason for the action; implies a negative state that needs to be resolved (e.g., by a cleaning motion)."
+            "what's up": {
+              "element": "socio-linguistic_context",
+              "attributes": [
+                "style:informal",
+                "purpose:greeting"
+              ]
+            }
+          }
+        },
+        {
+          "phrase": "I see the ocean.",
+          "breakdown": {
+            "I see the ocean": {
+              "element": "multimodal_concept",
+              "attributes": [
+                "modality:visual",
+                "state:present"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "multimodal_properties": {
+      "definition": "Properties that can be described across different modalities (e.g., text, visual, audio).",
+      "properties": [
+        "color",
+        "shape",
+        "texture",
+        "pitch",
+        "tempo"
+      ],
+      "examples": [
+        {
+          "modality": "visual",
+          "description": "a red car",
+          "breakdown": {
+            "car": "object",
+            "red": {
+              "element": "multimodal_property",
+              "type": "color",
+              "value": "red"
+            }
+          }
+        },
+        {
+          "modality": "audio",
+          "description": "a high-pitched scream",
+          "breakdown": {
+            "scream": "action",
+            "high-pitched": {
+              "element": "multimodal_property",
+              "type": "pitch",
+              "value": "high"
             }
           }
         }
@@ -153,4 +131,3 @@
     }
   }
 }
-
