@@ -4,7 +4,6 @@ import torch
 import torch.nn as nn
 from typing import Tuple, Dict, List
 
-# New Imports to use the C++ backend
 from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 from ..web_access.web_access import WebAccess
 import sswm_predictive_model_cpp
@@ -17,19 +16,13 @@ class SSWM(nn.Module):
                  web_access: WebAccess = None):
         super(SSWM, self).__init__()
 
-        # Store CKG and Web Access instances
         self.ckg = ckg
         self.web_access = web_access
 
-        # Initialize the C++ SSWM instance
         self.cpp_sswm = sswm_predictive_model_cpp.SSWMPredictiveModel(input_dim, hidden_dim)
-        # Initialize the C++ mock CKG and WebAccess
         self.cpp_ckg = sswm_predictive_model_cpp.MockCKG()
         self.cpp_web_access = sswm_predictive_model_cpp.MockWebAccess()
 
-        # The Python model now acts as a high-level wrapper.
-        # We keep the nn.Modules here for consistency, but the core logic
-        # is offloaded to C++.
         self.state_predictor = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
@@ -43,19 +36,14 @@ class SSWM(nn.Module):
         )
 
     def forward(self, fused_representation: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        # This forward pass now just relies on the CKG's current state.
         predicted_next_state_np = self.cpp_sswm.predict(fused_representation.detach().cpu().numpy())
-        predicted_reward = self.reward_predictor(fused_representation) # Mocking the reward
+        predicted_reward = self.reward_predictor(fused_representation)
         return torch.from_numpy(predicted_next_state_np), predicted_reward
 
     def simulate_what_if_scenario(self, 
                                   start_state_rep: torch.Tensor,
                                   hypothetical_move: int,
                                   num_steps: int) -> Tuple[torch.Tensor, float]:
-        """
-        Simulates a hypothetical scenario forward in time using the C++ backend.
-        """
-        # Call the optimized C++ function for simulation.
         final_state_np, total_reward = self.cpp_sswm.simulate_what_if_scenario(
             start_state_rep.detach().cpu().numpy(),
             hypothetical_move,
@@ -63,7 +51,6 @@ class SSWM(nn.Module):
             self.cpp_ckg,
             self.cpp_web_access
         )
-        
         final_state_rep = torch.from_numpy(final_state_np)
         return final_state_rep, total_reward
 
@@ -71,17 +58,13 @@ class SSWM(nn.Module):
                                             start_state_rep: torch.Tensor,
                                             hypothetical_moves: List[int],
                                             num_steps: int) -> Dict[int, Tuple[torch.Tensor, float]]:
-        """
-        New method to simulate multiple scenarios for counterfactual explanations.
-        """
-        outcomes = {}
-        for move in hypothetical_moves:
-            final_state_np, total_reward = self.cpp_sswm.simulate_what_if_scenario(
-                start_state_rep.detach().cpu().numpy(),
-                move,
-                num_steps,
-                self.cpp_ckg,
-                self.cpp_web_access
-            )
-            outcomes[move] = (torch.from_numpy(final_state_np), total_reward)
+        outcomes_list = self.cpp_sswm.simulate_multiple_what_if_scenarios(
+            start_state_rep.detach().cpu().numpy(),
+            hypothetical_moves,
+            num_steps,
+            self.cpp_ckg,
+            self.cpp_web_access
+        )
+        outcomes = {move: (torch.from_numpy(state_np), reward) for (move, (state_np, reward)) in zip(hypothetical_moves, outcomes_list)}
         return outcomes
+
