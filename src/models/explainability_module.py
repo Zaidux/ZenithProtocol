@@ -9,6 +9,8 @@ from ..nlp.command_parser import CommandParser
 from .sswm import SSWM
 from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 import hashlib
+import json # New: Import json for data serialization
+from datetime import datetime # New: Import datetime
 
 class ExplainabilityModule:
     """
@@ -26,7 +28,7 @@ class ExplainabilityModule:
         }
         self.discovered_concepts = []
         self.parser = CommandParser(ckg=ckg)
-        self.last_failure_report = None # New: Store the last generated report
+        self.last_failure_report = None
 
     def add_discovered_concept(self, concept_name: str):
         if concept_name not in self.discovered_concepts:
@@ -99,7 +101,6 @@ class ExplainabilityModule:
         eom_explanation = self._analyze_eom_contribution(decision_context)
         explanation['eom_reasoning'] = eom_explanation
 
-        # New: Analyze counterfactuals
         counterfactual_narrative = self._analyze_counterfactuals(decision_context, fused_representation)
         explanation['counterfactual_reasoning'] = counterfactual_narrative
 
@@ -111,40 +112,28 @@ class ExplainabilityModule:
         return explanation
 
     def _get_confidence_score(self, decision_context: Dict) -> float:
-        """
-        Calculates a confidence and hallucination score based on the model's reasoning path
-        and its reliance on verifiable facts from the CKG.
-        """
         chosen_score = decision_context.get('chosen_score', 0)
 
-        # Step 1: Base score from the model's output
         confidence_score = (chosen_score / max(decision_context.get('all_scores', [chosen_score]))) if decision_context.get('all_scores') else 0.5
 
-        # Step 2: Adjust based on CKG knowledge
         conceptual_factors = decision_context.get('conceptual_factors', [])
 
         for concept in conceptual_factors:
             node = self.ckg.query(concept)
             if node:
-                # If the concept is an established fact, increase confidence
                 if node['node'].get('source') == 'training_data' or node['node'].get('verifiability_score', 0) > 0.8:
                     confidence_score += 0.1
-                # If it's a new, emergent concept (HCT), slightly decrease confidence
                 elif node['node'].get('source') == 'HCT':
                     confidence_score -= 0.1
 
-        # Step 3: Check for counterfactuals (demonstrates causal reasoning)
         if decision_context.get('counterfactuals'):
             confidence_score += 0.05
 
-        # New: Step 4: Verify against blockchain record for a trust boost
-        # A move with a verifiable record on the blockchain gets a significant confidence boost.
         chosen_move_id = f"Move_{decision_context.get('chosen_move')}"
         verifiable_record = self.ckg.get_verifiable_record(chosen_move_id)
         if verifiable_record:
             confidence_score += 0.2
             
-        # Ensure the score is within a valid range
         return max(0.0, min(1.0, confidence_score))
 
     def _analyze_conceptual_contribution(self, conceptual_features: torch.Tensor, domain: str) -> str:
@@ -181,50 +170,44 @@ class ExplainabilityModule:
         else:
             eom_text = self.ckg.query("low_eom_change")['node'].get('description', 'low conceptual energy, indicating a minor, tactical adjustment.')
         return f"The move generated {eom_text}."
-        
+
     def _analyze_counterfactuals(self, decision_context: Dict, current_fused_rep: torch.Tensor) -> str:
-        """
-        Compares the chosen move's outcome with top rejected moves to generate a counterfactual explanation.
-        """
         chosen_move = decision_context.get('chosen_move')
         all_scores = decision_context.get('all_scores', [])
-        
+
         if not all_scores or len(all_scores) < 2:
             return "Counterfactual analysis not available."
 
-        # Find the best rejected move
         sorted_scores = sorted(zip(all_scores, range(len(all_scores))), reverse=True)
         best_rejected_move_info = None
         for score, move_idx in sorted_scores:
             if move_idx != chosen_move:
                 best_rejected_move_info = (score, move_idx)
                 break
-        
+
         if not best_rejected_move_info:
             return "Counterfactual analysis not available."
-            
+
         best_rejected_score, best_rejected_move = best_rejected_move_info
-        
-        # Simulate outcomes for both the chosen move and the best rejected move
+
         sim_outcomes = self.sswm.simulate_multiple_what_if_scenarios(
             start_state_rep=current_fused_rep,
             hypothetical_moves=[chosen_move, best_rejected_move],
             num_steps=1
         )
-        
+
         chosen_reward = sim_outcomes[chosen_move][1]
         rejected_reward = sim_outcomes[best_rejected_move][1]
-        
+
         chosen_outcome_desc = "a positive outcome" if chosen_reward > 0 else "a neutral outcome"
         rejected_outcome_desc = "a positive outcome" if rejected_reward > 0 else "a neutral outcome"
 
-        # Formulate the counterfactual narrative
         narrative = (
             f"While move {best_rejected_move} also had a high score, the SSWM predicted that your chosen move, {chosen_move}, "
             f"would lead to a more favorable outcome with a reward of {chosen_reward:.2f} compared to {rejected_reward:.2f}. "
             f"The chosen move was selected to prioritize a more strategic long-term goal."
         )
-        
+
         return narrative
 
     def _analyze_decision_context(self, context: Dict) -> str:
@@ -244,10 +227,9 @@ class ExplainabilityModule:
         eom_text = explanation.get('eom_reasoning', '')
         decision_text = explanation.get('decision_narrative', '')
         counterfactual_text = explanation.get('counterfactual_reasoning', '')
-        
+
         return f"{confidence_text} {conceptual_text} {moe_text} {eom_text} {decision_text} {counterfactual_text}"
 
-    # New Method: Phase 6 - Failure Diagnosis
     def analyze_and_report_failure(self, 
                                    original_input: torch.Tensor, 
                                    adversarial_input: torch.Tensor,
