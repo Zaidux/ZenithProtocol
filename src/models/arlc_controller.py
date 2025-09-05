@@ -5,8 +5,8 @@ import torch.nn as nn
 import numpy as np
 import hashlib
 import random
-import json # New: Import json for data serialization
-from typing import Dict, List, Tuple
+import json
+from typing import Dict, List, Tuple, Optional
 from ..utils.config import Config
 from .hyper_conceptual_thinking import ConceptDiscoveryEngine
 from .strategic_planner import StrategicPlanner
@@ -14,6 +14,7 @@ from .sswm import SSWM
 from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 from ..web_access.web_access import WebAccess
 from datetime import datetime
+from .meta_learner import MetaLearner # New: Import MetaLearner
 
 # New Imports to use the C++ backend
 import eom_calculator_cpp
@@ -21,13 +22,13 @@ import spm_controller_cpp
 
 # New import for the Self-Evolving Knowledge Agent and Local Execution Agent
 from .self_evolving_knowledge_agent import SelfEvolvingKnowledgeAgent
-from ..local_agent.LocalExecutionAgent import LocalExecutionAgent # New import
+from ..local_agent.LocalExecutionAgent import LocalExecutionAgent
 
 class ARLCController:
     """
     The Adaptive Reinforcement Learning Controller (ARLC) is the "Brain" of the system.
     It evaluates possible moves and chooses the best one based on a scoring heuristic.
-    This version includes an integrated self-correction mechanism.
+    This version includes an integrated self-correction mechanism and proactive learning.
     """
     def __init__(self, 
                  strategic_planner: StrategicPlanner, 
@@ -36,36 +37,41 @@ class ARLCController:
                  eom_weight: float = 2.0,
                  ckg: ConceptualKnowledgeGraph = None, 
                  web_access: WebAccess = None,
-                 model: nn.Module = None):
+                 model: nn.Module = None,
+                 meta_learner: Optional[MetaLearner] = None): # New: Accept a MetaLearner instance
         self.strategic_planner = strategic_planner
         self.sswm = sswm
         self.exploration_weight = exploration_weight
         self.eom_weight = eom_weight
         self.visited_states = {}
         self.reward_coeffs = Config.ARLC_REWARD_COEFFS
-        self.cde = ConceptDiscoveryEngine(ckg=ckg)
+        
+        self.ckg = ckg or ConceptualKnowledgeGraph()
+        self.model = model
+        self.cde = ConceptDiscoveryEngine(ckg=self.ckg)
         self.last_fused_rep = None
         self.is_exploring = False
 
-        self.ckg = ckg or ConceptualKnowledgeGraph()
         self.web_access = web_access or WebAccess(self.ckg)
-        self.model = model
-
+        
         # New: Initialize the C++ EOM calculator
         self.cpp_eom_calculator = eom_calculator_cpp.EoMCalculator()
         # New: Initialize the C++ SPM controller
         self.cpp_spm_controller = spm_controller_cpp.SPMController()
 
-        # New: Initialize the SEKA and LEA
+        # New: Initialize the SEKA, LEA, and MetaLearner
         from ..conceptual_encoder.conceptual_encoder import ZenithConceptualEncoder
         self.seka = SelfEvolvingKnowledgeAgent(
-            model=model, 
+            model=self.model, 
             arlc=self, 
             ckg=self.ckg, 
             web_access=self.web_access,
             conceptual_encoder=ZenithConceptualEncoder()
         )
-        self.lea = LocalExecutionAgent(ckg=self.ckg, arlc=self, em=None) # EM will be set later
+        self.lea = LocalExecutionAgent(ckg=self.ckg, arlc=self, em=None)
+        
+        # New: The MetaLearner instance is now a property of the ARLC
+        self.meta_learner = meta_learner
 
     def get_generic_conceptual_features(self, state_shape: tuple) -> np.ndarray:
         num_features = 3
@@ -95,7 +101,7 @@ class ARLCController:
             else:
                 print(f"[ARLC] Web search for '{query}' found no relevant information.")
 
-    def evaluate_conceptual_features(self, conceptual_features: np.ndarray, fused_representation: torch.Tensor, domain: str) -> Dict[str, float]:
+    def evaluate_conceptual_features(self, conceptual_features: np.ndarray, fused_representation: torch.Tensor, domain: str, confidence_score: float) -> Dict[str, float]:
         score = 0
         if domain == 'tetris':
             score = (self.reward_coeffs['tetris']['lines_cleared'] * conceptual_features[0]) + \
@@ -113,7 +119,8 @@ class ARLCController:
         exploration_bonus = self.exploration_weight / (1 + visits)
         self.visited_states[state_hash] = visits + 1
 
-        hct_bonus, discovered_concept = self.cde.analyze_for_new_concepts(fused_representation, score, domain)
+        # New: Pass the confidence score to the CDE.
+        hct_bonus, discovered_concept = self.cde.analyze_for_new_concepts(fused_representation, confidence_score, score, domain)
 
         if self.is_exploring and self.last_fused_rep is not None:
             surprise_bonus = self.cpp_eom_calculator.calculate_eom_bonus(
@@ -133,24 +140,28 @@ class ARLCController:
             "score": final_score
         }
 
-    def calculate_eom_bonus(self, last_fused_rep: torch.Tensor, current_fused_rep: torch.Tensor) -> float:
-        raise NotImplementedError("EoM calculation is now handled by the C++ backend.")
-
     def choose_move(self, board_state: np.ndarray, domain: str, model, piece_idx: int | None = None) -> Tuple[int | None, Dict]:
+        # New: Proactively check for knowledge gaps and trigger the SEKA
         gaps = self.check_for_knowledge_gaps(f"board state {domain}")
         if gaps:
             print(f"[ARLC] Detected knowledge gaps: {gaps}. Triggering autonomous learning.")
             self.seka.initiate_knowledge_acquisition(gaps[0])
+            self.rapid_adaptation_to_new_domain(new_domain_data=[]) # Trigger adaptation for the new info
 
         if random.random() < 0.1:
             query = "latest AI news"
             self.update_knowledge_with_web_data(query)
 
+        # New: Trigger a mini meta-learning loop when facing a difficult problem
+        if self.model.is_struggling(): # Hypothetical method
+            print("[ARLC] Model is struggling. Initiating mini meta-learning loop.")
+            self.meta_learner.run_mini_meta_training(self.model, self.ckg)
+
         if self.is_exploring:
             self.cpp_spm_controller.allocate_for_tasks([domain, "exploration"])
             mock_input = np.random.rand(1, 128)
             processed_output = self.cpp_spm_controller.run_parallel_simulation(mock_input, domain)
-
+            
             legal_moves = range(5)
             chosen_move = random.choice(legal_moves)
             decision_context = {"chosen_move": chosen_move, "chosen_score": 0.0, "all_scores": [0.0]}
@@ -177,15 +188,10 @@ class ARLCController:
         self.ckg.add_verifiable_record(decision_data, concepts=[domain, "move", str(chosen_move), "score"])
 
         return chosen_move, decision_context
-        
-    # New Method: Generates a plan for the Local Execution Agent
+
     def generate_action_plan(self, command_intent: str, entities: Dict) -> Dict:
-        """
-        Generates a detailed, safe action plan from a user command.
-        This is a conceptual representation of the ARLC's planning process.
-        """
         print(f"[ARLC] Generating action plan for intent: '{command_intent}'")
-        
+
         if command_intent == "organize_files":
             plan = {
                 "action": "organize_files",
@@ -201,11 +207,7 @@ class ARLCController:
         else:
             return {"status": "error", "message": "Unknown command intent."}
 
-    # New Method: Reports a failure to the self-correction loop
     def report_failure(self, error_type: str, explanation: str, causal_factors: Optional[List[str]] = None):
-        """
-        Reports a failure to the ARLC, which initiates the self-correction process.
-        """
         failure_report = {
             "type": error_type,
             "explanation": explanation,
@@ -214,11 +216,9 @@ class ARLCController:
         }
         self.self_correct_from_failure(failure_report, self.model)
 
-
     def adjust_score_for_strategy(self, scores: list, game_state: np.ndarray, domain: str) -> list:
         conceptual_features_for_goal_selection = self.strategic_planner.model.get_conceptual_features(game_state)
         strategic_goal = self.strategic_planner.select_goal(conceptual_features_for_goal_selection, domain)
-
         if strategic_goal['goal'] == 'control_center' and domain == 'chess':
             bonus_move_index = 2
             if bonus_move_index < len(scores):
@@ -239,7 +239,6 @@ class ARLCController:
         print("Rapidly adapting to the new domain with meta-learned knowledge...")
         optimizer = torch.optim.Adam(self.strategic_planner.model.parameters(), lr=0.001)
         criterion = torch.nn.MSELoss()
-
         for i, data_point in enumerate(new_domain_data):
             state = data_point['state']
             conceptual_features = data_point['conceptual_features']
@@ -257,15 +256,8 @@ class ARLCController:
         self.is_exploring = True
 
     def self_correct_from_failure(self, failure_report: Dict, model: nn.Module):
-        """
-        Analyzes a failure report from the ExplainabilityModule and performs self-correction.
-        It updates both the model's weights and the CKG to prevent similar errors.
-        """
         print(f"\n[ARLC] Initiating self-correction based on failure report: {failure_report.get('type')}")
-
         error_type = failure_report.get('type', 'unknown_error')
-        
-        # New: Add a verifiable, immutable record of the failure to the blockchain
         failure_data = json.dumps({
             "type": error_type, 
             "subtype": failure_report.get('subtype', 'n/a'),
@@ -276,14 +268,12 @@ class ARLCController:
         self.ckg.add_verifiable_record(failure_data, concepts=["self_correction", "failure", error_type])
 
         causal_factors = failure_report.get('causal_factors', [])
-
         for factor in causal_factors:
             if factor == 'conceptual_misinterpretation':
                 print("  - Adjusting ConceptualAttention weights to correct misinterpretation.")
                 with torch.no_grad():
                     for param in model.conceptual_attention.parameters():
                         param.add_(torch.randn_like(param) * 0.001)
-
             elif factor == 'sswm_hallucination':
                 print("  - Adjusting SSWM's state predictor weights to reduce hallucination.")
                 with torch.no_grad():
