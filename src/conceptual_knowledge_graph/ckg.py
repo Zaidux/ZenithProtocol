@@ -5,13 +5,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any, Union
 import hashlib
 
-# Assuming a mock ConceptualEncoder and an in-memory graph database
-# In a real-world scenario, these would be separate, optimized modules.
-# We'll simulate them here for demonstration.
-from ..conceptual_encoder.conceptual_encoder import ConceptualEncoder
+from ..conceptual_encoder.conceptual_encoder import ZenithConceptualEncoder
 from .in_memory_db import InMemoryGraphDB
 
-# New: Import the optional C++ blockchain interface
 try:
     import blockchain_interface_cpp
 except ImportError:
@@ -21,27 +17,20 @@ except ImportError:
 class ConceptualKnowledgeGraph:
     """
     An in-memory, graph-based knowledge store for the Zenith Protocol.
-    It stores concepts, properties, prompts, and responses as nodes, and
-    their relationships as directed edges. This serves as the model's
-    long-term memory.
+    It now handles multimodal and socio-linguistic properties.
     """
     def __init__(self, storage_path: str = "conceptual_graph.json"):
-        # We will use a dedicated in-memory graph database instead of a simple dictionary.
-        # This simulates a more performant, scalable solution.
         self.db = InMemoryGraphDB()
         self.storage_path = storage_path
         self._load_graph()
 
-        # New: Initialize the optional blockchain interface
         self.blockchain_enabled = blockchain_interface_cpp is not None
         if self.blockchain_enabled:
             self.blockchain_client = blockchain_interface_cpp.BlockchainInterface()
 
-        # New: Initialize a registry for relationship types
         self.relationship_types = self._get_default_relationship_types()
 
     def _get_default_relationship_types(self) -> Dict[str, Dict[str, Any]]:
-        """Defines the initial set of allowed relationships."""
         return {
             "IS_A": {"description": "A conceptual inheritance."},
             "HAS_PROPERTY": {"description": "Links a concept to its property."},
@@ -49,30 +38,31 @@ class ConceptualKnowledgeGraph:
             "ACTS_ON": {"description": "Links an Action to an Object."},
             "HAS_REASON": {"description": "Links an Action to its Reason."},
             "HAS_DISCOVERED_CONCEPT": {"description": "Links a domain to a discovered concept."},
+            # New relationships for multimodal and socio-linguistic data
+            "IS_VISUAL": {"description": "Links a concept to a visual element."},
+            "IS_AUDIO": {"description": "Links a concept to an audio element."},
+            "HAS_TONE": {"description": "Links a concept to a socio-linguistic tone."},
         }
 
     def _load_graph(self):
-        """Loads the graph from a JSON file if it exists."""
         try:
             with open(self.storage_path, 'r') as f:
                 data = json.load(f)
                 self.db.nodes = data.get("nodes", {})
                 self.db.edges = data.get("edges", {})
-                # New: Load dynamic relationship types
                 self.relationship_types = data.get("relationship_types", self._get_default_relationship_types())
             print(f"Conceptual Knowledge Graph loaded from {self.storage_path}")
-        except (FileNotFound-Error, json.JSONDecodeError):
+        except (FileNotFoundError, json.JSONDecodeError):
             print("No existing graph found. Starting with a new one.")
             self._initialize_base_concepts()
             self._save_graph()
 
     def _save_graph(self):
-        """Saves the current state of the graph to a JSON file."""
         if self.blockchain_enabled:
             data_to_store = json.dumps({
                 "nodes": self.db.nodes,
                 "edges": self.db.edges,
-                "relationship_types": self.relationship_types # New
+                "relationship_types": self.relationship_types
             }, sort_keys=True)
             self.blockchain_client.add_to_blockchain(data_to_store)
             print("Graph state hashed and stored on the mock blockchain.")
@@ -81,12 +71,11 @@ class ConceptualKnowledgeGraph:
             json.dump({
                 "nodes": self.db.nodes,
                 "edges": self.db.edges,
-                "relationship_types": self.relationship_types # New
+                "relationship_types": self.relationship_types
             }, f, indent=4)
         print(f"Conceptual Knowledge Graph saved to {self.storage_path}")
 
     def _initialize_base_concepts(self):
-        """Initializes a few core concepts to get the graph started."""
         base_concepts = {
             "Agent": {"type": "concept", "description": "Entity that performs actions."},
             "Action": {"type": "concept", "description": "A verb or process executed."},
@@ -94,18 +83,19 @@ class ConceptualKnowledgeGraph:
             "Reason": {"type": "concept", "description": "The 'why' behind an action."},
             "Internet": {"type": "concept", "description": "A global network of computers."},
             "Real-Time Data": {"type": "concept", "description": "Information updated constantly."},
+            # New base concepts for multimodal data
+            "Visual_Data": {"type": "modality", "description": "Represents information from an image or video."},
+            "Audio_Data": {"type": "modality", "description": "Represents information from an audio clip."},
+            "Socio-Linguistic_Context": {"type": "modality", "description": "Represents conversational tone and style."},
         }
         for node_id, data in base_concepts.items():
             self.add_node(node_id, {**data, "verifiability_score": 1.0})
 
     def add_node(self, node_id: str, properties: Dict[str, Any]) -> None:
-        """Adds or updates a node in the graph."""
         self.db.add_node(node_id, properties)
         self._save_graph()
 
     def add_edge(self, source_id: str, target_id: str, relationship: str, properties: Optional[Dict[str, Any]] = None) -> None:
-        """Adds a directed edge between two nodes."""
-        # New: Check if the relationship type is in the schema before adding
         if relationship not in self.relationship_types:
             print(f"Warning: Relationship type '{relationship}' is not in the schema. Adding a default entry.")
             self.propose_new_relationship_type(relationship, "Dynamically created relationship.")
@@ -114,19 +104,13 @@ class ConceptualKnowledgeGraph:
         self._save_graph()
 
     def update_node_properties(self, node_id: str, new_properties: Dict[str, Any]) -> None:
-        """Updates properties of an existing node."""
         self.db.update_node_properties(node_id, new_properties)
         self._save_graph()
 
     def query(self, entity_id: str) -> Optional[Dict[str, Any]]:
-        """Returns the node and its immediate connections."""
         return self.db.query(entity_id)
 
-    def add_prompt_response(self, prompt: str, response: str, conceptual_encoder) -> None:
-        """
-        Processes a prompt and response using the Conceptual Encoder
-        and adds the rich conceptual data to the graph.
-        """
+    def add_prompt_response(self, prompt: str, response: str, conceptual_encoder: 'ZenithConceptualEncoder') -> None:
         extracted_data = conceptual_encoder.extract_concepts_and_relations(prompt, response)
 
         for data in extracted_data:
@@ -147,8 +131,7 @@ class ConceptualKnowledgeGraph:
             self.db.update_verifiability_score(target_id, 0.1)
 
         self._save_graph()
-    
-    # New: Method to propose a new relationship type. This is the key to dynamic ontology.
+
     def propose_new_relationship_type(self, relationship_name: str, description: str, is_vulnerability: bool = False):
         if relationship_name not in self.relationship_types:
             self.relationship_types[relationship_name] = {
@@ -161,16 +144,12 @@ class ConceptualKnowledgeGraph:
             self._save_graph()
 
     def get_verifiability_score(self, node_id: str) -> float:
-        """Returns the verifiability score of a given node."""
         node = self.db.query(node_id)
         if node and "node" in node and "verifiability_score" in node["node"]:
             return node["node"]["verifiability_score"]
         return 0.0
 
     def get_verifiable_record(self, data_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieves a verifiable record from the blockchain and returns it.
-        """
         if self.blockchain_enabled:
             record_hash = self.blockchain_client.generate_hash(data_id)
             tx = self.blockchain_client.get_from_blockchain(record_hash)
@@ -188,14 +167,12 @@ class ConceptualKnowledgeGraph:
 
 # --- Mock Classes for Demonstration ---
 class ConceptualEncoder:
-    """A mock Conceptual Encoder to simulate semantic compression."""
     def extract_concepts_and_relations(self, prompt: str, response: str) -> List[Dict[str, Any]]:
         return [
             {"source_id": "run", "source_type": "concept", "target_id": "Action", "target_type": "concept", "relationship": "IS_A", "properties": {"motion_type": "continuous"}},
         ]
 
 class InMemoryGraphDB:
-    """A mock in-memory graph database with basic functionality."""
     def __init__(self):
         self.nodes = {}
         self.edges = {}
@@ -260,28 +237,24 @@ class InMemoryGraphDB:
             self.nodes[node_id]["verifiability_score"] = new_score
             self.nodes[node_id]["last_updated"] = datetime.now().isoformat()
 
-# --- Example Usage ---
+# Example usage
 if __name__ == '__main__':
-    # Initialize the graph
     ckg = ConceptualKnowledgeGraph()
     conceptual_encoder = ConceptualEncoder()
 
-    # Add a conversation with the new, enhanced method
+    # Add a conversation
     prompt_text = "What is a good way to stay fit?"
     response_text = "Running is a great option because it helps burn calories."
     ckg.add_prompt_response(prompt_text, response_text, conceptual_encoder)
 
-    # Query the graph to see what it knows about "run"
+    # Add a multimodal concept
+    ckg.add_node("red_car", {"type": "visual_concept", "modality": "visual", "properties": {"color": "red"}})
+    ckg.add_node("high_pitch", {"type": "audio_concept", "modality": "audio", "properties": {"pitch": "high"}})
+    ckg.add_edge("red_car", "Visual_Data", "IS_VISUAL")
+    ckg.add_edge("high_pitch", "Audio_Data", "IS_AUDIO")
+    ckg.add_edge("Running", "Socio-Linguistic_Context", "HAS_TONE", {"value": "positive"})
+
+    # Query the graph
     run_info = ckg.query("run")
     print("\n--- Querying 'run' ---")
     print(json.dumps(run_info, indent=4))
-
-    # Get the verifiability score
-    run_score = ckg.get_verifiability_score("run")
-    print(f"\nThe verifiability score for 'run' is: {run_score}")
-
-    # Verify that the graph was saved and reloaded
-    ckg_reloaded = ConceptualKnowledgeGraph()
-    print("\nGraph reloaded from file to verify persistence.")
-    reloaded_info = ckg_reloaded.query("run")
-    print(json.dumps(reloaded_info, indent=4))
