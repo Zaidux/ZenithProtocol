@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import random
 from typing import Dict, List, Tuple
 from ..utils.config import Config
+from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 
 class AdversarialModule(nn.Module):
     """
@@ -13,9 +14,10 @@ class AdversarialModule(nn.Module):
     to confuse the ASREHModel. It learns to find and exploit weaknesses in the
     model's reasoning, forcing the system to self-correct.
     """
-    def __init__(self, model: nn.Module):
+    def __init__(self, model: nn.Module, ckg: ConceptualKnowledgeGraph):
         super(AdversarialModule, self).__init__()
         self.model = model
+        self.ckg = ckg # New: CKG instance for proposing new relationships
         self.config = Config()
 
         # A simple generator network to create adversarial noise or a new state
@@ -80,6 +82,23 @@ class AdversarialModule(nn.Module):
                         original_output=original_output,
                         adversarial_output=adversarial_output
                     )
-
+                    
+                    # New: Propose a new relationship type based on the failure
+                    self.propose_new_relationship_from_failure(failure_report)
+                    
                     # 7. ARLC takes the report and performs self-correction
                     arlc.self_correct_from_failure(failure_report, self.model)
+
+    def propose_new_relationship_from_failure(self, failure_report: Dict[str, Any]):
+        """
+        Analyzes a failure report and proposes a new conceptual relationship to the CKG.
+        """
+        # This is a placeholder for a more sophisticated analysis.
+        # In a real system, the module would analyze the conceptual differences
+        # between the original and adversarial inputs to identify a missing link.
+        
+        # New: Propose a new relationship type based on the failure
+        relationship_name = f"Vulnerability_{random.randint(100, 999)}"
+        description = f"An emergent relationship identified by the Adversarial Module as a vulnerability. It describes a conceptual link that, when perturbed, causes the model's output to diverge significantly."
+        self.ckg.propose_new_relationship_type(relationship_name, description, is_vulnerability=True)
+        print(f"Adversarial Module proposed new conceptual relationship: '{relationship_name}'")
