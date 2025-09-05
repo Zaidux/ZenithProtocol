@@ -58,72 +58,59 @@
       ],
       "examples": [...]
     },
-    "socio-linguistic_context": {
-      "definition": "Concepts that describe the social and cultural context of language use.",
+    "multimodal_properties": {
+      "definition": "Attributes of a concept derived from non-textual data.",
       "properties": [
-        "tone",
-        "style",
-        "sentiment",
-        "demographic_info"
+        "visual_prop:color",
+        "visual_prop:shape",
+        "visual_prop:texture",
+        "audio_prop:pitch",
+        "audio_prop:tempo",
+        "audio_prop:emotion"
       ],
       "examples": [
         {
-          "phrase": "What's up?",
-          "breakdown": {
-            "what's up": {
-              "element": "socio-linguistic_context",
-              "attributes": [
-                "style:informal",
-                "purpose:greeting"
-              ]
+          "visual_example": {
+            "prompt": "A picture of a red car.",
+            "breakdown": {
+              "red_car": {
+                "element": "multimodal_property",
+                "properties": ["visual_prop:color", "visual_prop:shape"],
+                "value": "red, car-like"
+              }
             }
           }
         },
         {
-          "phrase": "I see the ocean.",
-          "breakdown": {
-            "I see the ocean": {
-              "element": "multimodal_concept",
-              "attributes": [
-                "modality:visual",
-                "state:present"
-              ]
+          "audio_example": {
+            "prompt": "An audio clip of a happy song.",
+            "breakdown": {
+              "happy_song": {
+                "element": "multimodal_property",
+                "properties": ["audio_prop:emotion", "audio_prop:tempo"],
+                "value": "happy, fast"
+              }
             }
           }
         }
       ]
     },
-    "multimodal_properties": {
-      "definition": "Properties that can be described across different modalities (e.g., text, visual, audio).",
+    "socio_linguistic_properties": {
+      "definition": "Attributes of a concept that are context-dependent and relate to communication style.",
       "properties": [
-        "color",
-        "shape",
-        "texture",
-        "pitch",
-        "tempo"
+        "tone",
+        "formality",
+        "sentiment",
+        "style"
       ],
       "examples": [
         {
-          "modality": "visual",
-          "description": "a red car",
+          "sentence": "That's just great.",
           "breakdown": {
-            "car": "object",
-            "red": {
-              "element": "multimodal_property",
-              "type": "color",
-              "value": "red"
-            }
-          }
-        },
-        {
-          "modality": "audio",
-          "description": "a high-pitched scream",
-          "breakdown": {
-            "scream": "action",
-            "high-pitched": {
-              "element": "multimodal_property",
-              "type": "pitch",
-              "value": "high"
+            "great": {
+              "element": "socio_linguistic_property",
+              "attributes": ["tone:sarcastic", "sentiment:negative"],
+              "purpose": "A negative tone for a seemingly positive word."
             }
           }
         }
