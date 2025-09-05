@@ -2,18 +2,19 @@
 
 import torch
 import torch.nn as nn
-from typing import Dict, Any
-from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph # New import
+from typing import Dict, Any, Optional
+from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 
 class StrategicPlanner:
     """
     The Strategic Planner is responsible for setting high-level, long-term goals
     for the ARLC. It now selects goals dynamically from the CKG.
     """
-    def __init__(self, model: nn.Module, ckg: ConceptualKnowledgeGraph): # New dependency
+    def __init__(self, model: nn.Module, ckg: ConceptualKnowledgeGraph):
         self.model = model
-        self.ckg = ckg # New: CKG instance
+        self.ckg = ckg
         self.current_goal = None
+        self._initialize_strategic_goals()
 
     def _initialize_strategic_goals(self):
         """Initializes strategic goals in the CKG if they don't exist."""
@@ -35,40 +36,40 @@ class StrategicPlanner:
         Analyzes the conceptual features and selects the most relevant long-term goal
         by querying the CKG.
         """
-        # Ensure base goals are in the CKG
         self._initialize_strategic_goals()
 
-        # New: Retrieve relevant conceptual information from the CKG
+        # New: Retrieve relevant conceptual information from the CKG based on the domain.
         conceptual_info = self.ckg.query(f"{domain}_conceptual_state")
         
-        # New: Use a rule-based system that can query the CKG's knowledge
-        # The logic below is a simplification of what a full-fledged goal selection network would do.
+        # New: The logic for selecting a goal is now based on CKG knowledge,
+        # which can include information from other modules like the Adversarial Module or HCT.
+        
         if domain == 'chess':
             king_safety_node = self.ckg.query('king_safety')
-            # Check if the board state has properties that indicate danger
-            if conceptual_info and 'is_king_threatened' in conceptual_info['node'].get('properties', {}):
+            # The decision is based on a CKG query, not a hard-coded check.
+            if king_safety_node and 'is_king_threatened' in king_safety_node['node'].get('properties', {}):
                 self.current_goal = 'king_safety'
                 return {'goal': 'king_safety', 'description': king_safety_node['node']['description']}
-
+            
             material_node = self.ckg.query('material_advantage')
-            if conceptual_info and 'is_material_disadvantaged' in conceptual_info['node'].get('properties', {}):
+            if material_node and 'is_material_disadvantaged' in material_node['node'].get('properties', {}):
                 self.current_goal = 'material_advantage'
                 return {'goal': 'material_advantage', 'description': material_node['node']['description']}
-
+                
             center_control_node = self.ckg.query('control_center')
             self.current_goal = 'control_center'
             return {'goal': 'control_center', 'description': center_control_node['node']['description']}
 
         elif domain == 'tetris':
             gaps_node = self.ckg.query('minimize_gaps')
-            if conceptual_info and 'has_many_gaps' in conceptual_info['node'].get('properties', {}):
+            if gaps_node and 'has_many_gaps' in gaps_node['node'].get('properties', {}):
                 self.current_goal = 'minimize_gaps'
                 return {'goal': 'minimize_gaps', 'description': gaps_node['node']['description']}
-
+                
             clear_lines_node = self.ckg.query('clear_lines')
             self.current_goal = 'clear_lines'
             return {'goal': 'clear_lines', 'description': clear_lines_node['node']['description']}
-        
+
         # Check for HCT discovered goals
         hct_goals = [n for n in self.ckg.nodes.keys() if n.startswith('HCT_Concept')]
         if hct_goals:
