@@ -1,0 +1,106 @@
+{A, B ,C ,D ,E ,F ,G ,H ,I ,J ,K ,L ,M ,N ,O ,P ,Q ,R ,S ,T ,U ,V ,W ,X ,Y ,Z},
+
+{
+  "A": [
+    {
+      "word": "an",
+      "definition": "A determiner, a form of 'a', used before a word starting with a vowel sound.",
+      "example": "An apple fell from the tree, and an hour later, it was gone."
+    },
+    {
+      "word": "am",
+      "definition": "A form of the verb 'to be', used as the first-person singular present tense.",
+      "example": "I am a data annotator, and I am ready to start."
+    },
+    {
+      "word": "as",
+      "definition": "A conjunction or adverb, used to make comparisons or to indicate a temporal or causal relationship.",
+      "example": "I am as ready as I can be, as the work is about to begin."
+    },
+    {
+      "word": "and",
+      "definition": "A conjunction used to connect words, phrases, or clauses, indicating a relationship of addition or sequence.",
+      "example": "We will start with the letter A and then continue with B."
+    },
+    {
+      "word": "are",
+      "definition": "A form of the verb 'to be', used as the plural present tense or for the second-person singular present tense.",
+      "example": "You are a user, and we are working together on a project."
+    },
+    {
+      "word": "ask",
+      "definition": "A verb, meaning to say something in the form of a question to get information.",
+      "example": "I will ask a question, and you will provide an answer."
+    },
+    {
+      "word": "add",
+      "definition": "A verb, meaning to join something to something else so as to increase the size, number, or amount.",
+      "example": "We will add a new file to the directory."
+    },
+    {
+      "word": "act",
+      "definition": "A verb, meaning to take action; to do something.",
+      "example": "We will act as data annotators for the Zenith Protocol."
+    },
+    {
+      "word": "all",
+      "definition": "A determiner or pronoun, meaning the whole of something or every single one.",
+      "example": "We will use all the files in the directory."
+    },
+    {
+      "word": "also",
+      "definition": "An adverb, meaning in addition; as well.",
+      "example": "We will also cover other topics in the future."
+    },
+    {
+      "word": "about",
+      "definition": "A preposition, meaning on the subject of; concerning.",
+      "example": "We are talking about the Zenith Protocol."
+    },
+    {
+      "word": "above",
+      "definition": "A preposition, meaning at a higher level than.",
+      "example": "The files are located above the root directory."
+    },
+    {
+      "word": "allow",
+      "definition": "A verb, meaning to give the necessary time or opportunity for.",
+      "example": "This will allow the model to reason more effectively."
+    },
+    {
+      "word": "another",
+      "definition": "A determiner or pronoun, meaning an additional person or thing of the same type.",
+      "example": "We will create another file for this project."
+    },
+    {
+      "word": "against",
+      "definition": "A preposition, meaning in opposition to; contrary to.",
+      "example": "We are working against a deadline."
+    },
+    {
+      "word": "action",
+      "definition": "A noun, meaning the process of doing something, typically to achieve a purpose.",
+      "example": "The model will be able to understand the action in a prompt."
+    },
+    {
+      "word": "ability",
+      "definition": "A noun, meaning the power or skill to do something.",
+      "example": "The model will have the ability to reason about complex concepts."
+    },
+    {
+      "word": "approach",
+      "definition": "A noun, meaning a way of dealing with a situation or problem.",
+      "example": "This new approach will lead to better results."
+    },
+    {
+      "word": "absolute",
+      "definition": "An adjective, meaning not qualified or diminished in any way; total.",
+      "example": "This is a new and absolute method for training AI."
+    },
+    {
+      "word": "acknowledge",
+      "definition": "A verb, meaning to accept or admit the existence or truth of.",
+      "example": "I will acknowledge your prompt and proceed with the task."
+    }
+  ]
+}
