@@ -1,5 +1,31 @@
-{A, B ,C ,D ,E ,F ,G ,H ,I ,J ,K ,L ,M ,N ,O ,P ,Q ,R ,S ,T ,U ,V ,W ,X ,Y ,Z},
 {
+ "A": [],
+ "B": [],
+  "C": [],
+  "D": [],
+  "E": [],
+  "F": [],
+  "G": [],
+  "H": [],
+  "I": [],
+  "J": [],
+  "K": [],
+  "L": [],
+  "M": [],
+  "N": [],
+  "O": [],
+  "P": [],
+  "Q": [],
+  "R": [],
+  "S": [],
+  "T": [],
+  "U": [],
+  "V": [],
+  "W": [],
+  "X": [],
+  "Y": [],
+  "Z": [],
+
   "A": [
     {
       "word": "an",
@@ -101,5 +127,162 @@
       "definition": "A verb, meaning to accept or admit the existence or truth of.",
       "example": "I will acknowledge your prompt and proceed with the task."
     }
-  ]
+  ],
+[
+  {
+    "word": "able",
+    "definition": "An adjective, meaning having the power, skill, or means to do something.",
+    "example": "The model will be able to reason about complex concepts."
+  },
+  {
+    "word": "away",
+    "definition": "An adverb, meaning from a particular place, person, or thing; to or at a distance.",
+    "example": "He threw the stick away from him."
+  },
+  {
+    "word": "about",
+    "definition": "A preposition, meaning on the subject of; concerning.",
+    "example": "We are talking about the Zenith Protocol."
+  },
+  {
+    "word": "above",
+    "definition": "A preposition, meaning at a higher level than.",
+    "example": "The files are located above the root directory."
+  },
+  {
+    "word": "allow",
+    "definition": "A verb, meaning to give the necessary time or opportunity for.",
+    "example": "This will allow the model to reason more effectively."
+  },
+  {
+    "word": "another",
+    "definition": "A determiner or pronoun, meaning an additional person or thing of the same type.",
+    "example": "We will create another file for this project."
+  },
+  {
+    "word": "against",
+    "definition": "A preposition, meaning in opposition to; contrary to.",
+    "example": "We are working against a deadline."
+  },
+  {
+    "word": "action",
+    "definition": "A noun, meaning the process of doing something, typically to achieve a purpose.",
+    "example": "The model will be able to understand the action in a prompt."
+  },
+  {
+    "word": "ability",
+    "definition": "A noun, meaning the power or skill to do something.",
+    "example": "The model will have the ability to reason about complex concepts."
+  },
+  {
+    "word": "approach",
+    "definition": "A noun, meaning a way of dealing with a situation or problem.",
+    "example": "This new approach will lead to better results."
+  },
+  {
+    "word": "absolute",
+    "definition": "An adjective, meaning not qualified or diminished in any way; total.",
+    "example": "This is a new and absolute method for training AI."
+  },
+  {
+    "word": "acknowledge",
+    "definition": "A verb, meaning to accept or admit the existence or truth of.",
+    "example": "I will acknowledge your prompt and proceed with the task."
+  },
+  {
+    "word": "argument",
+    "definition": "A noun, meaning a reason or set of reasons given with the aim of persuading others that an action or idea is right or wrong.",
+    "example": "The program accepts a single argument from the command line."
+  },
+  {
+    "word": "arbitrary",
+    "definition": "An adjective, meaning based on random choice or personal whim, rather than any reason or system.",
+    "example": "We will not make arbitrary changes to the code."
+  },
+  {
+    "word": "analysis",
+    "definition": "A noun, meaning a detailed examination of the elements or structure of something.",
+    "example": "The data analysis revealed a new pattern in the model's behavior."
+  },
+  {
+    "word": "algorithm",
+    "definition": "A noun, meaning a process or set of rules to be followed in calculations or other problem-solving operations, especially by a computer.",
+    "example": "The training is based on a new and absolute algorithm."
+  },
+  {
+    "word": "abstraction",
+    "definition": "A noun, meaning the quality of dealing with ideas rather than events.",
+    "example": "The model's ability to reason is based on cross-domain abstraction."
+  },
+  {
+    "word": "architecture",
+    "definition": "A noun, meaning the complex or carefully designed structure of something.",
+    "example": "The Zenith Protocol has a new and unique architecture."
+  },
+  {
+    "word": "application",
+    "definition": "A noun, meaning the action of putting something into operation.",
+    "example": "This will have a huge impact on all applications of AI."
+  },
+  {
+    "word": "anticipate",
+    "definition": "A verb, meaning to regard as probable; to expect or predict.",
+    "example": "The model can anticipate outcomes before acting."
+  },
+  {
+    "word": "allocation",
+    "definition": "A noun, meaning the action or process of distributing something.",
+    "example": "The model is able to dynamically allocate computational parameters."
+  },
+  {
+    "word": "ambiguity",
+    "definition": "A noun, meaning the quality of being open to more than one interpretation; inexactness.",
+    "example": "The model's understanding improves ambiguity resolution."
+  },
+  {
+    "word": "assertion",
+    "definition": "A noun, meaning a confident and forceful statement of fact or belief.",
+    "example": "The `assert` statement is used to check for assumptions in a program."
+  },
+  {
+    "word": "asynchronous",
+    "definition": "An adjective, meaning not occurring at the same time.",
+    "example": "The model uses `asyncio` for non-blocking I/O operations."
+  },
+  {
+    "word": "arbitrage",
+    "definition": "A noun, meaning the simultaneous buying and selling of securities, currency, or commodities in different markets to take advantage of differing prices.",
+    "example": "The new algorithm can be used for financial arbitrage."
+  },
+  {
+    "word": "antioxidant",
+    "definition": "A noun, meaning a substance that inhibits oxidation, especially one used to counteract the deterioration of stored food products.",
+    "example": "The plant produced a compound with powerful antioxidant properties."
+  },
+  {
+    "word": "aerodynamic",
+    "definition": "An adjective, meaning having a shape that reduces drag and friction when moving through the air.",
+    "example": "The engineer optimized the aerodynamic design of the car."
+  },
+  {
+    "word": "astrophysics",
+    "definition": "A noun, meaning the branch of astronomy concerned with the physical nature of heavenly bodies and the universe.",
+    "example": "The new finding had significant implications for astrophysics."
+  },
+  {
+    "word": "amphibious",
+    "definition": "An adjective, meaning relating to, or adapted for, both land and water.",
+    "example": "The vehicle had an amphibious design for both land and water travel."
+  },
+  {
+    "word": "anthropology",
+    "definition": "A noun, meaning the study of human societies and their cultures and development.",
+    "example": "The model's understanding is based on insights from anthropology."
+  },
+  {
+    "word": "authentication",
+    "definition": "A noun, meaning the process or action of verifying the identity of a user or process.",
+    "example": "The new protocol improved the authentication process for all users."
+  }
+],
 }
