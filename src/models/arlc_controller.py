@@ -1,4 +1,8 @@
-# src/models/arlc_controller.py
+"""
+Enhanced Adaptive Reinforcement Learning Controller (ARLC)
+=========================================================
+Now integrates with CKG's causal rules for verifiable, rule-based decision making.
+"""
 
 import torch
 import torch.nn as nn
@@ -15,7 +19,7 @@ from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 from ..web_access.web_access import WebAccess
 from datetime import datetime
 from .meta_learner import MetaLearner
-from .self_architecting_agent import SelfArchitectingAgent # New Import
+from .self_architecting_agent import SelfArchitectingAgent
 from .self_evolving_knowledge_agent import SelfEvolvingKnowledgeAgent
 from ..local_agent.LocalExecutionAgent import LocalExecutionAgent
 from ..conceptual_encoder.conceptual_encoder import ZenithConceptualEncoder
@@ -25,7 +29,7 @@ import spm_controller_cpp
 class ARLCController:
     """
     The Adaptive Reinforcement Learning Controller (ARLC) is the "Brain" of the system.
-    It now acts as the orchestrator for the self-evolving architecture.
+    Now enhanced with CKG-integrated reward calculation and verifiable decision making.
     """
     def __init__(self, 
                  strategic_planner: StrategicPlanner, 
@@ -60,13 +64,257 @@ class ARLCController:
         )
         self.lea = LocalExecutionAgent(ckg=self.ckg, arlc=self, em=None)
         self.meta_learner = meta_learner
-        # New: Initialize the Self-Architecting Agent
+        # Initialize the Self-Architecting Agent
         self.self_architecting_agent = SelfArchitectingAgent(
             sswm=self.sswm, 
             ckg=self.ckg, 
             model=self.model, 
             em=self.model.explainability_module if hasattr(self.model, 'explainability_module') else None
         )
+
+    def evaluate_with_ckg(self, conceptual_features: torch.Tensor, 
+                         ckg_validation: Dict, domain: str) -> Dict[str, float]:
+        """
+        Enhanced evaluation using CKG rules for verifiable reward calculation.
+        
+        Args:
+            conceptual_features: Forecasted conceptual features from SSWM
+            ckg_validation: Validation result from CKG
+            domain: The problem domain
+            
+        Returns:
+            Comprehensive scoring result with rule-based breakdown
+        """
+        # Calculate base score using CKG reward rules
+        base_score = self._calculate_rule_based_score(conceptual_features, domain)
+        
+        # Apply validation confidence
+        validation_confidence = ckg_validation.get('confidence', 1.0)
+        validated_score = base_score * validation_confidence
+        
+        # Apply exploration bonus
+        state_hash = self._create_state_hash(conceptual_features)
+        visits = self.visited_states.get(state_hash, 0)
+        exploration_bonus = self.exploration_weight / (1 + visits)
+        self.visited_states[state_hash] = visits + 1
+        
+        # Apply HCT bonus for novel discoveries
+        hct_bonus, discovered_concept = self.cde.analyze_for_new_concepts(
+            conceptual_features, validation_confidence, validated_score, domain
+        )
+        
+        # Apply surprise bonus for exploration
+        surprise_bonus = 0.0
+        if self.is_exploring and self.last_fused_rep is not None:
+            surprise_bonus = self.cpp_eom_calculator.calculate_eom_bonus(
+                self.last_fused_rep.detach().cpu().numpy(),
+                conceptual_features.detach().cpu().numpy(),
+                self.eom_weight
+            )
+        
+        # Calculate final score
+        final_score = validated_score + exploration_bonus + hct_bonus + surprise_bonus
+        
+        return {
+            "base_score": base_score,
+            "validated_score": validated_score,
+            "validation_confidence": validation_confidence,
+            "exploration_bonus": exploration_bonus,
+            "hct_bonus": hct_bonus,
+            "surprise_bonus": surprise_bonus,
+            "discovered_concept": discovered_concept,
+            "applied_rules": ckg_validation.get('applied_rules', []),
+            "violated_rules": ckg_validation.get('violated_rules', []),
+            "score": final_score
+        }
+
+    def _calculate_rule_based_score(self, conceptual_features: torch.Tensor, domain: str) -> float:
+        """
+        Calculate score based on CKG reward rules for the domain.
+        """
+        score = 0.0
+        features_dict = self._extract_features_dict(conceptual_features, domain)
+        
+        # Use CKG reward rules instead of hardcoded coefficients
+        domain_rules = self.ckg.reward_rules.get(domain, {})
+        
+        for concept, rule in domain_rules.items():
+            feature_value = features_dict.get(concept, 0.0)
+            score += feature_value * rule['weight']
+        
+        return score
+
+    def _extract_features_dict(self, conceptual_features: torch.Tensor, domain: str) -> Dict:
+        """
+        Extract conceptual features as a dictionary for rule-based scoring.
+        """
+        features_np = conceptual_features.detach().cpu().numpy()
+        if features_np.size == 0:
+            return {}
+            
+        if domain == 'tetris':
+            return {
+                'lines_cleared': float(features_np[0][0] if features_np.size > 0 else 0),
+                'gaps': float(features_np[0][1] if features_np.size > 1 else 0),
+                'max_height': float(features_np[0][2] if features_np.size > 2 else 0),
+                'board_fullness': float(features_np[0][3] if features_np.size > 3 else 0)
+            }
+        elif domain == 'chess':
+            return {
+                'material_advantage': float(features_np[0][0] if features_np.size > 0 else 0),
+                'king_safety': float(features_np[0][1] if features_np.size > 1 else 0),
+                'center_control': float(features_np[0][2] if features_np.size > 2 else 0),
+                'development': float(features_np[0][3] if features_np.size > 3 else 0)
+            }
+        return {}
+
+    def _create_state_hash(self, conceptual_features: torch.Tensor) -> str:
+        """Create a hash for state tracking."""
+        features_np = conceptual_features.detach().cpu().numpy()
+        return hashlib.sha256(features_np.tobytes()).hexdigest()
+
+    def choose_move(self, board_state: np.ndarray, domain: str, model, 
+                   piece_idx: Optional[int] = None) -> Tuple[Optional[int], Dict]:
+        """
+        Enhanced move selection with CKG-integrated evaluation.
+        """
+        # Check for knowledge gaps and update if needed
+        gaps = self.check_for_knowledge_gaps(f"board state {domain}")
+        if gaps:
+            print(f"[ARLC] Detected knowledge gaps: {gaps}. Triggering autonomous learning.")
+            self.seka.initiate_knowledge_acquisition(gaps[0])
+            self.rapid_adaptation_to_new_domain([])
+        
+        # Periodic web knowledge update
+        if random.random() < 0.1:
+            query = "latest AI news"
+            self.update_knowledge_with_web_data(query)
+        
+        # Meta-learning if model is struggling
+        if self.model.is_struggling():
+            print("[ARLC] Model is struggling. Initiating mini meta-learning loop.")
+            self.meta_learner.run_mini_meta_training(self.model, self.ckg)
+
+        # Architectural self-improvement
+        prediction = self.self_architecting_agent.predict_future_need(
+            conceptual_prompt="model is performing well, but could be more efficient"
+        )
+        if prediction['upgrade_type'] != 'none':
+            self.self_architecting_agent.propose_upgrade(
+                upgrade_type=prediction['upgrade_type'],
+                reasoning=prediction['reasoning']
+            )
+
+        # Exploration mode
+        if self.is_exploring:
+            return self._explore_random_move(domain)
+
+        # Normal decision making with CKG integration
+        return self._make_informed_decision(board_state, domain, model)
+
+    def _make_informed_decision(self, board_state: np.ndarray, domain: str, model) -> Tuple[Optional[int], Dict]:
+        """Make decisions using CKG-validated forecasting."""
+        possible_moves = self._get_possible_moves(domain, board_state)
+        scores = []
+        decision_metrics = []
+        
+        for move in possible_moves:
+            # Forecast outcome for this move
+            forecasted_state = self.sswm.predict(board_state, move, domain)
+            
+            # Get conceptual features
+            with torch.no_grad():
+                conceptual_features = model.conceptual_attention_layer(model.encoder(forecasted_state))
+            
+            # Validate forecast against CKG rules
+            ckg_validation = self.ckg.validate_forecast(conceptual_features, move, domain)
+            
+            # Evaluate using CKG rules
+            score_result = self.evaluate_with_ckg(conceptual_features, ckg_validation, domain)
+            
+            scores.append(score_result['score'])
+            decision_metrics.append({
+                'move': move,
+                'score_breakdown': score_result,
+                'ckg_validation': ckg_validation,
+                'forecasted_state': forecasted_state
+            })
+        
+        # Select move with softmax exploration
+        chosen_index = self._softmax_selection(scores, temperature=0.5)
+        chosen_move = possible_moves[chosen_index]
+        
+        # Build comprehensive decision context
+        decision_context = self._build_decision_context(
+            chosen_move, scores, decision_metrics, domain
+        )
+        
+        # Log decision to CKG for verifiability
+        self._log_decision_to_ckg(chosen_move, scores[chosen_index], domain, board_state)
+        
+        return chosen_move, decision_context
+
+    def _get_possible_moves(self, domain: str, board_state: np.ndarray) -> List:
+        """Get all possible moves for the domain."""
+        if domain == 'tetris':
+            return list(range(10))  # x positions 0-9
+        elif domain == 'chess':
+            # This would interface with a chess engine in practice
+            return ['e2e4', 'd2d4', 'g1f3', 'c2c4', 'e7e5']  # Example moves
+        return []
+
+    def _softmax_selection(self, scores: List[float], temperature: float = 1.0) -> int:
+        """Select action using softmax probability distribution."""
+        scores_array = np.array(scores)
+        scaled_scores = scores_array / temperature
+        exp_scores = np.exp(scaled_scores - np.max(scaled_scores))  # Numerical stability
+        probabilities = exp_scores / np.sum(exp_scores)
+        return np.random.choice(len(scores), p=probabilities)
+
+    def _build_decision_context(self, chosen_move: int, scores: List[float], 
+                              decision_metrics: List[Dict], domain: str) -> Dict:
+        """Build comprehensive context for explanation generation."""
+        return {
+            'chosen_move': chosen_move,
+            'chosen_score': scores[chosen_move],
+            'all_moves': [dm['move'] for dm in decision_metrics],
+            'all_scores': scores,
+            'decision_metrics': decision_metrics,
+            'domain': domain,
+            'timestamp': datetime.now().isoformat(),
+            'strategic_context': self.strategic_planner.current_goal if hasattr(self.strategic_planner, 'current_goal') else None
+        }
+
+    def _log_decision_to_ckg(self, move: int, score: float, domain: str, board_state: np.ndarray):
+        """Log decision to CKG for verifiable auditing."""
+        decision_data = json.dumps({
+            "move": move,
+            "score": score,
+            "domain": domain,
+            "board_state_hash": hashlib.sha256(board_state.tobytes()).hexdigest(),
+            "timestamp": datetime.now().isoformat()
+        })
+        self.ckg.add_verifiable_record(decision_data, concepts=[domain, "move", str(move), "decision"])
+
+    def _explore_random_move(self, domain: str) -> Tuple[Optional[int], Dict]:
+        """Handle exploration mode with random move selection."""
+        self.cpp_spm_controller.allocate_for_tasks([domain, "exploration"])
+        mock_input = np.random.rand(1, 128)
+        processed_output = self.cpp_spm_controller.run_parallel_simulation(mock_input, domain)
+        
+        possible_moves = self._get_possible_moves(domain, np.random.rand(20, 10))
+        chosen_move = random.choice(possible_moves) if possible_moves else 0
+        
+        decision_context = {
+            "chosen_move": chosen_move,
+            "chosen_score": 0.0,
+            "all_scores": [0.0] * len(possible_moves),
+            "exploration_mode": True
+        }
+        
+        return chosen_move, decision_context
+
+    # --- Existing methods kept for compatibility ---
 
     def get_generic_conceptual_features(self, state_shape: tuple) -> np.ndarray:
         num_features = 3
@@ -95,89 +343,6 @@ class ARLCController:
                 print(f"[ARLC] CKG updated with new information from the web.")
             else:
                 print(f"[ARLC] Web search for '{query}' found no relevant information.")
-
-    def evaluate_conceptual_features(self, conceptual_features: np.ndarray, fused_representation: torch.Tensor, domain: str, confidence_score: float) -> Dict[str, float]:
-        score = 0
-        if domain == 'tetris':
-            score = (self.reward_coeffs['tetris']['lines_cleared'] * conceptual_features[0]) + \
-                    (self.reward_coeffs['tetris']['gaps'] * conceptual_features[1]) + \
-                    (self.reward_coeffs['tetris']['max_height'] * conceptual_features[2])
-        elif domain == 'chess':
-            score = (self.reward_coeffs['chess']['material_advantage'] * conceptual_features[0]) + \
-                    (self.reward_coeffs['chess']['king_safety'] * (conceptual_features[1] - conceptual_features[2])) + \
-                    (self.reward_coeffs['chess']['center_control'] * (conceptual_features[3] - conceptual_features[4]))
-        elif self.is_exploring:
-            score = 0.0
-        state_hash = hashlib.sha256(conceptual_features.tobytes()).hexdigest()
-        visits = self.visited_states.get(state_hash, 0)
-        exploration_bonus = self.exploration_weight / (1 + visits)
-        self.visited_states[state_hash] = visits + 1
-        hct_bonus, discovered_concept = self.cde.analyze_for_new_concepts(fused_representation, confidence_score, score, domain)
-        if self.is_exploring and self.last_fused_rep is not None:
-            surprise_bonus = self.cpp_eom_calculator.calculate_eom_bonus(
-                self.last_fused_rep.detach().cpu().numpy(),
-                fused_representation.detach().cpu().numpy(),
-                self.eom_weight
-            )
-            score += surprise_bonus
-        final_score = score + exploration_bonus + hct_bonus
-        return {
-            "conceptual_score": score,
-            "exploration_bonus": exploration_bonus,
-            "hct_bonus": hct_bonus,
-            "discovered_concept": discovered_concept,
-            "score": final_score
-        }
-
-    def choose_move(self, board_state: np.ndarray, domain: str, model, piece_idx: int | None = None) -> Tuple[int | None, Dict]:
-        gaps = self.check_for_knowledge_gaps(f"board state {domain}")
-        if gaps:
-            print(f"[ARLC] Detected knowledge gaps: {gaps}. Triggering autonomous learning.")
-            self.seka.initiate_knowledge_acquisition(gaps[0])
-            self.rapid_adaptation_to_new_domain(new_domain_data=[])
-        if random.random() < 0.1:
-            query = "latest AI news"
-            self.update_knowledge_with_web_data(query)
-        if self.model.is_struggling():
-            print("[ARLC] Model is struggling. Initiating mini meta-learning loop.")
-            self.meta_learner.run_mini_meta_training(self.model, self.ckg)
-
-        # New: ARLC now asks the self-architecting agent for a feature-need prediction
-        prediction = self.self_architecting_agent.predict_future_need(
-            conceptual_prompt="model is performing well, but could be more efficient"
-        )
-        if prediction['upgrade_type'] != 'none':
-            self.self_architecting_agent.propose_upgrade(
-                upgrade_type=prediction['upgrade_type'],
-                reasoning=prediction['reasoning']
-            )
-
-        if self.is_exploring:
-            self.cpp_spm_controller.allocate_for_tasks([domain, "exploration"])
-            mock_input = np.random.rand(1, 128)
-            processed_output = self.cpp_spm_controller.run_parallel_simulation(mock_input, domain)
-            legal_moves = range(5)
-            chosen_move = random.choice(legal_moves)
-            decision_context = {"chosen_move": chosen_move, "chosen_score": 0.0, "all_scores": [0.0]}
-            return chosen_move, decision_context
-        all_scores = [1.5, 2.1, 0.8, 1.9, 2.5]
-        adjusted_scores = self.adjust_score_for_strategy(all_scores, board_state, domain)
-        adjusted_scores = self.predictive_score_adjustment(adjusted_scores, self.last_fused_rep, domain)
-        chosen_move = np.argmax(adjusted_scores)
-        chosen_score = adjusted_scores[chosen_move]
-        decision_context = {
-            'chosen_move': chosen_move,
-            'chosen_score': chosen_score,
-            'all_scores': all_scores,
-            'current_strategy': self.strategic_planner.current_goal
-        }
-        decision_data = json.dumps({
-            "prompt": f"Board State Hash: {hashlib.sha256(board_state.tobytes()).hexdigest()}",
-            "response": f"Chosen Move: {chosen_move} with score {chosen_score}",
-            "timestamp": datetime.now().isoformat()
-        })
-        self.ckg.add_verifiable_record(decision_data, concepts=[domain, "move", str(chosen_move), "score"])
-        return chosen_move, decision_context
 
     def generate_action_plan(self, command_intent: str, entities: Dict) -> Dict:
         context_info = self.ckg.query("Socio-Linguistic_Context")
