@@ -1,12 +1,20 @@
 # /src/web_access/web_access.py
 
+"""
+Enhanced Web Access with Verifiable Knowledge Integration
+=========================================================
+Adds advanced caching, credibility scoring, and blockchain verification.
+"""
+
 import requests
 import json
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime, timedelta
 import time
 import os
 import re
+from urllib.parse import urlparse
+import hashlib
 
 # New: Import the optional C++ blockchain interface
 try:
@@ -17,146 +25,195 @@ except ImportError:
 
 class WebAccess:
     """
-    The WebAccess module provides a structured interface for the Zenith Protocol
-    to query real-time information from the internet. It handles search queries,
-    retrieves results, and summarizes them for knowledge graph integration.
+    Enhanced WebAccess module with credibility scoring, advanced caching,
+    and blockchain-based verification for trustworthy knowledge integration.
     """
     def __init__(self, ckg: Any, api_key: str = "DUMMY_API_KEY"):
-        """Initializes the WebAccess module with a CKG instance.
-        
-        Args:
-            ckg: An instance of the ConceptualKnowledgeGraph for data integration.
-            api_key: A placeholder for a real search engine API key.
-        """
+        """Initializes the WebAccess module with enhanced capabilities."""
         self.ckg = ckg
         self.api_key = api_key
-        self.cache: Dict[str, Dict] = {} # A simple cache to avoid redundant searches
+        self.cache: Dict[str, Dict] = {}
+        self.source_credibility = self._initialize_credibility_db()
         self.blockchain_enabled = blockchain_interface_cpp is not None
+        self.query_history = []
 
-    def _execute_search(self, query: str) -> Optional[Dict]:
+    def _initialize_credibility_db(self) -> Dict[str, float]:
+        """Initialize source credibility database."""
+        return {
+            "arxiv.org": 0.95,
+            "nature.com": 0.93,
+            "sciencedirect.com": 0.90,
+            "wikipedia.org": 0.85,
+            "medium.com": 0.70,
+            "personal.blog": 0.60,
+            "unknown": 0.50
+        }
+
+    def _get_source_credibility(self, url: str) -> float:
+        """Get credibility score for a source."""
+        domain = urlparse(url).netloc.lower()
+        return self.source_credibility.get(domain, self.source_credibility["unknown"])
+
+    def _execute_advanced_search(self, query: str) -> Dict:
         """
-        Executes a web search query using a placeholder for a real search API.
-        
-        This is a dummy function to demonstrate the concept.
-        In a production environment, this would call a real search API.
+        Enhanced search with credibility scoring and diversity.
         """
-        print(f"Executing web search for: '{query}'...")
+        print(f"Executing advanced web search for: '{query}'...")
         time.sleep(0.5)
 
-        # Simple mock results for common queries
+        # Mock results with credibility metadata
         mock_results = {
             "latest ai news": {
                 "items": [
-                    {"title": "Breakthrough in AI Causal Reasoning", "snippet": "Researchers at a major university have unveiled a new model focused on causal understanding, addressing the 'black box' problem."},
-                    {"title": "Gemini 2.0 Launched by Google", "snippet": "Google has announced a major upgrade to its Gemini model, with enhanced performance and new features."},
-                    {"title": "New record for LLM training", "snippet": "A new supercomputer has trained a massive language model in a fraction of the time, setting a new efficiency record."}
-                ]
-            },
-            "what is a quantum computer": {
-                "items": [
-                    {"title": "Quantum Computing Explained", "snippet": "A quantum computer is a type of computer that uses the principles of quantum mechanics to perform computations."},
-                    {"title": "The D-Wave Quantum System", "snippet": "D-Wave's quantum annealing system is a specialized machine for solving optimization problems."},
-                    {"title": "Applications of Quantum Computing", "snippet": "Quantum computers can be used in drug discovery, materials science, and financial modeling."}
+                    {
+                        "title": "Breakthrough in AI Causal Reasoning",
+                        "snippet": "Researchers at Stanford unveiled a new causal reasoning model...",
+                        "url": "https://arxiv.org/abs/2401.12345",
+                        "source": "arxiv.org",
+                        "date": "2024-01-15"
+                    },
+                    {
+                        "title": "Google's Gemini 2.0 Launch",
+                        "snippet": "Google announced major upgrades to Gemini with new capabilities...",
+                        "url": "https://techcrunch.com/2024/01/gemini-2",
+                        "source": "techcrunch.com", 
+                        "date": "2024-01-14"
+                    }
                 ]
             }
         }
 
-        return mock_results.get(query.lower(), {"items": []})
+        results = mock_results.get(query.lower(), {"items": []})
         
-    def _scrape_data_from_source(self, url: str) -> str:
-        """
-        Simulates scraping content from a URL.
-        In a real scenario, this would use a library like BeautifulSoup or Scrapy.
-        """
-        print(f"Scraping data from mock URL: {url}...")
-        time.sleep(0.5)
+        # Add credibility scores
+        for item in results["items"]:
+            item["credibility"] = self._get_source_credibility(item["url"])
         
-        mock_html_content = (
-            "<html><body><h1>This is a web page about AI.</h1>"
-            "<p>A causal reasoning model helps an AI understand the 'why' behind events.</p>"
-            "<p>This new approach is crucial for building trustworthy AI systems.</p></body></html>"
-        )
-        
-        cleaned_text = re.sub('<[^>]*>', '', mock_html_content)
-        return cleaned_text
+        return results
 
-    def search_and_summarize(self, query: str) -> Optional[str]:
+    def _generate_verifiable_hash(self, content: str) -> str:
+        """Generate hash for content verification."""
+        return hashlib.sha256(content.encode()).hexdigest()
+
+    def search_and_summarize(self, query: str, min_credibility: float = 0.7) -> Optional[Dict]:
         """
-        Performs a web search, filters for relevance, and summarizes the results.
-        It can also scrape content from a URL for a deeper dive.
+        Enhanced search with credibility filtering and verification.
         """
-        # New: Check for a verifiable record on the blockchain first.
+        # Track query history
+        self.query_history.append({
+            "query": query,
+            "timestamp": datetime.now().isoformat(),
+            "min_credibility": min_credibility
+        })
+
+        # Check blockchain first for verified knowledge
         if self.blockchain_enabled:
-            print(f"[WebAccess] Checking for verifiable record for '{query}'...")
-            verifiable_record = self.ckg.get_verifiable_record(query)
-            if verifiable_record:
-                print("[WebAccess] Found a verifiable record. Prioritizing over web search.")
-                return verifiable_record['local_data']['node'].get('content', '')
+            blockchain_result = self._check_blockchain_knowledge(query)
+            if blockchain_result and blockchain_result["credibility"] >= min_credibility:
+                return blockchain_result
 
-        if query in self.cache:
-            print("Retrieving from cache.")
-            return self.cache[query]["summary"]
+        # Check cache with credibility consideration
+        cache_key = f"{query}_{min_credibility}"
+        if cache_key in self.cache:
+            cached = self.cache[cache_key]
+            if not self._is_cache_expired(cached["timestamp"]):
+                return cached["result"]
 
-        search_results = self._execute_search(query)
-
-        if not search_results or "items" not in search_results:
-            print("No search results found.")
-            return None
+        # Execute search
+        search_results = self._execute_advanced_search(query)
         
-        relevant_content = []
-        for item in search_results["items"]:
-            if len(relevant_content) == 0 and query.lower() in item["title"].lower():
-                full_text = self._scrape_data_from_source("[http://mock-url.com](http://mock-url.com)")
-                relevant_content.append(full_text)
-            else:
-                relevant_content.append(item["snippet"])
+        # Filter by credibility
+        credible_items = [
+            item for item in search_results.get("items", [])
+            if item.get("credibility", 0) >= min_credibility
+        ]
 
-        if not relevant_content:
+        if not credible_items:
+            print(f"No results meeting credibility threshold {min_credibility}")
             return None
 
-        summary = " ".join(relevant_content)
-
-        self.cache[query] = {
-            "summary": summary,
-            "timestamp": datetime.now().isoformat()
+        # Generate verifiable summary
+        summary = self._generate_verifiable_summary(credible_items, query)
+        
+        # Store in cache
+        self.cache[cache_key] = {
+            "result": summary,
+            "timestamp": datetime.now().isoformat(),
+            "credibility_score": min([item["credibility"] for item in credible_items])
         }
-        
-        print("Search results summarized and cached.")
+
+        # Add to CKG with verification data
+        self._integrate_to_ckg(query, summary, credible_items)
+
         return summary
 
-    def check_for_update(self, query: str, time_limit_minutes: int = 60) -> bool:
-        """
-        Checks if a cached result is outdated and needs a fresh search.
-        """
-        if query not in self.cache:
-            return True
+    def _generate_verifiable_summary(self, items: List[Dict], query: str) -> Dict:
+        """Generate a verifiable summary with source attribution."""
+        summary_text = f"Information about '{query}':\n\n"
+        
+        for i, item in enumerate(items, 1):
+            summary_text += f"{i}. {item['snippet']} [Source: {item['source']}, Credibility: {item['credibility']:.2f}]\n"
+        
+        verification_hash = self._generate_verifiable_hash(summary_text)
+        
+        return {
+            "content": summary_text,
+            "sources": [item["url"] for item in items],
+            "average_credibility": sum(item["credibility"] for item in items) / len(items),
+            "verification_hash": verification_hash,
+            "generated_at": datetime.now().isoformat()
+        }
 
-        cached_time = datetime.fromisoformat(self.cache[query]["timestamp"])
-        time_since_cached = (datetime.now() - cached_time).total_seconds() / 60
+    def _integrate_to_ckg(self, query: str, summary: Dict, sources: List[Dict]):
+        """Integrate search results into CKG with verification."""
+        # Create knowledge node
+        knowledge_id = f"web_knowledge_{hashlib.sha256(query.encode()).hexdigest()[:8]}"
+        
+        self.ckg.add_node(knowledge_id, {
+            "type": "web_knowledge",
+            "content": summary["content"],
+            "query": query,
+            "sources": sources,
+            "credibility": summary["average_credibility"],
+            "verification_hash": summary["verification_hash"],
+            "timestamp": summary["generated_at"]
+        })
+        
+        # Link to related concepts
+        query_concepts = query.split()
+        for concept in query_concepts:
+            if len(concept) > 3:  # Avoid short words
+                self.ckg.add_edge(concept, knowledge_id, "RELATED_TO")
 
-        return time_since_cached > time_limit_minutes
+    def _check_blockchain_knowledge(self, query: str) -> Optional[Dict]:
+        """Check blockchain for verified knowledge."""
+        try:
+            # This would interface with actual blockchain in production
+            record = self.ckg.get_verifiable_record(query)
+            if record and record["local_data"]:
+                return {
+                    "content": record["local_data"]["node"].get("content", ""),
+                    "sources": ["blockchain"],
+                    "credibility": 0.98,  # Blockchain-verified high credibility
+                    "verification_hash": record["blockchain_record"].get("data_hash", ""),
+                    "blockchain_verified": True
+                }
+        except Exception as e:
+            print(f"Blockchain check failed: {e}")
+        
+        return None
 
-# --- Example Usage ---
-if __name__ == '__main__':
-    from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
-    mock_ckg = ConceptualKnowledgeGraph()
-    web_access = WebAccess(ckg=mock_ckg)
+    def get_search_analytics(self) -> Dict:
+        """Get analytics about search patterns and credibility."""
+        return {
+            "total_queries": len(self.query_history),
+            "average_credibility_threshold": sum(q["min_credibility"] for q in self.query_history) / len(self.query_history) if self.query_history else 0,
+            "most_common_queries": self._get_common_queries(),
+            "cache_hit_rate": len(self.cache) / max(len(self.query_history), 1)
+        }
 
-    print("--- First Search ---")
-    query_1 = "latest AI news"
-    info = web_access.search_and_summarize(query_1)
-    if info:
-        print(f"\nZenith received this information:\n'{info}'")
-    else:
-        print("\nNo relevant information received.")
-
-    print("\n--- Second Search (from cache) ---")
-    info_cached = web_access.search_and_summarize(query_1)
-    if info_cached:
-        print(f"\nZenith received this information:\n'{info_cached}'")
-
-    print("\n--- Checking for update (simulating time passing) ---")
-    web_access.cache[query_1]["timestamp"] = (datetime.now() - timedelta(minutes=90)).isoformat()
-
-    needs_update = web_access.check_for_update(query_1)
-    print(f"Does the knowledge for '{query_1}' need an update? {needs_update}")
+    def _get_common_queries(self) -> List[Dict]:
+        """Get most common queries."""
+        from collections import Counter
+        query_counts = Counter(q["query"] for q in self.query_history)
+        return [{"query": q, "count": c} for q, c in query_counts.most_common(5)]
