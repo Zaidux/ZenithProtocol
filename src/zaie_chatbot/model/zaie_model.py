@@ -86,6 +86,52 @@ class ZAIEModel(nn.Module):
             raise ValueError("At least one modality must be provided for a forward pass.")
             
         fused_representation = torch.mean(torch.cat(all_vectors, dim=0), dim=0).unsqueeze(0)
+
+# Add these methods to the ZAIEModel class:
+
+def get_modality_confidence(self, modality_vectors: List[torch.Tensor]) -> Dict[str, float]:
+    """Calculate confidence scores for each modality."""
+    confidences = {}
+    for i, vector in enumerate(modality_vectors):
+        if vector is not None:
+            # Confidence based on vector magnitude and consistency
+            magnitude = torch.norm(vector).item()
+            variance = torch.var(vector).item() if vector.numel() > 1 else 0.0
+            confidence = magnitude * (1.0 - min(variance, 1.0))
+            confidences[f'modality_{i}'] = confidence
+    return confidences
+
+def dynamic_modality_fusion(self, modality_vectors: List[torch.Tensor], 
+                          confidences: Dict[str, float]) -> torch.Tensor:
+    """Fuse modalities dynamically based on confidence scores."""
+    if not modality_vectors:
+        return torch.zeros(self.hct_dim)
+    
+    # Weighted fusion based on confidence
+    total_confidence = sum(confidences.values())
+    if total_confidence == 0:
+        return torch.mean(torch.stack(modality_vectors), dim=0)
+    
+    weighted_vectors = []
+    for i, vector in enumerate(modality_vectors):
+        if vector is not None:
+            weight = confidences.get(f'modality_{i}', 0.5) / total_confidence
+            weighted_vectors.append(vector * weight)
+    
+    return torch.sum(torch.stack(weighted_vectors), dim=0)
+
+def explain_modality_contribution(self, modality_vectors: List[torch.Tensor],
+                                confidences: Dict[str, float]) -> str:
+    """Generate explanation of modality contributions."""
+    explanation = "Modality contributions:\n"
+    modality_names = ['Text', 'Visual', 'Audio']
+    
+    for i, (vector, name) in enumerate(zip(modality_vectors, modality_names)):
+        if vector is not None:
+            confidence = confidences.get(f'modality_{i}', 0.5)
+            explanation += f"- {name}: {confidence:.2f} confidence\n"
+    
+    return explanation
         
         # Use the C++ MoE router to select the conversational expert.
         conceptual_context = moe_router_cpp.ConceptualContext()
