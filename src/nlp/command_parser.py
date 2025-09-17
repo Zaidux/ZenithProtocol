@@ -1,94 +1,175 @@
 # src/nlp/command_parser.py
 
+"""
+Enhanced Command Parser with Contextual Understanding
+====================================================
+Now supports counterfactual queries and better entity recognition.
+"""
+
 import spacy
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
+import re
 
 class CommandParser:
     """
-    Parses natural language queries and extracts a structured command
-    and its parameters using a conceptual understanding of the query.
+    Enhanced parser with counterfactual understanding and context awareness.
     """
     def __init__(self, ckg: ConceptualKnowledgeGraph):
         self.ckg = ckg
-        # Use a simplified conceptual mapping instead of a flat keyword list.
         self.command_map = {
-            "explain": ["reasoning", "justification", "explain"],
-            "strategy": ["plan", "goal", "strategy"],
-            "board_state": ["situation"],
-            "eval_move": ["assess", "value", "evaluate"],
-            "what_if": ["hypothetical", "simulate"],
-            "organize_files": ["gather", "organize", "collect"] # New: Command for local tasks
+            "explain": ["why", "explain", "justify", "reason"],
+            "counterfactual": ["what if", "why not", "instead of", "consider"],
+            "strategy": ["plan", "strategy", "approach", "method"],
+            "eval_move": ["evaluate", "assess", "score", "value"],
+            "what_if": ["simulate", "hypothetical", "suppose"],
+            "organize_files": ["organize", "arrange", "sort", "categorize"]
         }
-        # A simple NLP model is loaded to handle part-of-speech tagging.
+        
         try:
-            self.nlp = spacy.load("en_core_web_sm")
+            self.nlp = spacy.load("en_core_web_md")  # Medium model for better accuracy
         except:
-            print("Spacy model not found. Please run: python -m spacy download en_core_web_sm")
+            print("Spacy model not found. Using basic parsing.")
             self.nlp = None
 
-        # Pre-load the base ontology for a basic understanding
-        self._initialize_conceptual_parser()
+        self._initialize_advanced_parser()
 
-    def _initialize_conceptual_parser(self):
-        """Initializes the parser by linking it to the CKG's base concepts."""
-        for cmd, synonyms in self.command_map.items():
-            for word in synonyms:
-                self.ckg.add_node(word, {"type": "command_keyword", "command": cmd})
-                self.ckg.add_edge(word, cmd, "IS_A_KEYWORD_FOR")
+    def _initialize_advanced_parser(self):
+        """Initialize with advanced concept relationships."""
+        # Add counterfactual concepts
+        counterfactual_concepts = {
+            "alternative": ["different", "other", "another"],
+            "rejection": ["reject", "dismiss", "ignore"],
+            "comparison": ["compare", "versus", "against"]
+        }
+        
+        for concept, words in counterfactual_concepts.items():
+            for word in words:
+                self.ckg.add_node(word, {"type": "counterfactual_concept", "concept": concept})
 
-    def parse_command(self, query: str) -> Dict[str, Any]:
+    def parse_command(self, query: str, context: Optional[Dict] = None) -> Dict[str, Any]:
         """
-        Takes a natural language query and returns a structured command
-        by identifying and linking concepts from the CKG.
+        Enhanced parsing with counterfactual detection and context awareness.
         """
         if not self.nlp:
-            return {"command": "error", "entities": {}, "error_message": "Spacy model not loaded."}
+            return self._basic_parse(query)
 
         doc = self.nlp(query.lower())
         command = "unknown"
         entities = {}
+        is_counterfactual = False
 
-        # Step 1: Identify the command based on conceptual mapping
-        for token in doc:
-            if token.text in self.command_map:
-                command = token.text
-                break
-            node_info = self.ckg.query(token.text)
-            if node_info and node_info['node'].get('type') == 'command_keyword':
-                command = node_info['node'].get('command')
-                break
+        # Detect counterfactual queries
+        if any(phrase in query.lower() for phrase in ["why didn't", "why did you not", "what about"]):
+            command = "counterfactual"
+            is_counterfactual = True
+            entities["type"] = "alternative_rejection"
 
-        # Step 2: Extract entities with improved logic
+        # Extract main command
+        if not is_counterfactual:
+            for token in doc:
+                node_info = self.ckg.query(token.text)
+                if node_info and node_info['node'].get('type') == 'command_keyword':
+                    command = node_info['node'].get('command')
+                    break
+
+        # Enhanced entity extraction
+        entities.update(self._extract_entities(doc, command, context))
+        
+        # Extract counterfactual alternatives
+        if is_counterfactual:
+            entities["alternative"] = self._extract_alternative(doc)
+
+        return {
+            "command": command,
+            "entities": entities,
+            "is_counterfactual": is_counterfactual,
+            "original_query": query
+        }
+
+    def _extract_alternative(self, doc) -> str:
+        """Extract proposed alternative from counterfactual query."""
+        # Look for patterns like "why didn't you [X] instead"
+        for i, token in enumerate(doc):
+            if token.text in ["instead", "rather", "alternative"]:
+                # Extract the alternative phrase
+                start_idx = max(0, i - 3)
+                end_idx = min(len(doc), i + 3)
+                alternative = " ".join(token.text for token in doc[start_idx:end_idx])
+                return alternative
+        
+        return "unknown_alternative"
+
+    def _extract_entities(self, doc, command: str, context: Optional[Dict]) -> Dict:
+        """Enhanced entity extraction with context awareness."""
+        entities = {}
+
         if command in ["eval_move", "what_if"]:
+            # Extract move numbers or coordinates
             for token in doc:
                 if token.like_num:
                     entities['move'] = int(token.text)
-                elif command == "eval_move" and len(token.text) == 2 and token.text[0].isalpha() and token.text[1].isdigit():
+                elif len(token.text) == 2 and token.text[0].isalpha() and token.text[1].isdigit():
                     entities['move'] = token.text
-        
-        # New: Logic for extracting entities for on-device tasks
-        if command == "organize_files":
-            folder_name = None
-            file_types = []
-            conceptual_filters = []
-            
-            # Look for a folder name (a noun with "folder" or "named")
-            for i, token in enumerate(doc):
-                if token.text == 'folder' and i + 1 < len(doc) and doc[i+1].text == 'named':
-                    folder_name = doc[i+2].text.strip('"')
-                elif 'photos' in token.text or 'images' in token.text:
-                    file_types.extend(['.jpg', '.png', '.jpeg'])
-                elif 'dog' in token.text or 'cat' in token.text:
-                    conceptual_filters.append('pets')
-            
-            entities = {
-                "folder_name": folder_name,
-                "file_types": file_types,
-                "conceptual_filters": conceptual_filters
-            }
-            
-        return {
-            "command": command,
-            "entities": entities
+
+        elif command == "organize_files":
+            # Enhanced file organization parsing
+            entities = self._parse_organization_query(doc, context)
+
+        elif command == "counterfactual":
+            # Extract what alternative is being suggested
+            entities["suggested_alternative"] = self._find_suggested_alternative(doc)
+
+        return entities
+
+    def _parse_organization_query(self, doc, context: Optional[Dict]) -> Dict:
+        """Parse file organization queries with context awareness."""
+        entities = {
+            "folder_name": None,
+            "file_types": [],
+            "categories": [],
+            "priority": "medium"
         }
+
+        for i, token in enumerate(doc):
+            # Detect file types
+            if token.text in ["photo", "photos", "image", "images"]:
+                entities["file_types"].extend(['.jpg', '.png', '.jpeg'])
+            elif token.text in ["document", "documents"]:
+                entities["file_types"].extend(['.doc', '.pdf', '.txt'])
+            
+            # Detect organization categories
+            if token.text in ["date", "time", "chronological"]:
+                entities["categories"].append("date")
+            elif token.text in ["location", "place", "where"]:
+                entities["categories"].append("location")
+            elif token.text in ["event", "activity"]:
+                entities["categories"].append("event")
+            
+            # Detect priority
+            if token.text in ["urgent", "important", "priority"]:
+                entities["priority"] = "high"
+
+        # Use context if available
+        if context and "default_categories" in context:
+            entities["categories"].extend(context["default_categories"])
+
+        return entities
+
+    def _find_suggested_alternative(self, doc) -> str:
+        """Find the alternative being suggested in counterfactual queries."""
+        # Look for patterns suggesting alternatives
+        patterns = [
+            r"why didn't you ([\w\s]+) instead",
+            r"what about ([\w\s]+)",
+            r"why not ([\w\s]+)"
+        ]
+        
+        query_text = " ".join(token.text for token in doc)
+        
+        for pattern in patterns:
+            match = re.search(pattern, query_text)
+            if match:
+                return match.group(1).strip()
+        
+        return "unknown_alternative"
