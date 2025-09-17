@@ -48,3 +48,39 @@ class MixtureOfExperts(nn.Module):
 
     def _calculate_conceptual_load_balancing_loss(self, weights: torch.Tensor, top_k_weights: torch.Tensor, top_k_indices: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError("This function is now implemented in the C++ backend.")
+
+
+# Add these methods to the MixtureOfExperts class:
+
+def get_expert_specialization_report(self) -> Dict:
+    """Get a report on expert specialization patterns."""
+    # Analyze which experts handle which conceptual contexts
+    specialization_report = {}
+    
+    for expert_idx in range(self.num_experts):
+        # This would track expert usage patterns in practice
+        specialization_report[f'expert_{expert_idx}'] = {
+            'usage_count': 0,
+            'common_contexts': [],
+            'specialization_score': 0.0
+        }
+    
+    return specialization_report
+
+def adapt_expert_capacity(self, usage_patterns: Dict):
+    """Adapt expert capacities based on usage patterns."""
+    # This would implement dynamic expert capacity adjustment
+    # Based on which experts are over/under utilized
+    pass
+
+def explain_expert_selection(self, top_k_indices: torch.Tensor, 
+                           context: Dict) -> str:
+    """Generate explanation for expert selection."""
+    explanation = "Expert selection reasoning:\n"
+    
+    for i, expert_idx in enumerate(top_k_indices):
+        explanation += f"Expert {expert_idx} was selected because it specializes in: "
+        # This would map expert indices to their known specializations
+        explanation += f"context patterns matching {list(context.keys())}\n"
+    
+    return explanation
