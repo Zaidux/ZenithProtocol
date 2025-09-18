@@ -1,3 +1,5 @@
+# src/models/alrc_controller.py
+
 """
 Enhanced Adaptive Reinforcement Learning Controller (ARLC)
 =========================================================
