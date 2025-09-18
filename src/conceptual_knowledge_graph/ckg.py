@@ -1,3 +1,5 @@
+# src/conceptual_knowledge_graph/ckg.py
+
 """
 Enhanced Conceptual Knowledge Graph with Causal Rules and Tracing Methods
 =======================================================================
