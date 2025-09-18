@@ -20,7 +20,7 @@ from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 class HolographicPatternExtractor(nn.Module):
     """
     Extracts holographic patterns from images using frequency domain analysis
-    and quantum-inspired pattern recognition. Processes entire images holistically.
+    and quantum-inspired pattern recognition.
     """
     def __init__(self, pattern_dim: int = 256, num_pattern_types: int = 64):
         super().__init__()
@@ -48,231 +48,218 @@ class HolographicPatternExtractor(nn.Module):
             nn.MaxPool2d(2),
             nn.Conv2d(32, 64, kernel_size=3, padding=1),
             nn.ReLU(),
-            nn.AdaptiveAvgPool2d((4, 4)),
+            nn.AdaptiveAvgPool2d(1),
             nn.Flatten()
         )
 
     def forward(self, image: torch.Tensor) -> Dict[str, torch.Tensor]:
         """
-        Extract holographic patterns from image using holistic processing.
-        
-        Args:
-            image: Input image tensor [batch, channels, height, width]
-            
-        Returns:
-            Dictionary containing holographic pattern components
+        Extract holographic patterns from image using dual processing.
         """
         batch_size, channels, height, width = image.shape
         
         # 1. Frequency domain analysis (holistic processing)
-        freq_domain = torch.fft.fft2(image, dim=(2, 3))
-        magnitude = torch.abs(freq_domain)
-        phase = torch.angle(freq_domain)
+        freq_patterns = self._process_frequency_domain(image)
         
-        # 2. Pattern matching in frequency space
-        pattern_activations = self._match_patterns(magnitude)
+        # 2. Spatial relationship analysis (structural understanding)
+        spatial_patterns = self._process_spatial_relationships(image)
         
-        # 3. Spatial relationship analysis (gradient patterns)
-        spatial_relationships = self._analyze_spatial_patterns(image)
+        # 3. Pattern activation matching
+        pattern_activations = self._match_patterns(freq_patterns['magnitude'])
         
-        # 4. Phase pattern analysis
-        phase_patterns = self._analyze_phase_patterns(phase)
-        
-        # 5. Form holistic conceptual pattern
+        # 4. Form holistic conceptual pattern
         holographic_pattern = self._form_conceptual_pattern(
-            pattern_activations, spatial_relationships, phase_patterns
+            freq_patterns, spatial_patterns, pattern_activations
         )
         
         return {
             'pattern_activations': pattern_activations,
-            'spatial_relationships': spatial_relationships,
-            'phase_patterns': phase_patterns,
+            'spatial_relationships': spatial_patterns,
             'holographic_pattern': holographic_pattern,
-            'pattern_signature': self._generate_pattern_signature(holographic_pattern)
+            'frequency_components': freq_patterns
         }
+
+    def _process_frequency_domain(self, image: torch.Tensor) -> Dict[str, torch.Tensor]:
+        """Process image in frequency domain for holistic understanding."""
+        # Convert to frequency domain
+        freq_domain = torch.fft.fft2(image, dim=(2, 3))
+        magnitude = torch.abs(freq_domain)
+        phase = torch.angle(freq_domain)
+        
+        # Extract key frequency components
+        low_freq = self._extract_low_frequency_components(magnitude)
+        high_freq = self._extract_high_frequency_components(magnitude)
+        
+        return {
+            'magnitude': magnitude,
+            'phase': phase,
+            'low_frequency': low_freq,
+            'high_frequency': high_freq
+        }
+
+    def _extract_low_frequency_components(self, magnitude: torch.Tensor) -> torch.Tensor:
+        """Extract low-frequency components (global structure)."""
+        # Center crop for low frequencies
+        batch, channels, height, width = magnitude.shape
+        center_h, center_w = height // 2, width // 2
+        crop_size = min(height, width) // 4
+        
+        low_freq = magnitude[
+            :, :, 
+            center_h-crop_size:center_h+crop_size, 
+            center_w-crop_size:center_w+crop_size
+        ]
+        
+        return F.adaptive_avg_pool2d(low_freq, (1, 1)).flatten(1)
+
+    def _extract_high_frequency_components(self, magnitude: torch.Tensor) -> torch.Tensor:
+        """Extract high-frequency components (details and edges)."""
+        # Edge regions for high frequencies
+        batch, channels, height, width = magnitude.shape
+        margin = min(height, width) // 8
+        
+        # Create mask for high frequencies
+        mask = torch.ones_like(magnitude)
+        mask[:, :, margin:-margin, margin:-margin] = 0
+        
+        high_freq = magnitude * mask
+        return F.adaptive_avg_pool2d(high_freq, (1, 1)).flatten(1)
+
+    def _process_spatial_relationships(self, image: torch.Tensor) -> torch.Tensor:
+        """Analyze spatial relationships and structural patterns."""
+        # Convert to grayscale for spatial analysis
+        if image.shape[1] == 3:
+            grayscale = torch.mean(image, dim=1, keepdim=True)
+        else:
+            grayscale = image
+        
+        # Calculate gradients for edge and structure detection
+        grad_x = torch.gradient(grayscale, dim=3)[0]
+        grad_y = torch.gradient(grayscale, dim=2)[0]
+        
+        # Stack gradients for spatial processing
+        gradients = torch.cat([grad_x, grad_y], dim=1)
+        
+        # Process spatial relationships
+        spatial_features = self.spatial_processor(gradients)
+        
+        return spatial_features
 
     def _match_patterns(self, magnitude: torch.Tensor) -> torch.Tensor:
         """Match against learned pattern library using quantum-inspired similarity."""
-        batch_size, channels, height, width = magnitude.shape
+        batch_size = magnitude.shape[0]
         
-        # Extract dominant frequency components
-        flattened_magnitude = magnitude.view(batch_size, channels, -1)
-        dominant_freqs, _ = torch.topk(flattened_magnitude, k=128, dim=2)
-        dominant_freqs = dominant_freqs.view(batch_size, -1)
+        # Flatten and normalize magnitude
+        flat_magnitude = magnitude.view(batch_size, -1)
+        flat_magnitude = F.normalize(flat_magnitude, p=2, dim=1)
         
-        # Quantum-inspired pattern matching (cosine similarity)
-        pattern_receptors_norm = F.normalize(self.pattern_receptors, p=2, dim=1)
-        dominant_freqs_norm = F.normalize(dominant_freqs, p=2, dim=1)
+        # Normalize pattern receptors
+        norm_receptors = F.normalize(self.pattern_receptors, p=2, dim=1)
         
-        similarities = torch.matmul(dominant_freqs_norm, pattern_receptors_norm.t())
+        # Quantum-inspired similarity measure
+        similarities = torch.matmul(flat_magnitude, norm_receptors.T)
         
-        return similarities
+        # Softmax activation for pattern strength
+        pattern_strengths = F.softmax(similarities * 10, dim=1)  # Temperature scaling
+        
+        return pattern_strengths
 
-    def _analyze_spatial_patterns(self, image: torch.Tensor) -> torch.Tensor:
-        """Analyze spatial relationships using gradient patterns."""
-        # Convert to numpy for efficient gradient computation
-        image_np = image.detach().cpu().numpy()
-        
-        batch_size, channels, height, width = image_np.shape
-        spatial_features = []
-        
-        for i in range(batch_size):
-            batch_spatial = []
-            for c in range(channels):
-                # Compute gradients
-                grad_y, grad_x = np.gradient(image_np[i, c])
-                
-                # Compute gradient magnitude and orientation
-                magnitude = np.sqrt(grad_x**2 + grad_y**2)
-                orientation = np.arctan2(grad_y, grad_x)
-                
-                batch_spatial.append(np.stack([magnitude, orientation], axis=0))
-            
-            spatial_features.append(np.concatenate(batch_spatial, axis=0))
-        
-        spatial_tensor = torch.tensor(np.array(spatial_features), dtype=torch.float32)
-        
-        # Process spatial patterns
-        return self.spatial_processor(spatial_tensor)
-
-    def _analyze_phase_patterns(self, phase: torch.Tensor) -> torch.Tensor:
-        """Analyze phase information for structural understanding."""
-        # Phase contains structural information about the image
-        phase_flat = phase.view(phase.size(0), -1)
-        
-        # Use statistical features of phase
-        phase_mean = torch.mean(phase_flat, dim=1)
-        phase_std = torch.std(phase_flat, dim=1)
-        phase_entropy = self._compute_phase_entropy(phase)
-        
-        return torch.stack([phase_mean, phase_std, phase_entropy], dim=1)
-
-    def _compute_phase_entropy(self, phase: torch.Tensor) -> torch.Tensor:
-        """Compute entropy of phase distribution."""
-        # Flatten and compute histogram
-        phase_flat = phase.view(phase.size(0), -1)
-        hist = torch.histc(phase_flat, bins=64, min=-np.pi, max=np.pi)
-        hist_normalized = hist / hist.sum(dim=1, keepdim=True)
-        
-        # Compute entropy
-        entropy = -torch.sum(hist_normalized * torch.log(hist_normalized + 1e-10), dim=1)
-        return entropy
-
-    def _form_conceptual_pattern(self, activations, spatial, phase) -> torch.Tensor:
+    def _form_conceptual_pattern(self, freq_patterns: Dict, spatial_patterns: torch.Tensor, 
+                               pattern_activations: torch.Tensor) -> torch.Tensor:
         """Form holistic conceptual pattern from all components."""
         # Combine all information sources
-        combined = torch.cat([
-            activations.flatten(1),
-            spatial.flatten(1),
-            phase.flatten(1)
+        combined_features = torch.cat([
+            freq_patterns['low_frequency'],
+            freq_patterns['high_frequency'],
+            spatial_patterns,
+            pattern_activations
         ], dim=1)
         
-        return self.frequency_processor(combined)
+        # Process through frequency processor
+        conceptual_pattern = self.frequency_processor(combined_features)
+        
+        return conceptual_pattern
 
-    def _generate_pattern_signature(self, pattern: torch.Tensor) -> str:
-        """Generate unique signature for pattern matching."""
-        pattern_np = pattern.detach().cpu().numpy()
-        return hashlib.sha256(pattern_np.tobytes()).hexdigest()[:16]
-
-
-class HolographicConceptualAttention:
+class HolographicConceptualAttentionLayer:
     """
-    Attention layer that understands holographic patterns and maps them to
-    conceptual representations using CKG integration.
+    Advanced attention layer for holographic concept identification and CKG integration.
     """
     def __init__(self, ckg: ConceptualKnowledgeGraph):
         self.ckg = ckg
-        self.pattern_concept_map = defaultdict(list)
-        
-        # Predefined pattern-concept mappings
-        self.default_mappings = {
-            "periodic_patterns": ["rhythm", "repetition", "pattern"],
-            "gradient_patterns": ["transition", "gradient", "change"],
-            "high_frequency": ["detail", "texture", "complexity"],
-            "low_frequency": ["structure", "shape", "form"]
+        self.pattern_to_concept_map = self._initialize_pattern_mapping()
+
+    def _initialize_pattern_mapping(self) -> Dict[str, str]:
+        """Initialize mapping from pattern types to conceptual meanings."""
+        return {
+            "pattern_0": "symmetrical_structure",
+            "pattern_1": "repeating_texture", 
+            "pattern_2": "radial_symmetry",
+            "pattern_3": "linear_alignment",
+            "pattern_4": "organic_shape",
+            "pattern_5": "geometric_pattern",
+            "pattern_6": "high_contrast_edges",
+            "pattern_7": "smooth_gradient",
+            # ... more pattern mappings
         }
 
-    def identify_conceptual_roles(self, holographic_features: Dict) -> Dict[str, Any]:
+    def identify_conceptual_roles(self, holographic_features: Dict[str, torch.Tensor], 
+                                context: Dict = None) -> Dict[str, Any]:
         """
-        Map holographic patterns to conceptual understanding using CKG.
+        Identify conceptual roles from holographic patterns.
         """
         conceptual_roles = defaultdict(list)
-        pattern_signature = holographic_features['pattern_signature']
+        pattern_activations = holographic_features['pattern_activations']
         
-        # Check if pattern is already known
-        existing_concept = self.ckg.query(f"pattern_{pattern_signature}")
-        if existing_concept:
-            conceptual_roles['known_pattern'] = existing_concept['node']['concepts']
-            return conceptual_roles
+        # Find dominant patterns
+        dominant_pattern_idx = torch.argmax(pattern_activations, dim=1)
+        dominant_pattern_strength = pattern_activations[torch.arange(pattern_activations.size(0)), dominant_pattern_idx]
         
-        # Analyze pattern characteristics for new patterns
-        pattern_type = self._classify_pattern_type(holographic_features)
-        concepts = self._map_pattern_to_concepts(pattern_type, holographic_features)
+        # Map patterns to concepts
+        for i, pattern_idx in enumerate(dominant_pattern_idx):
+            pattern_key = f"pattern_{pattern_idx.item()}"
+            if pattern_key in self.pattern_to_concept_map:
+                concept_name = self.pattern_to_concept_map[pattern_key]
+                strength = dominant_pattern_strength[i].item()
+                
+                # Store in CKG with activation strength
+                concept_id = f"{concept_name}_{hashlib.sha256(str(strength).encode()).hexdigest()[:8]}"
+                self.ckg.add_node(concept_id, {
+                    "type": "holographic_concept",
+                    "concept": concept_name,
+                    "activation_strength": strength,
+                    "pattern_type": pattern_key,
+                    "domain": context.get("domain", "visual") if context else "visual"
+                })
+                
+                conceptual_roles["holographic_concepts"].append({
+                    "concept": concept_name,
+                    "strength": strength,
+                    "pattern_type": pattern_key
+                })
         
-        # Store new pattern in CKG
-        self._store_new_pattern(pattern_signature, pattern_type, concepts, holographic_features)
-        
-        conceptual_roles['new_pattern'] = concepts
-        conceptual_roles['pattern_type'] = pattern_type
+        # Analyze spatial relationships
+        spatial_analysis = self._analyze_spatial_relationships(
+            holographic_features['spatial_relationships']
+        )
+        conceptual_roles.update(spatial_analysis)
         
         return conceptual_roles
 
-    def _classify_pattern_type(self, features: Dict) -> str:
-        """Classify the type of holographic pattern."""
-        activations = features['pattern_activations']
-        spatial = features['spatial_relationships']
+    def _analyze_spatial_relationships(self, spatial_features: torch.Tensor) -> Dict[str, Any]:
+        """Analyze spatial relationships from features."""
+        analysis = {}
         
-        # Simple classification based on pattern characteristics
-        if torch.max(activations) > 0.8:
-            return "strong_structured_pattern"
-        elif torch.mean(spatial) > 0.5:
-            return "spatial_dominant_pattern"
+        # Simple spatial property detection (would be more sophisticated)
+        if torch.mean(spatial_features) > 0.5:
+            analysis["spatial_properties"] = ["structured", "organized"]
         else:
-            return "complex_mixed_pattern"
-
-    def _map_pattern_to_concepts(self, pattern_type: str, features: Dict) -> List[str]:
-        """Map pattern type to conceptual understanding."""
-        concepts = []
-        
-        # Basic pattern-type to concept mapping
-        if pattern_type == "strong_structured_pattern":
-            concepts.extend(["structure", "organization", "pattern"])
-        elif pattern_type == "spatial_dominant_pattern":
-            concepts.extend(["space", "layout", "arrangement"])
-        else:
-            concepts.extend(["complex", "detailed", "intricate"])
-        
-        # Add frequency-based concepts
-        if torch.mean(features['phase_patterns']) > 0:
-            concepts.append("rhythmic")
-        else:
-            concepts.append("irregular")
+            analysis["spatial_properties"] = ["organic", "free_form"]
             
-        return concepts
-
-    def _store_new_pattern(self, signature: str, pattern_type: str, 
-                          concepts: List[str], features: Dict):
-        """Store new pattern in CKG for future reference."""
-        pattern_node_id = f"holographic_pattern_{signature}"
-        
-        self.ckg.add_node(pattern_node_id, {
-            "type": "holographic_pattern",
-            "pattern_type": pattern_type,
-            "concepts": concepts,
-            "activations_mean": float(torch.mean(features['pattern_activations']).item()),
-            "spatial_complexity": float(torch.mean(features['spatial_relationships']).item()),
-            "phase_entropy": float(torch.mean(features['phase_patterns']).item()),
-            "signature": signature
-        })
-        
-        # Link concepts to pattern
-        for concept in concepts:
-            self.ckg.add_edge(pattern_node_id, concept, "EXPRESSES")
-
+        return analysis
 
 class ZenithHolographicVisualEncoder(nn.Module):
     """
-    Next-generation visual encoder that processes images holographically
+    Zenith Holographic Visual Encoder - Processes images as holistic patterns
     for exponential compression and human-like understanding.
     """
     def __init__(self, embedding_dim: int = 512, ckg: ConceptualKnowledgeGraph = None):
@@ -282,106 +269,110 @@ class ZenithHolographicVisualEncoder(nn.Module):
         
         # Holographic processing pathway
         self.holographic_extractor = HolographicPatternExtractor()
-        self.holographic_attention = HolographicConceptualAttention(ckg)
+        self.holographic_attention = HolographicConceptualAttentionLayer(self.ckg)
         
         # Conceptual embedding system
         self.concept_embeddings = nn.Embedding(1000, embedding_dim)  # 1000 concept types
-        self.pattern_embeddings = nn.Embedding(500, embedding_dim)   # 500 pattern types
+        self.property_embeddings = nn.Embedding(500, embedding_dim)   # 500 property types
         
         # Fusion and compression
         self.fusion_network = nn.Sequential(
-            nn.Linear(512 * 2, 1024),
+            nn.Linear(256 + 512, 1024),
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.Linear(1024, embedding_dim),
             nn.LayerNorm(embedding_dim)
         )
         
-        # Compression metrics
-        self.compression_stats = {
-            'total_images_processed': 0,
-            'average_compression_ratio': 0.0,
-            'pattern_reuse_count': 0
-        }
+        # Pattern memory bank (learned patterns)
+        self.pattern_memory = nn.Parameter(torch.randn(100, 256) * 0.1)
 
-    def forward(self, image: torch.Tensor) -> torch.Tensor:
+    def forward(self, image: torch.Tensor, context: Dict = None) -> torch.Tensor:
         """
-        Process image through holographic pathway and return conceptual embedding.
+        Process image through holographic pathway and return conceptual vector.
         """
         # Extract holographic patterns
         holographic_features = self.holographic_extractor(image)
         
-        # Map to conceptual understanding
-        conceptual_roles = self.holographic_attention.identify_conceptual_roles(holographic_features)
+        # Identify conceptual roles
+        conceptual_roles = self.holographic_attention.identify_conceptual_roles(
+            holographic_features, context
+        )
         
-        # Generate conceptual embedding
-        conceptual_embedding = self._generate_conceptual_embedding(conceptual_roles)
+        # Encode into conceptual vector
+        conceptual_vector = self._encode_conceptual_representation(
+            conceptual_roles, holographic_features
+        )
         
-        # Update compression statistics
-        self._update_compression_stats(image, conceptual_roles)
-        
-        return conceptual_embedding.unsqueeze(0)
+        return conceptual_vector
 
-    def _generate_conceptual_embedding(self, conceptual_roles: Dict) -> torch.Tensor:
-        """Generate embedding from conceptual roles."""
+    def _encode_conceptual_representation(self, conceptual_roles: Dict, 
+                                        holographic_features: Dict) -> torch.Tensor:
+        """Encode conceptual roles into dense vector representation."""
         concept_vectors = []
         
-        # Process known patterns
-        if 'known_pattern' in conceptual_roles:
-            for concept in conceptual_roles['known_pattern']:
-                concept_id = hash(concept) % 1000
-                concept_vectors.append(self.concept_embeddings(torch.tensor(concept_id)))
-            self.compression_stats['pattern_reuse_count'] += 1
-            
-        # Process new patterns
-        if 'new_pattern' in conceptual_roles:
-            for concept in conceptual_roles['new_pattern']:
-                concept_id = hash(concept) % 1000
-                concept_vectors.append(self.concept_embeddings(torch.tensor(concept_id)))
-                
-        # Add pattern type information
-        if 'pattern_type' in conceptual_roles:
-            pattern_id = hash(conceptual_roles['pattern_type']) % 500
-            concept_vectors.append(self.pattern_embeddings(torch.tensor(pattern_id)))
+        # Encode holographic concepts
+        if "holographic_concepts" in conceptual_roles:
+            for concept_info in conceptual_roles["holographic_concepts"]:
+                concept_id = self._get_concept_id(concept_info["concept"])
+                concept_vec = self.concept_embeddings(concept_id)
+                # Weight by activation strength
+                concept_vec = concept_vec * concept_info["strength"]
+                concept_vectors.append(concept_vec)
         
-        if not concept_vectors:
-            return torch.zeros(self.embedding_dim)
-            
-        # Weighted combination
-        return torch.mean(torch.stack(concept_vectors), dim=0)
-
-    def _update_compression_stats(self, image: torch.Tensor, conceptual_roles: Dict):
-        """Update compression statistics."""
-        original_size = image.numel() * image.element_size()
-        compressed_size = len(conceptual_roles.get('new_pattern', [])) * self.embedding_dim * 4
+        # Encode spatial properties
+        if "spatial_properties" in conceptual_roles:
+            for prop in conceptual_roles["spatial_properties"]:
+                prop_id = self._get_property_id(prop)
+                prop_vec = self.property_embeddings(prop_id)
+                concept_vectors.append(prop_vec)
         
-        if compressed_size > 0:
-            compression_ratio = original_size / compressed_size
-            self.compression_stats['total_images_processed'] += 1
-            self.compression_stats['average_compression_ratio'] = (
-                (self.compression_stats['average_compression_ratio'] * 
-                 (self.compression_stats['total_images_processed'] - 1) +
-                 compression_ratio) / self.compression_stats['total_images_processed']
-            )
+        # Add holographic pattern itself
+        pattern_vector = holographic_features['holographic_pattern']
+        concept_vectors.append(pattern_vector)
+        
+        # Fuse all concepts
+        if concept_vectors:
+            concept_stack = torch.stack(concept_vectors)
+            # Use attention-weighted fusion
+            weights = torch.softmax(torch.ones(len(concept_vectors)), dim=0)
+            fused_vector = torch.sum(concept_stack * weights.unsqueeze(1), dim=0)
+        else:
+            fused_vector = torch.zeros(self.embedding_dim)
+        
+        return fused_vector.unsqueeze(0)
 
-    def get_compression_metrics(self) -> Dict[str, float]:
-        """Get current compression performance metrics."""
+    def _get_concept_id(self, concept: str) -> int:
+        """Get or create concept ID."""
+        concept_hash = hash(concept) % 1000
+        return concept_hash
+
+    def _get_property_id(self, property: str) -> int:
+        """Get or create property ID."""
+        property_hash = hash(property) % 500
+        return property_hash
+
+    def get_compression_metrics(self, image: torch.Tensor) -> Dict[str, float]:
+        """
+        Calculate compression metrics for holographic encoding.
+        """
+        original_size = image.numel() * image.element_size()  # bytes
+        holographic_features = self.holographic_extractor(image)
+        
+        # Calculate compressed size
+        compressed_size = 0
+        for key, value in holographic_features.items():
+            if isinstance(value, torch.Tensor):
+                compressed_size += value.numel() * value.element_size()
+        
+        compression_ratio = original_size / max(compressed_size, 1)
+        
         return {
-            'images_processed': self.compression_stats['total_images_processed'],
-            'average_compression_ratio': self.compression_stats['average_compression_ratio'],
-            'pattern_reuse_rate': (
-                self.compression_stats['pattern_reuse_count'] / 
-                max(self.compression_stats['total_images_processed'], 1)
-            ),
-            'estimated_context_capacity': self._estimate_context_capacity()
+            "original_size_bytes": original_size,
+            "compressed_size_bytes": compressed_size,
+            "compression_ratio": compression_ratio,
+            "efficiency_gain": compression_ratio / 1.0
         }
-
-    def _estimate_context_capacity(self) -> float:
-        """Estimate how many images can be stored in context."""
-        avg_compression = max(self.compression_stats['average_compression_ratio'], 200)
-        # Assuming 128K token context window
-        return (131072 * 768 * 4) / (224 * 224 * 3 * 4 / avg_compression)
-
 
 # Usage example
 if __name__ == '__main__':
@@ -389,28 +380,28 @@ if __name__ == '__main__':
     class MockCKG:
         def __init__(self):
             self.nodes = {}
-            self.edges = {}
-            
+        
+        def add_node(self, node_id: str, properties: Dict):
+            self.nodes[node_id] = properties
+            print(f"Added node: {node_id} with properties {properties}")
+        
         def query(self, entity_id: str) -> Optional[Dict]:
             return self.nodes.get(entity_id)
-            
-        def add_node(self, node_id: str, properties: Dict):
-            self.nodes[node_id] = {'node': properties}
-            print(f"Added node: {node_id}")
-            
-        def add_edge(self, source: str, target: str, relationship: str):
-            self.edges[f"{source}_{relationship}_{target}"] = {
-                'source': source, 'target': target, 'relationship': relationship
-            }
 
     # Test the holographic encoder
     ckg_instance = MockCKG()
-    encoder = ZenithHolographicVisualEncoder(ckg=ckg_instance)
+    encoder = ZenithHolographicVisualEncoder(ckg=ckg_instance, embedding_dim=512)
     
-    # Test with sample image
-    dummy_image = torch.randn(1, 3, 224, 224)
-    encoded_vector = encoder(dummy_image)
+    # Create test image
+    test_image = torch.randn(1, 3, 224, 224)  # Batch of 1, RGB, 224x224
     
-    print("Holographic encoding successful!")
-    print(f"Encoded vector shape: {encoded_vector.shape}")
-    print(f"Compression metrics: {encoder.get_compression_metrics()}")
+    # Process through encoder
+    with torch.no_grad():
+        conceptual_vector = encoder(test_image)
+        metrics = encoder.get_compression_metrics(test_image)
+    
+    print(f"Holographic encoding successful!")
+    print(f"Conceptual vector shape: {conceptual_vector.shape}")
+    print(f"Compression ratio: {metrics['compression_ratio']:.1f}:1")
+    print(f"Original: {metrics['original_size_bytes']:,} bytes")
+    print(f"Compressed: {metrics['compressed_size_bytes']:,} bytes")
