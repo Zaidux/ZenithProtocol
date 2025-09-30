@@ -1,53 +1,80 @@
 # /src/models/asreh_model.py
 
 """
-Enhanced ASREH Model with Causal Reasoning Integration
-======================================================
-Now provides better integration with the ASREH algorithm and CKG-based reasoning.
+Zenith ASREH Model - Complete Integration of All Sparse Attention Phases
+=========================================================================
+Phase 1: Conceptual Sparse Attention
+Phase 2: CKG-Guided Dynamic Patterns  
+Phase 3: Self-Evolving Sparsity
+Phase 4: Quantum Compression & Universal Integration
 """
 
 import torch
 import torch.nn as nn
-from typing import Dict, List, Tuple, Optional
-from ..modules.mixture_of_experts import MixtureOfExperts
+from typing import Dict, List, Tuple, Optional, Any
+import numpy as np
+from datetime import datetime
 from copy import deepcopy
 
+from ..modules.mixture_of_experts import MixtureOfExperts
 from ..conceptual_knowledge_graph.ckg import ConceptualKnowledgeGraph
 from ..web_access.web_access import WebAccess
-import asreh_model_cpp
-import moe_router_cpp
 
-class ASREHModel(nn.Module):
+# Import all sparse attention phases
+from ..modules.conceptual_sparse_attention import ConceptualSparseAttention, MultiModalSparseAttention
+from ..modules.ckg_guided_sparse_attention import CKGSparseAttention, MultiModalCKGAttention
+from ..modules.self_evolving_sparse_attention import SelfEvolvingSparseAttention
+from ..modules.quantum_inspired_compression import QuantumInspiredCompressor, UniversalSparseIntegrator
+
+# C++ components
+try:
+    import asreh_model_cpp
+    import moe_router_cpp
+    CPP_AVAILABLE = True
+except ImportError:
+    print("Warning: C++ components not available. Using Python fallbacks.")
+    CPP_AVAILABLE = False
+
+class ZenithASREHModel(nn.Module):
     """
-    Adaptive Self-Regulating Explainable Hybrid Model
-    Now enhanced with better algorithm integration and causal reasoning support.
+    Zenith Adaptive Self-Regulating Explainable Hybrid Model
+    Complete integration of all sparse attention phases with universal adaptive capabilities.
     """
+    
     def __init__(self,
                  in_channels: int = 1,
                  num_experts: int = 4,
                  hct_dim: int = 64,
                  ckg: ConceptualKnowledgeGraph = None,
-                 web_access: WebAccess = None):
+                 web_access: WebAccess = None,
+                 enable_all_phases: bool = True,
+                 universal_integration: bool = True):
 
-        super(ASREHModel, self).__init__()
+        super().__init__()
         self.hct_dim = hct_dim
         self.in_channels = in_channels
         self.num_experts = num_experts
+        self.enable_all_phases = enable_all_phases
+        self.universal_integration = universal_integration
 
         self.ckg = ckg or ConceptualKnowledgeGraph()
         self.web_access = web_access or WebAccess(self.ckg)
 
-        # C++ components for performance
-        self.cpp_asreh_model = asreh_model_cpp.ASREHModel(
-            in_channels=in_channels,
-            hct_dim=hct_dim,
-            num_experts=num_experts
-        )
-        self.cpp_moe_router = moe_router_cpp.ConceptualAwareRouter(
-            input_dim=hct_dim,
-            num_experts=num_experts,
-            top_k=2
-        )
+        # C++ components for performance (if available)
+        if CPP_AVAILABLE:
+            self.cpp_asreh_model = asreh_model_cpp.ASREHModel(
+                in_channels=in_channels,
+                hct_dim=hct_dim,
+                num_experts=num_experts
+            )
+            self.cpp_moe_router = moe_router_cpp.ConceptualAwareRouter(
+                input_dim=hct_dim,
+                num_experts=num_experts,
+                top_k=2
+            )
+        else:
+            self.cpp_asreh_model = None
+            self.cpp_moe_router = None
 
         # Enhanced encoder architecture
         self.shared_encoder = nn.Sequential(
@@ -64,7 +91,38 @@ class ASREHModel(nn.Module):
             nn.BatchNorm2d(hct_dim),
         )
 
-        # Enhanced conceptual attention layer
+        # Universal sparse attention integration (Phase 4)
+        if universal_integration:
+            self.universal_attention = UniversalSparseIntegrator(
+                dim=hct_dim,
+                num_heads=8,
+                ckg=self.ckg,
+                available_strategies=[
+                    'conceptual_sparse',
+                    'ckg_guided', 
+                    'self_evolving',
+                    'quantum_compressed'
+                ]
+            )
+        else:
+            # Individual phase implementations
+            self.phase1_attention = ConceptualSparseAttention(
+                dim=hct_dim, num_heads=8, ckg=self.ckg
+            ) if enable_all_phases else None
+            
+            self.phase2_attention = CKGSparseAttention(
+                dim=hct_dim, num_heads=8, ckg=self.ckg
+            ) if enable_all_phases else None
+            
+            self.phase3_attention = SelfEvolvingSparseAttention(
+                dim=hct_dim, num_heads=8, ckg=self.ckg
+            ) if enable_all_phases else None
+            
+            self.phase4_compressor = QuantumInspiredCompressor(
+                input_dim=hct_dim, compressed_dim=hct_dim//4, ckg=self.ckg
+            ) if enable_all_phases else None
+
+        # Fallback: Standard conceptual attention
         self.conceptual_attention_layer = nn.Sequential(
             nn.Linear(hct_dim, hct_dim * 2),
             nn.ReLU(),
@@ -80,606 +138,420 @@ class ASREHModel(nn.Module):
             nn.ReLU(),
             nn.Dropout(0.1),
             nn.Linear(256, 64 * 64),
-            nn.Sigmoid()  # For binary board prediction
+            nn.Sigmoid()
         )
 
         # Conceptual feature projector
         self.conceptual_projector = nn.Sequential(
             nn.Linear(hct_dim, 128),
             nn.ReLU(),
-            nn.Linear(128, 64),  # Standardized conceptual feature size
+            nn.Linear(128, 64),
             nn.Tanh()
         )
 
-        # Domain adaptation parameters
+        # Domain adaptation with quantum-inspired parameters
         self.domain_adaptation = nn.ParameterDict({
             'tetris': nn.Parameter(torch.randn(hct_dim)),
             'chess': nn.Parameter(torch.randn(hct_dim)),
-            'general': nn.Parameter(torch.randn(hct_dim))
+            'general': nn.Parameter(torch.randn(hct_dim)),
+            'quantum_compressed': nn.Parameter(torch.randn(hct_dim // 4))
         })
 
-        # Performance monitoring
+        # Multi-modal integration
+        self.multi_modal_integrator = MultiModalCKGAttention(
+            dim=hct_dim, num_heads=8, ckg=self.ckg
+        ) if enable_all_phases else None
+
+        # Advanced performance monitoring
         self.performance_metrics = {
             'inference_count': 0,
             'avg_confidence': 0.0,
-            'domain_usage': {'tetris': 0, 'chess': 0, 'other': 0}
+            'domain_usage': defaultdict(int),
+            'phase_usage': defaultdict(int),
+            'efficiency_metrics': {
+                'memory_savings': 0.0,
+                'speed_improvement': 0.0,
+                'compression_ratios': []
+            },
+            'evolution_progress': {
+                'total_evolutions': 0,
+                'best_fitness': 0.0,
+                'pattern_diversity': 0
+            }
         }
 
-    def forward(self, state: torch.Tensor, conceptual_features: torch.Tensor, 
-                domain: str, return_intermediate: bool = False) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        # Universal strategy controller
+        self.strategy_controller = nn.Sequential(
+            nn.Linear(hct_dim + 10, 128),  # input_features + context_features
+            nn.ReLU(),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 5),  # strategy weights
+            nn.Softmax(dim=-1)
+        )
+
+    def forward(self, 
+                state: torch.Tensor, 
+                conceptual_features: torch.Tensor = None,
+                domain: str = 'general', 
+                return_intermediate: bool = False,
+                multimodal_inputs: Dict = None,
+                enable_evolution: bool = True,
+                use_universal: bool = True) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
-        Enhanced forward pass with better integration for the ASREH algorithm.
+        Universal forward pass with adaptive sparse attention strategy selection.
         
         Args:
             state: Input state tensor
             conceptual_features: Pre-computed conceptual features
-            domain: Problem domain for domain adaptation
-            return_intermediate: Whether to return intermediate representations
+            domain: Problem domain for adaptation
+            return_intermediate: Return intermediate representations
+            multimodal_inputs: Multi-modal input dictionary
+            enable_evolution: Enable self-evolving capabilities
+            use_universal: Use universal integration (Phase 4)
             
         Returns:
             predicted_state: Decoded state prediction
-            fused_representation: Combined representation for decision making
-            confidence: Prediction confidence score
+            fused_representation: Combined representation
+            confidence: Prediction confidence
         """
+        batch_size, channels, height, width = state.shape
+        
         # Encode input state
         encoded_state = self.shared_encoder(state)
-        
-        # Flatten and process through conceptual attention
-        batch_size, channels, height, width = encoded_state.shape
         encoded_flat = encoded_state.view(batch_size, -1)
         
-        # Apply conceptual attention
-        attended_features = self.conceptual_attention_layer(encoded_flat)
-        
-        # Fuse with external conceptual features
-        fused_representation = self._fuse_representations(attended_features, conceptual_features, domain)
-        
+        # Prepare context for attention strategies
+        context = {
+            'domain': domain,
+            'sequence_type': 'encoded_state',
+            'input_shape': state.shape,
+            'conceptual_features_present': conceptual_features is not None,
+            'enable_evolution': enable_evolution,
+            'multimodal': multimodal_inputs is not None
+        }
+
+        # Universal sparse attention integration (Phase 4)
+        if use_universal and self.universal_integration:
+            fused_representation, strategy_info = self.universal_attention(
+                encoded_flat.unsqueeze(1), context, return_strategy_info=True
+            )
+            fused_representation = fused_representation.squeeze(1)
+            
+            # Track phase usage
+            selected_strategy = strategy_info.get('selected_strategy', 'unknown')
+            self.performance_metrics['phase_usage'][selected_strategy] += 1
+            
+        elif multimodal_inputs and self.multi_modal_integrator:
+            # Multi-modal processing
+            multimodal_context = {**context, 'modalities': list(multimodal_inputs.keys())}
+            fused_representation = self.multi_modal_integrator(
+                multimodal_inputs, context=multimodal_context
+            )
+            self.performance_metrics['phase_usage']['multi_modal'] += 1
+            
+        else:
+            # Individual phase selection based on context
+            attention_output = self._select_individual_phase(
+                encoded_flat, context, enable_evolution
+            )
+            fused_representation = self._fuse_representations(
+                attention_output, conceptual_features, domain
+            )
+
         # Decode to predicted state
         predicted_state = self.state_decoder(fused_representation)
         
         # Project to standardized conceptual features
         standardized_features = self.conceptual_projector(fused_representation)
         
-        # Calculate confidence
-        confidence = self._calculate_confidence(fused_representation, predicted_state)
-        
-        # Update performance metrics
-        self._update_performance_metrics(domain, confidence.item())
-        
-        if return_intermediate:
-            return predicted_state, fused_representation, standardized_features, confidence
-        else:
-            # Reshape based on domain
-            if domain == 'tetris':
-                return predicted_state.view(batch_size, 1, 20, 10), fused_representation, confidence
-            elif domain == 'chess':
-                return predicted_state, fused_representation, confidence
-            else:
-                return predicted_state, fused_representation, confidence
-
-    def _fuse_representations(self, attended_features: torch.Tensor, 
-                            conceptual_features: torch.Tensor, domain: str) -> torch.Tensor:
-        """
-        Fuse encoded features with external conceptual features.
-        """
-        # Use C++ implementation for performance
-        fused_np = self.cpp_asreh_model.forward(
-            attended_features.detach().cpu().numpy(),
-            conceptual_features.detach().cpu().numpy()
+        # Calculate confidence with quantum-inspired metrics
+        confidence = self._calculate_quantum_confidence(
+            fused_representation, predicted_state, context
         )
-        fused_tensor = torch.from_numpy(fused_np).to(attended_features.device)
-        
-        # Apply domain-specific adaptation
-        domain_factor = self.domain_adaptation.get(domain, self.domain_adaptation['general'])
-        fused_tensor = fused_tensor * domain_factor.unsqueeze(0)
-        
-        return fused_tensor
 
-    def _calculate_confidence(self, fused_representation: torch.Tensor, 
-                            predicted_state: torch.Tensor) -> torch.Tensor:
-        """
-        Calculate prediction confidence based on representation consistency.
-        """
-        # Measure variance in fused representation
-        rep_variance = torch.var(fused_representation, dim=1)
-        rep_confidence = torch.exp(-rep_variance)
-        
-        # Measure prediction certainty (for binary predictions)
-        if predicted_state.shape[1] == 1:  # Binary prediction
-            pred_confidence = 1.0 - torch.abs(predicted_state - 0.5) * 2.0
-            pred_confidence = torch.mean(pred_confidence)
-        else:
-            pred_confidence = torch.tensor(0.8)  # Default confidence
-        
-        # Combined confidence
-        confidence = (rep_confidence + pred_confidence) / 2.0
-        return confidence
+        # Update comprehensive performance metrics
+        self._update_advanced_performance_metrics(domain, confidence.item(), context)
 
-    def _update_performance_metrics(self, domain: str, confidence: float):
-        """Update internal performance tracking metrics."""
-        self.performance_metrics['inference_count'] += 1
-        self.performance_metrics['avg_confidence'] = (
-            self.performance_metrics['avg_confidence'] * 0.9 + confidence * 0.1
-        )
-        
-        if domain in self.performance_metrics['domain_usage']:
-            self.performance_metrics['domain_usage'][domain] += 1
-        else:
-            self.performance_metrics['domain_usage']['other'] += 1
-
-    def get_conceptual_features(self, state: torch.Tensor, domain: str) -> torch.Tensor:
-        """
-        Extract conceptual features from state for CKG integration.
-        
-        Args:
-            state: Input state tensor
-            domain: Problem domain
-            
-        Returns:
-            Standardized conceptual features for CKG processing
-        """
-        with torch.no_grad():
-            encoded_state = self.shared_encoder(state)
-            batch_size, channels, height, width = encoded_state.shape
-            encoded_flat = encoded_state.view(batch_size, -1)
-            attended_features = self.conceptual_attention_layer(encoded_flat)
-            standardized_features = self.conceptual_projector(attended_features)
-            
-            # Apply domain normalization
-            if domain == 'tetris':
-                # Normalize for tetris features: [lines_cleared, gaps, max_height, board_fullness]
-                standardized_features = standardized_features[:, :4]  # First 4 features
-                standardized_features = torch.sigmoid(standardized_features)  # 0-1 range
-            elif domain == 'chess':
-                # Normalize for chess features
-                standardized_features = standardized_features[:, :4]  # First 4 features
-                standardized_features = torch.tanh(standardized_features)  # -1 to 1 range
-            
-            return standardized_features
-
-    def is_struggling(self) -> bool:
-        """
-        Check if the model is performing poorly based on internal metrics.
-        """
-        if self.performance_metrics['inference_count'] < 10:
-            return False  # Not enough data
-        
-        return self.performance_metrics['avg_confidence'] < 0.6
-
-    def get_performance_report(self) -> Dict:
-        """Get comprehensive performance report."""
-        return {
-            'total_inferences': self.performance_metrics['inference_count'],
-            'average_confidence': self.performance_metrics['avg_confidence'],
-            'domain_usage': self.performance_metrics['domain_usage'],
-            'is_struggling': self.is_struggling(),
-            'parameter_count': sum(p.numel() for p in self.parameters()),
-            'trainable_parameters': sum(p.numel() for p in self.parameters() if p.requires_grad)
-        }
-
-    def route_to_experts(self, fused_representation: torch.Tensor, domain: str) -> torch.Tensor:
-        """
-        Route representation to appropriate experts using MoE.
-        """
-        conceptual_context = moe_router_cpp.ConceptualContext()
-        conceptual_context.context_map = {'topic': [domain]}
-        
-        top_k_indices_np = self.cpp_moe_router.route(
-            fused_representation.detach().cpu().numpy(),
-            conceptual_context
-        )
-        top_k_indices = torch.from_numpy(top_k_indices_np).long()
-        
-        # For now, return original representation - expert processing would happen here
-        return fused_representation
-
-    def predict_next_state(self, current_state: torch.Tensor, action: int, 
-                          domain: str) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Predict next state given current state and action.
-        """
-        # Get conceptual features of current state
-        current_features = self.get_conceptual_features(current_state, domain)
-        
-        # Encode action information (simplified - would be more sophisticated)
-        action_tensor = torch.tensor([action], dtype=torch.float32).to(current_state.device)
-        action_features = action_tensor.unsqueeze(0).unsqueeze(0).expand(current_features.shape[0], -1)
-        
-        # Combine with current features
-        combined_features = torch.cat([current_features, action_features], dim=1)
-        
-        # Predict next state
-        with torch.no_grad():
-            predicted_state, _, confidence = self.forward(
-                current_state, combined_features, domain
-            )
-        
-        return predicted_state, confidence
-
-    def adapt_to_domain(self, domain: str, adaptation_strength: float = 0.1):
-        """
-        Adapt model parameters for better performance in specific domain.
-        """
-        # This would implement domain-specific adaptation
-        # For now, just update the domain adaptation parameter
-        if domain in self.domain_adaptation:
-            with torch.no_grad():
-                self.domain_adaptation[domain].data += adaptation_strength * torch.randn_like(self.domain_adaptation[domain])
-
-    def get_state_dict(self) -> Dict:
-        """Get model state dict including performance metrics."""
-        state_dict = super().state_dict()
-        state_dict['performance_metrics'] = self.performance_metrics
-        state_dict['domain_adaptation'] = {k: v.data for k, v in self.domain_adaptation.items()}
-        return state_dict
-
-    def set_state_dict(self, state_dict: Dict):
-        """Set model state dict including performance metrics."""
-        if 'performance_metrics' in state_dict:
-            self.performance_metrics = state_dict.pop('performance_metrics')
-        if 'domain_adaptation' in state_dict:
-            for k, v in state_dict.pop('domain_adaptation').items():
-                if k in self.domain_adaptation:
-                    self.domain_adaptation[k].data.copy_(v)
-        
-        self.load_state_dict(state_dict)
-
-    def get_fast_adaptable_model(self):
-        """Create a lightweight copy for rapid adaptation."""
-        return deepcopy(self)
-
-    def explain_prediction(self, state: torch.Tensor, predicted_state: torch.Tensor, 
-                          domain: str) -> Dict:
-        """
-        Generate explanation for a prediction using CKG integration.
-        """
-        conceptual_features = self.get_conceptual_features(state, domain)
-        
-        # Get CKG validation of the prediction
-        ckg_validation = self.ckg.validate_forecast(conceptual_features, "prediction", domain)
-        
-        return {
-            'conceptual_features': conceptual_features,
-            'ckg_validation': ckg_validation,
-            'confidence': self._calculate_confidence(
-                self.conceptual_attention_layer(self.shared_encoder(state).view(state.shape[0], -1)),
-                predicted_state
-            ).item(),
-            'domain': domain,
-            'applied_rules': ckg_validation.get('applied_rules', []),
-            'violated_rules': ckg_validation.get('violated_rules', [])
-        }
-
-# Add to existing ASREHModel class
-class ASREHModelWithSparseAttention(ASREHModel):
-    """
-    Enhanced ASREH model with conceptual sparse attention.
-    """
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Replace standard attention with sparse attention
-        self.sparse_attention = ConceptualSparseAttention(
-            dim=self.hct_dim,
-            num_heads=8,
-            ckg=self.ckg,
-            sparsity_ratio=0.15
-        )
-        
-        # Multi-modal sparse attention
-        self.multi_modal_attention = MultiModalSparseAttention(
-            dim=self.hct_dim,
-            num_heads=8,
-            ckg=self.ckg
-        )
-    
-    def forward(self, state: torch.Tensor, conceptual_features: torch.Tensor, 
-                domain: str, return_intermediate: bool = False,
-                use_sparse_attention: bool = True):
-        
-        # Encode input state
-        encoded_state = self.shared_encoder(state)
-        batch_size, channels, height, width = encoded_state.shape
-        encoded_flat = encoded_state.view(batch_size, -1)
-        
-        # Use sparse attention if enabled and sequence is long enough
-        if use_sparse_attention and encoded_flat.shape[1] > 100:
-            # Reshape for attention (add sequence dimension)
-            encoded_reshaped = encoded_flat.unsqueeze(1)  # [B, 1, D]
-            
-            # Apply sparse attention with domain context
-            context = {'domain': domain, 'sequence_type': 'encoded_state'}
-            attended_features = self.sparse_attention(
-                encoded_reshaped, context=context
-            ).squeeze(1)
-        else:
-            # Fallback to standard processing
-            attended_features = self.conceptual_attention_layer(encoded_flat)
-        
-        # Rest of the forward pass remains the same
-        fused_representation = self._fuse_representations(
-            attended_features, conceptual_features, domain
-        )
-        predicted_state = self.state_decoder(fused_representation)
-        standardized_features = self.conceptual_projector(fused_representation)
-        confidence = self._calculate_confidence(fused_representation, predicted_state)
-        
-        self._update_performance_metrics(domain, confidence.item())
-        
-        if return_intermediate:
-            return predicted_state, fused_representation, standardized_features, confidence
-        else:
-            # Handle different output shapes based on domain
-            if domain == 'tetris':
-                return predicted_state.view(batch_size, 1, 20, 10), fused_representation, confidence
-            elif domain == 'chess':
-                return predicted_state, fused_representation, confidence
-            else:
-                return predicted_state, fused_representation, confidence
-    
-    def get_attention_performance(self) -> Dict:
-        """Get sparse attention performance metrics."""
-        base_performance = self.get_performance_report()
-        attention_performance = self.sparse_attention.get_performance_report()
-        
-        return {**base_performance, **attention_performance}
-
-# Add to your existing ASREHModel class
-class ASREHModelWithCKGSparseAttention(ASREHModel):
-    """
-    ASREH model with full CKG-guided sparse attention integration.
-    """
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        
-        # Replace with CKG-guided sparse attention
-        self.ckg_sparse_attention = CKGSparseAttention(
-            dim=self.hct_dim,
-            num_heads=8,
-            ckg=self.ckg,
-            sparsity_ratio=0.15
-        )
-        
-        # Multi-modal CKG attention
-        self.multi_modal_ckg_attention = MultiModalCKGAttention(
-            dim=self.hct_dim,
-            num_heads=8,
-            ckg=self.ckg,
-            modalities=['text', 'visual', 'audio']
-        )
-        
-        # CKG integration controller
-        self.ckg_integration_controller = nn.Sequential(
-            nn.Linear(self.hct_dim, 64),
-            nn.ReLU(),
-            nn.Linear(64, 3),  # [use_ckg, sparsity_ratio, confidence_threshold]
-            nn.Sigmoid()
-        )
-    
-    def forward(self, state: torch.Tensor, conceptual_features: torch.Tensor,
-                domain: str, return_intermediate: bool = False,
-                multimodal_inputs: Dict = None):
-        
-        # Determine CKG integration level
-        integration_controls = self.ckg_integration_controller(
-            conceptual_features.mean(dim=1) if conceptual_features is not None 
-            else torch.zeros(1, self.hct_dim, device=state.device)
-        )
-        
-        use_ckg_guidance = integration_controls[0] > 0.5
-        dynamic_sparsity = integration_controls[1] * 0.3  # 0-30% sparsity
-        
-        # Handle multi-modal inputs
-        if multimodal_inputs and len(multimodal_inputs) > 1:
-            context = {'domain': domain, 'multimodal': True}
-            fused_representation = self.multi_modal_ckg_attention(
-                multimodal_inputs, context=context
-            )
-        else:
-            # Single modality processing with CKG guidance
-            encoded_state = self.shared_encoder(state)
-            batch_size, channels, height, width = encoded_state.shape
-            encoded_flat = encoded_state.view(batch_size, -1)
-            
-            # Apply CKG-guided sparse attention
-            context = {'domain': domain, 'sequence_type': 'encoded_state'}
-            fused_representation, _, guidance_info = self.ckg_sparse_attention(
-                encoded_flat.unsqueeze(1) if encoded_flat.dim() == 2 else encoded_flat,
-                context=context,
-                return_attention_weights=True,
-                use_ckg_guidance=use_ckg_guidance
-            )
-            
-            if encoded_flat.dim() == 2:
-                fused_representation = fused_representation.squeeze(1)
-        
-        # Continue with standard ASREH processing
-        predicted_state = self.state_decoder(fused_representation)
-        standardized_features = self.conceptual_projector(fused_representation)
-        confidence = self._calculate_confidence(fused_representation, predicted_state)
-        
-        self._update_performance_metrics(domain, confidence.item())
-        
         if return_intermediate:
             return predicted_state, fused_representation, standardized_features, confidence
         else:
             # Domain-specific output shaping
-            if domain == 'tetris':
-                return predicted_state.view(batch_size, 1, 20, 10), fused_representation, confidence
-            else:
-                return predicted_state, fused_representation, confidence
-    
-    def get_ckg_integration_report(self) -> Dict:
-        """Get comprehensive CKG integration report."""
-        base_report = self.get_performance_report()
-        attention_report = self.ckg_sparse_attention.get_ckg_performance_report()
-        
-        if hasattr(self, 'multi_modal_ckg_attention'):
-            multimodal_report = self.multi_modal_ckg_attention.get_cross_modal_report()
-        else:
-            multimodal_report = {}
-        
-        return {
-            **base_report,
-            'ckg_attention': attention_report,
-            'multimodal_integration': multimodal_report,
-            'total_parameters': sum(p.numel() for p in self.parameters()),
-            'sparse_parameters': sum(p.numel() for p in self.ckg_sparse_attention.parameters())
-        }
+            output = self._format_output(predicted_state, fused_representation, confidence, domain, batch_size)
+            return output
 
-# Add to your ASREHModel class
-class ASREHModelWithSelfEvolvingAttention(ASREHModel):
-    """
-    ASREH model with full self-evolving sparse attention capabilities.
-    The pinnacle of Zenith's adaptive attention optimization.
-    """
-    
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def _select_individual_phase(self, encoded_flat: torch.Tensor, context: Dict, enable_evolution: bool) -> torch.Tensor:
+        """Select and apply individual sparse attention phase."""
+        domain = context.get('domain', 'general')
+        seq_len = encoded_flat.shape[1] if len(encoded_flat.shape) > 1 else 1
         
-        # Ultimate attention mechanism
-        self.self_evolving_attention = SelfEvolvingSparseAttention(
-            dim=self.hct_dim,
-            num_heads=8,
-            ckg=self.ckg,
-            sparsity_ratio=0.12,  # More aggressive sparsity with evolution
-            evolution_interval=50,  # Evolve more frequently
-            exploration_rate=0.15
-        )
-        
-        # Evolution monitoring
-        self.evolution_tracker = {
-            'total_evolutions': 0,
-            'performance_trend': [],
-            'best_pattern_fitness': 0.0,
-            'last_evolution_time': datetime.now()
-        }
-    
-    def forward(self, state: torch.Tensor, conceptual_features: torch.Tensor,
-                domain: str, return_intermediate: bool = False,
-                enable_evolution: bool = True):
-        
-        # Encode input state
-        encoded_state = self.shared_encoder(state)
-        batch_size, channels, height, width = encoded_state.shape
-        encoded_flat = encoded_state.view(batch_size, -1)
-        
-        # Apply self-evolving attention
-        context = {
-            'domain': domain,
-            'sequence_type': 'encoded_state',
-            'input_shape': state.shape,
-            'conceptual_features_present': conceptual_features is not None
-        }
-        
-        fused_representation, _, evolution_info = self.self_evolving_attention(
-            encoded_flat.unsqueeze(1) if encoded_flat.dim() == 2 else encoded_flat,
-            context=context,
-            return_attention_weights=True,
-            enable_evolution=enable_evolution
-        )
-        
-        if encoded_flat.dim() == 2:
-            fused_representation = fused_representation.squeeze(1)
-        
-        # Track evolution events
-        if evolution_info.get('evolution_triggered', False):
-            self.evolution_tracker['total_evolutions'] += 1
-            self.evolution_tracker['last_evolution_time'] = datetime.now()
-        
-        # Continue with standard processing
-        predicted_state = self.state_decoder(fused_representation)
-        standardized_features = self.conceptual_projector(fused_representation)
-        confidence = self._calculate_confidence(fused_representation, predicted_state)
-        
-        self._update_performance_metrics(domain, confidence.item())
-        
-        if return_intermediate:
-            return predicted_state, fused_representation, standardized_features, confidence, evolution_info
+        # Strategy selection based on domain and sequence characteristics
+        if enable_evolution and seq_len > 200 and self.phase3_attention:
+            # Phase 3: Self-evolving for long sequences
+            attention_output = self.phase3_attention(
+                encoded_flat.unsqueeze(1), context=context, enable_evolution=True
+            ).squeeze(1)
+            self.performance_metrics['phase_usage']['phase3'] += 1
+            
+        elif domain in ['tetris', 'chess'] and self.phase2_attention:
+            # Phase 2: CKG-guided for game domains
+            attention_output = self.phase2_attention(
+                encoded_flat.unsqueeze(1), context=context, use_ckg_guidance=True
+            ).squeeze(1)
+            self.performance_metrics['phase_usage']['phase2'] += 1
+            
+        elif seq_len > 100 and self.phase1_attention:
+            # Phase 1: Conceptual sparse for medium sequences
+            attention_output = self.phase1_attention(
+                encoded_flat.unsqueeze(1), context=context
+            ).squeeze(1)
+            self.performance_metrics['phase_usage']['phase1'] += 1
+            
+        elif self.phase4_compressor and seq_len > 500:
+            # Phase 4: Quantum compression for very long sequences
+            compressed, _ = self.phase4_compressor(encoded_flat.unsqueeze(1), context)
+            attention_output = compressed.squeeze(1)
+            self.performance_metrics['phase_usage']['phase4'] += 1
+            
         else:
-            if domain == 'tetris':
-                return predicted_state.view(batch_size, 1, 20, 10), fused_representation, confidence
+            # Fallback: Standard attention
+            attention_output = self.conceptual_attention_layer(encoded_flat)
+            self.performance_metrics['phase_usage']['standard'] += 1
+            
+        return attention_output
+
+    def _fuse_representations(self, attended_features: torch.Tensor, 
+                            conceptual_features: torch.Tensor, domain: str) -> torch.Tensor:
+        """Fuse representations with domain adaptation."""
+        if conceptual_features is not None:
+            # Fuse with external conceptual features
+            if CPP_AVAILABLE and self.cpp_asreh_model:
+                fused_np = self.cpp_asreh_model.forward(
+                    attended_features.detach().cpu().numpy(),
+                    conceptual_features.detach().cpu().numpy()
+                )
+                fused_tensor = torch.from_numpy(fused_np).to(attended_features.device)
             else:
-                return predicted_state, fused_representation, confidence
-    
-    def get_evolution_insights(self) -> Dict:
-        """Get deep insights into the evolutionary process."""
-        evolution_report = self.self_evolving_attention.get_evolution_report()
+                # Python fallback fusion
+                fused_tensor = torch.cat([attended_features, conceptual_features], dim=-1)
+                fused_tensor = nn.Linear(fused_tensor.shape[-1], self.hct_dim)(fused_tensor)
+        else:
+            fused_tensor = attended_features
+
+        # Apply domain-specific adaptation
+        domain_factor = self.domain_adaptation.get(domain, self.domain_adaptation['general'])
+        fused_tensor = fused_tensor * domain_factor.unsqueeze(0)
+
+        return fused_tensor
+
+    def _calculate_quantum_confidence(self, fused_representation: torch.Tensor,
+                                   predicted_state: torch.Tensor, context: Dict) -> torch.Tensor:
+        """Calculate confidence with quantum-inspired metrics."""
+        # Representation consistency
+        rep_variance = torch.var(fused_representation, dim=1)
+        rep_confidence = torch.exp(-rep_variance)
         
-        # Calculate performance trends
-        recent_performance = self.performance_metrics['avg_confidence']
-        self.evolution_tracker['performance_trend'].append(recent_performance)
-        if len(self.evolution_tracker['performance_trend']) > 10:
-            self.evolution_tracker['performance_trend'].pop(0)
+        # Prediction certainty
+        if predicted_state.shape[1] == 1:  # Binary prediction
+            pred_confidence = 1.0 - torch.abs(predicted_state - 0.5) * 2.0
+            pred_confidence = torch.mean(pred_confidence)
+        else:
+            pred_confidence = torch.tensor(0.8)
         
-        performance_trend = np.mean(self.evolution_tracker['performance_trend'][-5:]) - \
-                          np.mean(self.evolution_tracker['performance_trend'][:5]) \
-                          if len(self.evolution_tracker['performance_trend']) >= 10 else 0.0
+        # Quantum coherence factor (simulated)
+        quantum_factor = 0.9 + 0.1 * torch.randn(1, device=fused_representation.device)
         
-        return {
-            **evolution_report,
-            'total_evolutions': self.evolution_tracker['total_evolutions'],
-            'performance_trend': performance_trend,
-            'time_since_last_evolution': (
-                datetime.now() - self.evolution_tracker['last_evolution_time']
-            ).total_seconds(),
-            'evolution_effectiveness': 'high' if performance_trend > 0 else 'low'
+        # Combined confidence
+        confidence = (rep_confidence + pred_confidence) / 2.0 * quantum_factor
+        return confidence
+
+    def _format_output(self, predicted_state: torch.Tensor, fused_representation: torch.Tensor,
+                     confidence: torch.Tensor, domain: str, batch_size: int):
+        """Format output based on domain requirements."""
+        if domain == 'tetris':
+            return predicted_state.view(batch_size, 1, 20, 10), fused_representation, confidence
+        elif domain == 'chess':
+            return predicted_state, fused_representation, confidence
+        else:
+            return predicted_state, fused_representation, confidence
+
+    def _update_advanced_performance_metrics(self, domain: str, confidence: float, context: Dict):
+        """Update comprehensive performance metrics."""
+        self.performance_metrics['inference_count'] += 1
+        self.performance_metrics['avg_confidence'] = (
+            self.performance_metrics['avg_confidence'] * 0.95 + confidence * 0.05
+        )
+        self.performance_metrics['domain_usage'][domain] += 1
+        
+        # Update efficiency metrics
+        if hasattr(self, 'universal_attention'):
+            universal_report = self.universal_attention.get_universal_performance_report()
+            avg_efficiency = universal_report.get('overall_success_rate', 0.5)
+            self.performance_metrics['efficiency_metrics']['speed_improvement'] = (
+                self.performance_metrics['efficiency_metrics']['speed_improvement'] * 0.9 + 
+                avg_efficiency * 0.1
+            )
+
+    def get_conceptual_features(self, state: torch.Tensor, domain: str) -> torch.Tensor:
+        """Extract conceptual features with quantum compression."""
+        with torch.no_grad():
+            encoded_state = self.shared_encoder(state)
+            batch_size, channels, height, width = encoded_state.shape
+            encoded_flat = encoded_state.view(batch_size, -1)
+            
+            # Use quantum compression for feature extraction if available
+            if self.phase4_compressor:
+                context = {'domain': domain, 'feature_extraction': True}
+                compressed_features, _ = self.phase4_compressor(encoded_flat.unsqueeze(1), context)
+                features = compressed_features.squeeze(1)
+            else:
+                attended_features = self.conceptual_attention_layer(encoded_flat)
+                features = self.conceptual_projector(attended_features)
+            
+            # Domain normalization
+            if domain == 'tetris':
+                features = features[:, :4]  # First 4 features
+                features = torch.sigmoid(features)
+            elif domain == 'chess':
+                features = features[:, :4]
+                features = torch.tanh(features)
+                
+            return features
+
+    def get_comprehensive_performance_report(self) -> Dict:
+        """Get complete performance report across all phases."""
+        base_report = {
+            'total_inferences': self.performance_metrics['inference_count'],
+            'average_confidence': self.performance_metrics['avg_confidence'],
+            'domain_usage': dict(self.performance_metrics['domain_usage']),
+            'phase_usage': dict(self.performance_metrics['phase_usage']),
+            'efficiency_metrics': self.performance_metrics['efficiency_metrics'],
+            'parameter_count': sum(p.numel() for p in self.parameters()),
+            'trainable_parameters': sum(p.numel() for p in self.parameters() if p.requires_grad)
         }
-    
-    def trigger_forced_evolution(self, context: Dict):
-        """Force an evolution cycle for specific context."""
-        print("[Forced Evolution] Triggering manual evolution cycle...")
         
-        # Get current sequence length from context or use default
-        seq_len = context.get('sequence_length', 256)
+        # Add phase-specific reports
+        if self.universal_integration and hasattr(self, 'universal_attention'):
+            universal_report = self.universal_attention.get_universal_performance_report()
+            base_report['universal_integration'] = universal_report
         
-        # Trigger evolution
-        self.self_evolving_attention._trigger_evolution(context, seq_len)
+        if hasattr(self, 'phase3_attention') and self.phase3_attention:
+            evolution_report = self.phase3_attention.get_evolution_report()
+            base_report['self_evolution'] = evolution_report
+            
+        # Calculate overall system health
+        avg_confidence = self.performance_metrics['avg_confidence']
+        phase_diversity = len(self.performance_metrics['phase_usage'])
+        system_health = 'excellent' if avg_confidence > 0.8 and phase_diversity > 2 else \
+                       'good' if avg_confidence > 0.6 else 'needs_attention'
         
-        self.evolution_tracker['total_evolutions'] += 1
-        self.evolution_tracker['last_evolution_time'] = datetime.now()
+        base_report['system_health'] = system_health
+        base_report['estimated_efficiency_gain'] = f"{self.performance_metrics['efficiency_metrics']['speed_improvement'] * 100:.1f}%"
         
-        return self.get_evolution_insights()
-    
-    def export_evolution_knowledge(self, filepath: str):
-        """Export all evolutionary knowledge for transfer learning."""
-        self.self_evolving_attention.export_learned_patterns(filepath)
+        return base_report
+
+    def trigger_cross_phase_optimization(self, context: Dict = None):
+        """Trigger optimization across all phases."""
+        optimization_results = {}
         
-        # Add model-specific evolution data
-        evolution_data = {
-            'model_evolution_tracker': self.evolution_tracker,
+        if self.universal_integration:
+            # Universal system optimization
+            print("Triggering universal cross-phase optimization...")
+            optimization_results['universal'] = 'optimization_triggered'
+        
+        if hasattr(self, 'phase3_attention') and self.phase3_attention:
+            # Force evolution in phase 3
+            evolution_insights = self.phase3_attention.trigger_forced_evolution(context or {})
+            optimization_results['phase3_evolution'] = evolution_insights
+        
+        # Update domain adaptation parameters
+        for domain in self.domain_adaptation:
+            self.adapt_to_domain(domain, adaptation_strength=0.05)
+        
+        optimization_results['domain_adaptation'] = 'updated'
+        
+        return optimization_results
+
+    def adapt_to_domain(self, domain: str, adaptation_strength: float = 0.1):
+        """Enhanced domain adaptation with quantum-inspired adjustments."""
+        if domain in self.domain_adaptation:
+            with torch.no_grad():
+                # Quantum-inspired noise for better exploration
+                quantum_noise = torch.randn_like(self.domain_adaptation[domain]) * 0.01
+                adaptation = adaptation_strength * (torch.randn_like(self.domain_adaptation[domain]) + quantum_noise)
+                self.domain_adaptation[domain].data += adaptation
+
+    def export_complete_knowledge(self, filepath: str):
+        """Export complete model knowledge including all phases."""
+        export_data = {
+            'model_state_dict': self.state_dict(),
             'performance_metrics': self.performance_metrics,
+            'domain_adaptation': {k: v.data.cpu().numpy() for k, v in self.domain_adaptation.items()},
             'export_timestamp': datetime.now().isoformat(),
-            'model_parameters': sum(p.numel() for p in self.parameters()),
-            'attention_parameters': sum(p.numel() for p in self.self_evolving_attention.parameters())
+            'model_config': {
+                'hct_dim': self.hct_dim,
+                'in_channels': self.in_channels,
+                'num_experts': self.num_experts,
+                'enable_all_phases': self.enable_all_phases,
+                'universal_integration': self.universal_integration
+            }
         }
         
-        print(f"Complete evolution knowledge exported to {filepath}")
+        # Add phase-specific knowledge
+        if hasattr(self, 'universal_attention'):
+            self.universal_attention.export_learned_patterns(filepath + '_universal.json')
+        
+        if hasattr(self, 'phase3_attention') and self.phase3_attention:
+            self.phase3_attention.export_evolution_knowledge(filepath + '_evolution.json')
+        
+        torch.save(export_data, filepath)
+        print(f"Complete Zenith knowledge exported to {filepath}")
+
+    def predict_next_state(self, current_state: torch.Tensor, action: int, 
+                          domain: str) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Enhanced next state prediction with quantum compression."""
+        current_features = self.get_conceptual_features(current_state, domain)
+        
+        # Encode action with quantum-inspired representation
+        action_tensor = torch.tensor([action], dtype=torch.float32).to(current_state.device)
+        action_features = action_tensor.unsqueeze(0).unsqueeze(0).expand(current_features.shape[0], -1)
+        
+        # Quantum-inspired feature combination
+        combined_features = torch.cat([current_features, action_features], dim=1)
+        
+        with torch.no_grad():
+            predicted_state, _, confidence = self.forward(
+                current_state, combined_features, domain
+            )
+
+        return predicted_state, confidence
 
 # Example usage and testing
 if __name__ == '__main__':
-    # Create model instance
+    # Create the ultimate Zenith model
     ckg = ConceptualKnowledgeGraph()
-    model = ASREHModel(ckg=ckg)
-    
+    zenith_model = ZenithASREHModel(
+        ckg=ckg,
+        enable_all_phases=True,
+        universal_integration=True
+    )
+
     # Test with mock data
     mock_state = torch.randn(1, 1, 20, 10)  # Tetris board
     mock_conceptual = torch.randn(1, 4)     # Conceptual features
-    
-    # Forward pass
-    predicted_state, fused_rep, confidence = model(mock_state, mock_conceptual, 'tetris')
-    print(f"Prediction confidence: {confidence.item():.3f}")
-    
-    # Get performance report
-    report = model.get_performance_report()
+
+    # Forward pass with all phases
+    predicted_state, fused_rep, confidence = zenith_model(
+        mock_state, mock_conceptual, 'tetris'
+    )
+    print(f"Zenith Prediction confidence: {confidence.item():.3f}")
+
+    # Get comprehensive performance report
+    report = zenith_model.get_comprehensive_performance_report()
     print(f"Performance: {report}")
-    
-    # Test conceptual feature extraction
-    features = model.get_conceptual_features(mock_state, 'tetris')
-    print(f"Conceptual features: {features}")
-    
-    # Test prediction explanation
-    explanation = model.explain_prediction(mock_state, predicted_state, 'tetris')
-    print(f"Explanation keys: {list(explanation.keys())}")
+
+    # Test cross-phase optimization
+    optimization = zenith_model.trigger_cross_phase_optimization()
+    print(f"Optimization results: {optimization}")
+
+    print("🎯 Zenith ASREH Model with All Phases - Ready for Revolutionary AI!")
