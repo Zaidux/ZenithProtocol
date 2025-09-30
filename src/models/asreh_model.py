@@ -529,6 +529,135 @@ class ASREHModelWithCKGSparseAttention(ASREHModel):
             'sparse_parameters': sum(p.numel() for p in self.ckg_sparse_attention.parameters())
         }
 
+# Add to your ASREHModel class
+class ASREHModelWithSelfEvolvingAttention(ASREHModel):
+    """
+    ASREH model with full self-evolving sparse attention capabilities.
+    The pinnacle of Zenith's adaptive attention optimization.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Ultimate attention mechanism
+        self.self_evolving_attention = SelfEvolvingSparseAttention(
+            dim=self.hct_dim,
+            num_heads=8,
+            ckg=self.ckg,
+            sparsity_ratio=0.12,  # More aggressive sparsity with evolution
+            evolution_interval=50,  # Evolve more frequently
+            exploration_rate=0.15
+        )
+        
+        # Evolution monitoring
+        self.evolution_tracker = {
+            'total_evolutions': 0,
+            'performance_trend': [],
+            'best_pattern_fitness': 0.0,
+            'last_evolution_time': datetime.now()
+        }
+    
+    def forward(self, state: torch.Tensor, conceptual_features: torch.Tensor,
+                domain: str, return_intermediate: bool = False,
+                enable_evolution: bool = True):
+        
+        # Encode input state
+        encoded_state = self.shared_encoder(state)
+        batch_size, channels, height, width = encoded_state.shape
+        encoded_flat = encoded_state.view(batch_size, -1)
+        
+        # Apply self-evolving attention
+        context = {
+            'domain': domain,
+            'sequence_type': 'encoded_state',
+            'input_shape': state.shape,
+            'conceptual_features_present': conceptual_features is not None
+        }
+        
+        fused_representation, _, evolution_info = self.self_evolving_attention(
+            encoded_flat.unsqueeze(1) if encoded_flat.dim() == 2 else encoded_flat,
+            context=context,
+            return_attention_weights=True,
+            enable_evolution=enable_evolution
+        )
+        
+        if encoded_flat.dim() == 2:
+            fused_representation = fused_representation.squeeze(1)
+        
+        # Track evolution events
+        if evolution_info.get('evolution_triggered', False):
+            self.evolution_tracker['total_evolutions'] += 1
+            self.evolution_tracker['last_evolution_time'] = datetime.now()
+        
+        # Continue with standard processing
+        predicted_state = self.state_decoder(fused_representation)
+        standardized_features = self.conceptual_projector(fused_representation)
+        confidence = self._calculate_confidence(fused_representation, predicted_state)
+        
+        self._update_performance_metrics(domain, confidence.item())
+        
+        if return_intermediate:
+            return predicted_state, fused_representation, standardized_features, confidence, evolution_info
+        else:
+            if domain == 'tetris':
+                return predicted_state.view(batch_size, 1, 20, 10), fused_representation, confidence
+            else:
+                return predicted_state, fused_representation, confidence
+    
+    def get_evolution_insights(self) -> Dict:
+        """Get deep insights into the evolutionary process."""
+        evolution_report = self.self_evolving_attention.get_evolution_report()
+        
+        # Calculate performance trends
+        recent_performance = self.performance_metrics['avg_confidence']
+        self.evolution_tracker['performance_trend'].append(recent_performance)
+        if len(self.evolution_tracker['performance_trend']) > 10:
+            self.evolution_tracker['performance_trend'].pop(0)
+        
+        performance_trend = np.mean(self.evolution_tracker['performance_trend'][-5:]) - \
+                          np.mean(self.evolution_tracker['performance_trend'][:5]) \
+                          if len(self.evolution_tracker['performance_trend']) >= 10 else 0.0
+        
+        return {
+            **evolution_report,
+            'total_evolutions': self.evolution_tracker['total_evolutions'],
+            'performance_trend': performance_trend,
+            'time_since_last_evolution': (
+                datetime.now() - self.evolution_tracker['last_evolution_time']
+            ).total_seconds(),
+            'evolution_effectiveness': 'high' if performance_trend > 0 else 'low'
+        }
+    
+    def trigger_forced_evolution(self, context: Dict):
+        """Force an evolution cycle for specific context."""
+        print("[Forced Evolution] Triggering manual evolution cycle...")
+        
+        # Get current sequence length from context or use default
+        seq_len = context.get('sequence_length', 256)
+        
+        # Trigger evolution
+        self.self_evolving_attention._trigger_evolution(context, seq_len)
+        
+        self.evolution_tracker['total_evolutions'] += 1
+        self.evolution_tracker['last_evolution_time'] = datetime.now()
+        
+        return self.get_evolution_insights()
+    
+    def export_evolution_knowledge(self, filepath: str):
+        """Export all evolutionary knowledge for transfer learning."""
+        self.self_evolving_attention.export_learned_patterns(filepath)
+        
+        # Add model-specific evolution data
+        evolution_data = {
+            'model_evolution_tracker': self.evolution_tracker,
+            'performance_metrics': self.performance_metrics,
+            'export_timestamp': datetime.now().isoformat(),
+            'model_parameters': sum(p.numel() for p in self.parameters()),
+            'attention_parameters': sum(p.numel() for p in self.self_evolving_attention.parameters())
+        }
+        
+        print(f"Complete evolution knowledge exported to {filepath}")
+
 # Example usage and testing
 if __name__ == '__main__':
     # Create model instance
