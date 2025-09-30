@@ -4,6 +4,9 @@
 torch==2.3.0
 numpy==1.26.4
 Pillow==10.3.0
+scipy>=1.7.0
+scikit-learn>=1.0.0
+pybind11>=2.6.0
 # The next two are for handling and managing the project's files
 typing==3.10.0.0
 pathlib==1.0.1
