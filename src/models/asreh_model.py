@@ -425,6 +425,110 @@ class ASREHModelWithSparseAttention(ASREHModel):
         
         return {**base_performance, **attention_performance}
 
+# Add to your existing ASREHModel class
+class ASREHModelWithCKGSparseAttention(ASREHModel):
+    """
+    ASREH model with full CKG-guided sparse attention integration.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Replace with CKG-guided sparse attention
+        self.ckg_sparse_attention = CKGSparseAttention(
+            dim=self.hct_dim,
+            num_heads=8,
+            ckg=self.ckg,
+            sparsity_ratio=0.15
+        )
+        
+        # Multi-modal CKG attention
+        self.multi_modal_ckg_attention = MultiModalCKGAttention(
+            dim=self.hct_dim,
+            num_heads=8,
+            ckg=self.ckg,
+            modalities=['text', 'visual', 'audio']
+        )
+        
+        # CKG integration controller
+        self.ckg_integration_controller = nn.Sequential(
+            nn.Linear(self.hct_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64, 3),  # [use_ckg, sparsity_ratio, confidence_threshold]
+            nn.Sigmoid()
+        )
+    
+    def forward(self, state: torch.Tensor, conceptual_features: torch.Tensor,
+                domain: str, return_intermediate: bool = False,
+                multimodal_inputs: Dict = None):
+        
+        # Determine CKG integration level
+        integration_controls = self.ckg_integration_controller(
+            conceptual_features.mean(dim=1) if conceptual_features is not None 
+            else torch.zeros(1, self.hct_dim, device=state.device)
+        )
+        
+        use_ckg_guidance = integration_controls[0] > 0.5
+        dynamic_sparsity = integration_controls[1] * 0.3  # 0-30% sparsity
+        
+        # Handle multi-modal inputs
+        if multimodal_inputs and len(multimodal_inputs) > 1:
+            context = {'domain': domain, 'multimodal': True}
+            fused_representation = self.multi_modal_ckg_attention(
+                multimodal_inputs, context=context
+            )
+        else:
+            # Single modality processing with CKG guidance
+            encoded_state = self.shared_encoder(state)
+            batch_size, channels, height, width = encoded_state.shape
+            encoded_flat = encoded_state.view(batch_size, -1)
+            
+            # Apply CKG-guided sparse attention
+            context = {'domain': domain, 'sequence_type': 'encoded_state'}
+            fused_representation, _, guidance_info = self.ckg_sparse_attention(
+                encoded_flat.unsqueeze(1) if encoded_flat.dim() == 2 else encoded_flat,
+                context=context,
+                return_attention_weights=True,
+                use_ckg_guidance=use_ckg_guidance
+            )
+            
+            if encoded_flat.dim() == 2:
+                fused_representation = fused_representation.squeeze(1)
+        
+        # Continue with standard ASREH processing
+        predicted_state = self.state_decoder(fused_representation)
+        standardized_features = self.conceptual_projector(fused_representation)
+        confidence = self._calculate_confidence(fused_representation, predicted_state)
+        
+        self._update_performance_metrics(domain, confidence.item())
+        
+        if return_intermediate:
+            return predicted_state, fused_representation, standardized_features, confidence
+        else:
+            # Domain-specific output shaping
+            if domain == 'tetris':
+                return predicted_state.view(batch_size, 1, 20, 10), fused_representation, confidence
+            else:
+                return predicted_state, fused_representation, confidence
+    
+    def get_ckg_integration_report(self) -> Dict:
+        """Get comprehensive CKG integration report."""
+        base_report = self.get_performance_report()
+        attention_report = self.ckg_sparse_attention.get_ckg_performance_report()
+        
+        if hasattr(self, 'multi_modal_ckg_attention'):
+            multimodal_report = self.multi_modal_ckg_attention.get_cross_modal_report()
+        else:
+            multimodal_report = {}
+        
+        return {
+            **base_report,
+            'ckg_attention': attention_report,
+            'multimodal_integration': multimodal_report,
+            'total_parameters': sum(p.numel() for p in self.parameters()),
+            'sparse_parameters': sum(p.numel() for p in self.ckg_sparse_attention.parameters())
+        }
+
 # Example usage and testing
 if __name__ == '__main__':
     # Create model instance
