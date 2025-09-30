@@ -350,6 +350,81 @@ class ASREHModel(nn.Module):
             'violated_rules': ckg_validation.get('violated_rules', [])
         }
 
+# Add to existing ASREHModel class
+class ASREHModelWithSparseAttention(ASREHModel):
+    """
+    Enhanced ASREH model with conceptual sparse attention.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Replace standard attention with sparse attention
+        self.sparse_attention = ConceptualSparseAttention(
+            dim=self.hct_dim,
+            num_heads=8,
+            ckg=self.ckg,
+            sparsity_ratio=0.15
+        )
+        
+        # Multi-modal sparse attention
+        self.multi_modal_attention = MultiModalSparseAttention(
+            dim=self.hct_dim,
+            num_heads=8,
+            ckg=self.ckg
+        )
+    
+    def forward(self, state: torch.Tensor, conceptual_features: torch.Tensor, 
+                domain: str, return_intermediate: bool = False,
+                use_sparse_attention: bool = True):
+        
+        # Encode input state
+        encoded_state = self.shared_encoder(state)
+        batch_size, channels, height, width = encoded_state.shape
+        encoded_flat = encoded_state.view(batch_size, -1)
+        
+        # Use sparse attention if enabled and sequence is long enough
+        if use_sparse_attention and encoded_flat.shape[1] > 100:
+            # Reshape for attention (add sequence dimension)
+            encoded_reshaped = encoded_flat.unsqueeze(1)  # [B, 1, D]
+            
+            # Apply sparse attention with domain context
+            context = {'domain': domain, 'sequence_type': 'encoded_state'}
+            attended_features = self.sparse_attention(
+                encoded_reshaped, context=context
+            ).squeeze(1)
+        else:
+            # Fallback to standard processing
+            attended_features = self.conceptual_attention_layer(encoded_flat)
+        
+        # Rest of the forward pass remains the same
+        fused_representation = self._fuse_representations(
+            attended_features, conceptual_features, domain
+        )
+        predicted_state = self.state_decoder(fused_representation)
+        standardized_features = self.conceptual_projector(fused_representation)
+        confidence = self._calculate_confidence(fused_representation, predicted_state)
+        
+        self._update_performance_metrics(domain, confidence.item())
+        
+        if return_intermediate:
+            return predicted_state, fused_representation, standardized_features, confidence
+        else:
+            # Handle different output shapes based on domain
+            if domain == 'tetris':
+                return predicted_state.view(batch_size, 1, 20, 10), fused_representation, confidence
+            elif domain == 'chess':
+                return predicted_state, fused_representation, confidence
+            else:
+                return predicted_state, fused_representation, confidence
+    
+    def get_attention_performance(self) -> Dict:
+        """Get sparse attention performance metrics."""
+        base_performance = self.get_performance_report()
+        attention_performance = self.sparse_attention.get_performance_report()
+        
+        return {**base_performance, **attention_performance}
+
 # Example usage and testing
 if __name__ == '__main__':
     # Create model instance
