@@ -1,12 +1,12 @@
-Comprehensive System Design Document: Zenith-Enhanced Cognitive Architecture
+## Comprehensive System Design Document: Zenith-Enhanced Cognitive Architecture
 
-Executive Summary
+**Executive Summary**
 
 This document outlines a complete cognitive architecture that combines memory systems, causal reasoning, goal formation, and self-continuity. The system transcends traditional LLM limitations through a layered, modular design that enables true understanding, continuous learning, and autonomous goal formation while maintaining safety and corrigibility.
 
-1. Core Architecture Overview
+1. **Core Architecture Overview**
 
-1.1 System Stack (Top to Bottom)
+1.1 **System Stack (Top to Bottom)**
 
 ```
 ┌─────────────────────────────────────┐
@@ -30,7 +30,7 @@ This document outlines a complete cognitive architecture that combines memory sy
 └─────────────────────────────────────┘
 ```
 
-1.2 Key Design Principles
+1.2 **Key Design Principles**
 
 1. Modularity: Components are replaceable, inspectable, and independently upgradeable
 2. Asymmetric Intelligence: Most queries use fast paths; only complex reasoning triggers full stack
@@ -38,9 +38,9 @@ This document outlines a complete cognitive architecture that combines memory sy
 4. Externalized Memory: Learning happens outside the static LLM core
 5. Causal First: All reasoning must pass through conceptual validation
 
-2. Component Specifications
+2. **Component Specifications**
 
-2.1 Memory System (Enhanced)
+2.1 **Memory System (Enhanced)**
 
 Types:
 
@@ -77,7 +77,7 @@ def retrieve_memory(query, context, confidence_threshold=0.7):
     return convert_to_constraints(pruned)
 ```
 
-2.2 Zenith Conceptual Reasoning Layer
+2.2 **Zenith Conceptual Reasoning Layer**
 
 Conceptual Categories (Extended):
 
@@ -90,7 +90,7 @@ Conceptual Categories (Extended):
 7. Outcome: Results, consequences
 8. Metric: Quantitative measures of success/failure
 
-Five-Step Reasoning Process:
+# Five-Step Reasoning Process:
 
 ```python
 class ZenithReasoner:
@@ -113,7 +113,7 @@ class ZenithReasoner:
         return understanding
 ```
 
-2.3 Belief System
+2.3 **Belief System**
 
 Belief Node Structure:
 
@@ -141,7 +141,7 @@ class BeliefNode:
             self.last_updated = now()
 ```
 
-Belief Update Protocol:
+# Belief Update Protocol:
 
 1. Compare new evidence with existing belief network
 2. Evaluate conceptual validity (Zenith layer)
@@ -149,7 +149,7 @@ Belief Update Protocol:
 4. Apply gradual updates with momentum
 5. Trigger reconciliation for high-conflict beliefs
 
-2.4 Goal Generation Engine
+2.4 **Goal Generation Engine**
 
 Goal Sources:
 
@@ -225,9 +225,9 @@ class SelfState:
             self.identity_traits[trait] = value * 0.8 + new_value * 0.2
 ```
 
-3. Training Methodology
+3. **Training Methodology**
 
-3.1 Multi-Stage Training Pipeline
+3.1 **Multi-Stage Training Pipeline**
 
 Stage 1: Base Intelligence (Pretraining)
 
@@ -259,7 +259,7 @@ Stage 5: Self-Continuity Training
 · Objective: Maintain consistent self-model across time
 · Metric: Self-continuity score across sessions
 
-3.2 Hybrid Data Strategy
+3.2 **Hybrid Data Strategy**
 
 Three Data Streams:
 
@@ -300,7 +300,7 @@ def process_conversation_data(raw_conversations):
     return annotated
 ```
 
-3.3 Composite Loss Function
+3.3 **Composite Loss Function**
 
 ```python
 L_total = (
@@ -314,7 +314,7 @@ L_total = (
 )
 ```
 
-4. Integration with ASREH Algorithm
+4. **Integration with ASREH Algorithm**
 
 4.1 Enhanced ASREH Components
 
